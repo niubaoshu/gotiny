@@ -2,7 +2,18 @@ package gotiny
 
 import (
 	//"fmt"
+	"encoding"
+	"encoding/gob"
 	"reflect"
+)
+
+var (
+	gobEncIF = reflect.TypeOf((*gob.GobEncoder)(nil)).Elem()
+	binEncIF = reflect.TypeOf((*encoding.BinaryMarshaler)(nil)).Elem()
+	//txtEncIF   = reflect.TypeOf((*encoding.TextMarshaler)(nil)).Elem()
+	gobEncfunc = gobEncIF.Method(0).Func
+	binEncfunc = binEncIF.Method(0).Func
+	//txtEncfunc = txtEncIF.Method(0).Func
 )
 
 func (e *Encoder) encBool(v bool) {
@@ -66,11 +77,37 @@ func encComplex64(e *Encoder, v reflect.Value)  { e.encComplex64(v.Complex()) }
 func encComplex128(e *Encoder, v reflect.Value) { e.encComplex128(v.Complex()) }
 func encString(e *Encoder, v reflect.Value)     { e.encString(v.String()) }
 
+func encGob(e *Encoder, v reflect.Value) {
+	rvs := gobEncfunc.Call([]reflect.Value{v})
+	buf := rvs[0].Bytes()
+	length := len(buf)
+	e.encUint64(uint64(length))
+	e.buf = append(e.buf, buf...)
+	e.index += length
+}
+func encBin(e *Encoder, v reflect.Value) {
+	rvs := binEncfunc.Call([]reflect.Value{v})
+	buf := rvs[0].Bytes()
+	length := len(buf)
+	e.encUint64(uint64(length))
+	e.buf = append(e.buf, buf...)
+	e.index += length
+}
+
+// func encTxt(e *Encoder, v reflect.Value) {
+// 	rvs := txtEncfunc.Call([]reflect.Value{v})
+// 	buf := rvs[0].Bytes()
+// 	length := len(buf)
+// 	e.encUint64(uint64(length))
+// 	e.buf = append(e.buf, buf...)
+// 	e.index += length
+// }
+
 func (e *Encoder) encString(v string) {
-	l := len(v)
-	e.encUint(uint64(l))
-	l = l << 3
-	e.reqLen += l
-	e.append(l)
+	length := len(v)
+	e.encUint(uint64(length))
+	length = length << 3
+	e.reqLen += length
+	e.append(length)
 	e.index += copy(e.buf[e.index:], v)
 }

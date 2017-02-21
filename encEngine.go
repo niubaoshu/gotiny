@@ -1,7 +1,6 @@
 package gotiny
 
 import (
-	//"fmt"
 	"reflect"
 	"sync"
 )
@@ -99,12 +98,32 @@ func buildInfo(rt reflect.Type) *TypeInfo {
 	// 循环类型 type x *x
 	// 套嵌  type  a { b *a }
 	//接口类型处理
+	// 实现了 BinaryMarshaler
+	// TextMarshaler
+	//GobEncoder
+	// 接口的处理
 	info, has := rt2Info[rt]
 	if has {
 		return info
 	}
+
 	kind := rt.Kind()
+
 	info = new(TypeInfo)
+	if rt.Implements(gobEncIF) && rt.Implements(gobDecIF) {
+		info.Engine = encGob
+		//fmt.Println("encGob")
+		goto end
+	}
+
+	if rt.Implements(binEncIF) && rt.Implements(binDecIF) {
+		info.Engine = encBin
+		goto end
+	}
+	 //if rt.Implements(txtEncIF) && rt.Implements(txtDecIF) {
+	 //	info.Engine = encTxt
+	 //	goto end
+	 //}
 	info.Length = baseLength[kind]
 	switch kind {
 	case reflect.Ptr:
@@ -300,6 +319,7 @@ func buildInfo(rt reflect.Type) *TypeInfo {
 	default:
 		info = baseInfo[kind]
 	}
+end:
 	rt2Info[rt] = info
 	return info
 }

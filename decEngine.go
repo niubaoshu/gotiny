@@ -40,6 +40,19 @@ func buildDecEngine(rt reflect.Type) decEngine {
 	if has {
 		return engine
 	}
+	if rt.Implements(gobEncIF) && rt.Implements(gobDecIF) {
+		engine = decGob
+		goto end
+	}
+
+	if rt.Implements(binEncIF) && rt.Implements(binDecIF) {
+		engine = decBin
+		goto end
+	}
+	//if rt.Implements(txtEncIF) && rt.Implements(txtDecIF) {
+	//	engine = decTxt
+	//	goto end
+	//}
 
 	switch rt.Kind() {
 	case reflect.Bool:
@@ -151,6 +164,7 @@ func buildDecEngine(rt reflect.Type) decEngine {
 	default:
 		engine = decignore
 	}
+end:
 	rt2decEng[rt] = engine
 	return engine
 }

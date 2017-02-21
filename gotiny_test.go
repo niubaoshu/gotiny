@@ -12,6 +12,8 @@ type str struct {
 	A map[int]map[int]string
 	B []bool
 	c int
+	//s *str
+	//sss map[string]str
 }
 
 type ET0 struct {
@@ -163,6 +165,8 @@ func init() {
 	// 	enc.Encode(vs[i])
 	// }
 	// fmt.Println("stdgob length:", len(network.Bytes()))
+
+	d.ResetWith(e.Encodes(vs...))
 
 }
 
