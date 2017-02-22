@@ -1,18 +1,7 @@
 package gotiny
 
 import (
-	"encoding"
-	"encoding/gob"
 	"reflect"
-)
-
-var (
-	gobDecIF = reflect.TypeOf((*gob.GobDecoder)(nil)).Elem()
-	binDecIF = reflect.TypeOf((*encoding.BinaryUnmarshaler)(nil)).Elem()
-	//txtDecIF   = reflect.TypeOf((*encoding.TextUnmarshaler)(nil)).Elem()
-	gobDecfunc = gobDecIF.Method(0).Func
-	binDecfunc = binDecIF.Method(0).Func
-	//txtDecfunc = txtDecIF.Method(0).Func
 )
 
 func (d *Decoder) decBool() (b bool) {
@@ -138,10 +127,10 @@ done:
 
 func (d *Decoder) decUint8() (x uint8) { x = d.buf[d.index]; d.index++; return }
 func (d *Decoder) decInt8() int8       { return int8(d.decUint8()) }
-func (d *Decoder) decInt() int64       { return uintToInt(d.decUint()) }
-func (d *Decoder) decFloat() float64   { return uintToFloat(d.decUint()) }
+func (d *Decoder) decInt() int64       { return uintToInt(d.decUintFast()) }
+func (d *Decoder) decFloat() float64   { return uintToFloat(d.decUintFast()) }
 func (d *Decoder) decComplex() complex128 {
-	return complex(uintToFloat(d.decUint()), uintToFloat(d.decUint()))
+	return complex(uintToFloat(d.decUintFast()), uintToFloat(d.decUintFast()))
 }
 
 func decignore(d *Decoder, v reflect.Value)  {}
@@ -153,23 +142,3 @@ func decInt(d *Decoder, v reflect.Value)     { v.SetInt(d.decInt()) }
 func decFloat(d *Decoder, v reflect.Value)   { v.SetFloat(d.decFloat()) }
 func decComplex(d *Decoder, v reflect.Value) { v.SetComplex(d.decComplex()) }
 func decString(d *Decoder, v reflect.Value)  { v.SetString(d.decString()) }
-
-func decGob(d *Decoder, v reflect.Value) {
-	length := int(d.decUint())
-	start := d.index
-	d.index += length
-	gobDecfunc.Call([]reflect.Value{v, reflect.ValueOf(d.buf[start:d.index])})
-}
-func decBin(d *Decoder, v reflect.Value) {
-	length := int(d.decUint())
-	start := d.index
-	d.index += length
-	binDecfunc.Call([]reflect.Value{v, reflect.ValueOf(d.buf[start:d.index])})
-}
-
-// func decTxt(d *Decoder, v reflect.Value) {
-// 	length := int(d.decUint())
-// 	start := d.index
-// 	d.index += length
-// 	txtDecfunc.Call([]reflect.Value{v, reflect.ValueOf(d.buf[start:d.index])})
-// }

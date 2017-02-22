@@ -1,11 +1,12 @@
-package gotiny
+package main
 
 import (
-	"fmt"
-	"math/rand"
+	"github.com/niubaoshu/gotiny"
 	"reflect"
-	"testing"
-	"time"
+	"runtime/pprof"
+	"log"
+
+	"os"
 )
 
 type str struct {
@@ -20,16 +21,17 @@ type ET0 struct {
 }
 
 var (
-	_   = rand.Intn(1)
-	now = time.Now()
-	a   = "234234"
-	i   = map[int]map[int]string{
+	//_   = rand.Intn(1)
+	//now = time.Now()
+	a = "234234"
+	i = map[int]map[int]string{
 		1: map[int]string{
 			1: a,
 		},
 	}
-	strs     = `抵制西方的司法独立，有什么错？有人说马克思主义还是西方的，有本事别用啊。这都是犯了形而上学的错误，任何理论、思想都必须和中国国情相结合，和当前实际相结合。全部照搬照抄的教条主义王明已经试过一次，结果怎么样？歪解周强讲话，不是蠢就是别有用心，蠢的可以教育，别有用心就该打倒`
-	st       = str{A: i, B: []bool{true, false, false, false, false, true, true, false, true, false, true}, c: 234234}
+	strs = `抵制西方的司法独立，有什么错？有人说马克思主义还是西方的，有本事别用啊。这都是犯了形而上学的错误，任何理论、思想都必须和中国国情相结合，和当前实际相结合。全部照搬照抄的教条主义王明已经试过一次，结果怎么样？歪解周强讲话，不是蠢就是别有用心，蠢的可以教育，别有用心就该打倒`
+	st   = str{A: i, B: []bool{true, false, false, false, false, true, true, false, true, false, true}, c: 234234}
+	//st     = str{c: 234234}
 	et0      = ET0{s: st, F: i}
 	stp      = &st
 	stpp     = &stp
@@ -47,22 +49,22 @@ var (
 		出席世界经济论坛2017年年会并访问在瑞士的国际组织
 		新华社北京1月15日电1月15日上午，国家主席习近平乘专机离开北京，应以洛伊特哈德为主席的瑞士联邦委员会邀请，对瑞士进行国事访问；应世界经济论坛创始人兼执行主席施瓦布邀请，出席在达沃斯举行的世界经济论坛2017年年会；应联合国秘书长古特雷斯、世界卫生组织总干事陈冯富珍、国际奥林匹克委员会主席巴赫邀请，访问联合国日内瓦总部、世界卫生组织、国际奥林匹克委员会。
 		陪同习近平出访的有：习近平主席夫人彭丽媛，中共中央政治局委员、中央政策研究室主任王沪宁，中共中央政治局委员、中央书记处书记、中央办公厅主任栗战书，国务委员杨洁篪等。返回腾讯网首页>>`,
-		true,
-		false,
+		// true,
+		// false,
 		int(123456),
 		int8(123),
 		int16(-12345),
 		int32(123456),
 		int64(-1234567),
 		int64(1<<63 - 1),
-		int64(rand.Int63()),
+		//		int64(rand.Int63()),
 		uint(123),
 		uint8(123),
 		uint16(12345),
 		uint32(123456),
 		uint64(1234567),
 		uint64(1<<64 - 1),
-		uint64(rand.Uint32() * rand.Uint32()),
+		//uint64(rand.Uint32() * rand.Uint32()),
 		uintptr(12345678),
 		float32(1.2345),
 		float64(1.2345678),
@@ -92,7 +94,8 @@ var (
 			a, C int
 		}{1, 2},
 		et0,
-		now,
+		[100]int{},
+		//	now,
 		ptrint,
 		nilmap,
 		nilslice,
@@ -101,8 +104,8 @@ var (
 		slice,
 		mapt,
 	}
-	e = NewEncoder(vs...)
-	d = NewDecoder(vs...)
+	e = gotiny.NewEncoder(vs...)
+	d = gotiny.NewDecoder(vs...)
 
 	rvalues = make([]reflect.Value, len(vs))
 	//rtypes   = make([]reflect.Type, len(vs))
@@ -164,112 +167,26 @@ func init() {
 	d.ResetWith(e.Encodes(vs...))
 }
 
-// Test basic operations in a safe manner.
-func TestBasicEncoderDecoder(t *testing.T) {
-	//fmt.Println(vs...)
-	e.Reset()
-	b := e.Encodes(vs...)
-	//t.Logf("%v\n", b)
-	fmt.Printf("length: %d, content: %v\n", len(b), b)
-	d.ResetWith(b)
-	d.Decodes(presults...)
-	for i, result := range results {
-		r := result.Interface()
-		//fmt.Printf("%T: expected %v got %v ,%T\n", vs[i], vs[i], r, r)
-		if !reflect.DeepEqual(vs[i], r) {
-			t.Fatalf("%T: expected %#v got %#v ,%T\n", vs[i], vs[i], r, r)
-		}
+func main() {
+	f, err := os.Create("cpuprofile.pprof")
+	if err != nil {
+		log.Fatal(err)
 	}
-
-	b = e.EncodeValues(rvalues...)
-	d.ResetWith(b)
-	d.DecodeValues(results...)
-	for i, result := range results {
-		r := result.Interface()
-		//fmt.Printf("%T: expected %v got %v ,%T\n", vs[i], vs[i], r, r)
-		if !reflect.DeepEqual(vs[i], result.Interface()) {
-			t.Fatalf("%T: expected %#v got %#v ,%T\n", vs[i], vs[i], r, r)
-		}
-	}
-}
-
-// func BenchmarkStdEncode(b *testing.B) {
-// 	for i := 0; i < b.N; i++ {
-// 		for j := 0; j < 1000; j++ {
-// 			for i := 0; i < len(vs); i++ {
-// 				enc.Encode(vs[i])
-// 			}
-// 		}
-// 	}
-// }
-
-// func BenchmarkStdDecode(b *testing.B) {
-// 	for i := 0; i < b.N; i++ {
-// 		for j := 0; j < 1000; j++ {
-// 			for i := 0; i < len(presults); i++ {
-// 				dec.Decode(presults[i])
-// 				//err := dec.Decode(presults[i])
-// 				//if err != nil {
-// 				//	b.Fatal(j, err.Error())
-// 				//}
-// 			}
-// 		}
-// 	}
-//}
-
-func BenchmarkEncodes(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	defer f.Close()
+	pprof.StartCPUProfile(f)
+	defer pprof.StopCPUProfile()
+	var buf []byte
+	_ =buf
+	for i := 0; i < 1000; i++ {
+		e.Reset()
 		for i := 0; i < 1000; i++ {
-			e.Reset()
-			e.Encodes(vs...)
+			buf = e.Encodes(vs...)
 		}
+		//d.ResetWith(buf)
+		//
+		//for i := 0; i < 1000; i++ {
+		//	d.Decodes(presults...)
+		//}
+		//fmt.Println(i, len(buf))
 	}
 }
-
-func BenchmarkDecodes(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		for i := 0; i < 1000; i++ {
-			d.Reset()
-			d.Decodes(presults...)
-		}
-	}
-}
-
-// func BenchmarkFloatToUint(b *testing.B) {
-// 	var f = 1.0
-// 	for i := 0; i < b.N; i++ {
-// 		floatToUint(f)
-// 	}
-// }
-// func BenchmarkIntToUint(b *testing.B) {
-// 	for i := 0; i < b.N; i++ {
-// 		intToUint(1)
-// 	}
-// }
-
-// var (
-// 	ee        = NewEncoder(0)
-// 	maxuint64 = uint64(1<<64 - 1)
-// )
-
-// func BenchmarkEncUint(b *testing.B) {
-// 	for i := 0; i < b.N; i++ {
-// 		ee.encUint(maxuint64)
-// 	}
-// }
-
-// func BenchmarkEncUint2(b *testing.B) {
-// 	for i := 0; i < b.N; i++ {
-// 		ee.encUint(maxuint64)
-// 	}
-// }
-
-// func BenchmarkDecUint(b *testing.B) {
-// 	b.StopTimer()
-// 	dd := NewDecoder(ee.Bytes())
-// 	dd.Reset()
-// 	b.StartTimer()
-// 	for i := 0; i < b.N; i++ {
-// 		dd.DecUint()
-// 	}
-// }

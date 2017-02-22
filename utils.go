@@ -1,6 +1,7 @@
 package gotiny
 
 import (
+	"reflect"
 	"unsafe"
 )
 
@@ -33,30 +34,13 @@ func uintToInt(u uint64) int64 {
 	return (-(v & 1)) ^ (v>>1)&0x7FFFFFFFFFFFFFFF
 }
 
-// //单位是字节
-// func varuint(buf []byte, u uint64) (i int) {
-// 	for u >= 0x80 {
-// 		buf[i] = uint8(u) | 0x80
-// 		i++
-// 		u >>= 7
-// 	}
-// 	buf[i] = uint8(u)
-// 	i++
-// 	return i
-// }
-
-// func unvaruint(buf []byte) (u uint64, i int) {
-// 	s := uint(0)
-// 	for buf[i] > 0x7f {
-// 		u |= (uint64(buf[i]&0x7f) << s)
-// 		s += 7
-// 		i++
-// 	}
-// 	u |= uint64(buf[i]) << s
-// 	i++
-// 	return
-// }
-
-// func varint(buf []byte, v int64) (i uint) {
-// 	return varuint(buf, intToUint(v))
-// }
+func implementsInterface(rt reflect.Type) (reflect.Value, reflect.Value, bool) {
+	encm, has := rt.MethodByName("GobEncode")
+	decm, has2 := reflect.PtrTo(rt).MethodByName("GobDecode")
+	if has && has2 {
+		return encm.Func ,decm.Func,true
+	}
+	encm, has = rt.MethodByName("MarshalBinary")
+	decm, has2 = reflect.PtrTo(rt).MethodByName("UnmarshalBinary")
+	return encm.Func ,decm.Func, has&&has2
+}
