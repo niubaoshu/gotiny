@@ -1,6 +1,8 @@
 package gotiny
 
 import (
+	"encoding"
+	"encoding/gob"
 	"reflect"
 	"unsafe"
 )
@@ -34,13 +36,24 @@ func uintToInt(u uint64) int64 {
 	return (-(v & 1)) ^ (v>>1)&0x7FFFFFFFFFFFFFFF
 }
 
-func implementsInterface(rt reflect.Type) (reflect.Value, reflect.Value, bool) {
-	encm, has := rt.MethodByName("GobEncode")
-	decm, has2 := reflect.PtrTo(rt).MethodByName("GobDecode")
-	if has && has2 {
-		return encm.Func ,decm.Func,true
-	}
-	encm, has = rt.MethodByName("MarshalBinary")
-	decm, has2 = reflect.PtrTo(rt).MethodByName("UnmarshalBinary")
-	return encm.Func ,decm.Func, has&&has2
+//func implementsInterface(rt reflect.Type) (reflect.Value, reflect.Value, bool) {
+//	encm, has := rt.MethodByName("GobEncode")
+//	decm, has2 := reflect.PtrTo(rt).MethodByName("GobDecode")
+//	if has && has2 {
+//		return encm.Func ,decm.Func,true
+//	}
+//	encm, has = rt.MethodByName("MarshalBinary")
+//	decm, has2 = reflect.PtrTo(rt).MethodByName("UnmarshalBinary")
+//	return encm.Func ,decm.Func, has&&has2
+//}
+
+func implementsGob(rt reflect.Type) (func(gob.GobEncoder) ([]byte, error), func(gob.GobDecoder, []byte) error, bool) {
+	_, has := rt.MethodByName("GobEncode")
+	_, has2 := reflect.PtrTo(rt).MethodByName("GobDecode")
+	return gob.GobEncoder.GobEncode, gob.GobDecoder.GobDecode, has && has2
+}
+func implementsBin(rt reflect.Type) (func(encoding.BinaryMarshaler) ([]byte, error), func(encoding.BinaryUnmarshaler, []byte) error, bool) {
+	_, has := rt.MethodByName("MarshalBinary")
+	_, has2 := reflect.PtrTo(rt).MethodByName("UnmarshalBinary")
+	return encoding.BinaryMarshaler.MarshalBinary, encoding.BinaryUnmarshaler.UnmarshalBinary, has && has2
 }

@@ -2,6 +2,8 @@ package gotiny
 
 import (
 	//"fmt"
+	"encoding"
+	"encoding/gob"
 	"reflect"
 	"sync"
 	"unsafe"
@@ -54,15 +56,35 @@ func buildDecEngine(rt reflect.Type) decEng {
 	if has {
 		return engine
 	}
-	if _, mfunc, yes := implementsInterface(rt); yes {
+	if _, fn, yes := implementsGob(rt); yes {
 		engine = func(d *Decoder, v reflect.Value) {
-			length := d.decUint()
+			length := int(d.decUint())
 			start := d.index
-			d.index += int(length)
-			mfunc.Call([]reflect.Value{v.Addr(), reflect.ValueOf(d.buf[start:d.index])})
+			d.index += length
+			fn(v.Addr().Interface().(gob.GobDecoder), d.buf[start:d.index])
 		}
 		goto end
 	}
+
+	if _, fn, yes := implementsBin(rt); yes {
+		engine = func(d *Decoder, v reflect.Value) {
+			length := int(d.decUint())
+			start := d.index
+			d.index += length
+			fn(v.Addr().Interface().(encoding.BinaryUnmarshaler), d.buf[start:d.index])
+		}
+		goto end
+	}
+
+	// if _, mfunc, yes := implementsInterface(rt); yes {
+	// 	engine = func(d *Decoder, v reflect.Value) {
+	// 		length := d.decUint()
+	// 		start := d.index
+	// 		d.index += int(length)
+	// 		mfunc.Call([]reflect.Value{v., reflect.ValueOf(d.buf[start:d.index])})
+	// 	}
+	// 	goto end
+	// }
 
 	switch rt.Kind() {
 	case reflect.Complex64, reflect.Complex128:

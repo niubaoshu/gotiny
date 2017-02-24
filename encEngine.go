@@ -1,6 +1,8 @@
 package gotiny
 
 import (
+	"encoding"
+	"encoding/gob"
 	"reflect"
 	"sync"
 )
@@ -24,8 +26,6 @@ var (
 		reflect.TypeOf((*uintptr)(nil)).Elem(): encUint,
 		reflect.TypeOf((*float64)(nil)).Elem(): encFloat,
 		reflect.TypeOf((*float32)(nil)).Elem(): encFloat,
-		//reflect.TypeOf((*complex64)(nil)).Elem():encComplex,
-		//reflect.TypeOf((*complex128)(nil)).Elem():encComplex,
 	}
 	encLock sync.RWMutex
 )
@@ -55,14 +55,32 @@ func buildEncEng(rt reflect.Type) (engine encEng) {
 	if engine != nil {
 		return engine
 	}
-	if mfunc,_,yes:= implementsInterface(rt) ;yes{
-		engine = func(e *Encoder,v reflect.Value){
-			buf:= mfunc.Call([]reflect.Value{v})[0].Bytes()
+
+	if fn, _, yes := implementsGob(rt); yes {
+		engine = func(e *Encoder, v reflect.Value) {
+			buf, _ := fn(v.Interface().(gob.GobEncoder))
 			e.encUint(uint64(len(buf)))
 			e.buf = append(e.buf, buf...)
 		}
 		goto end
 	}
+
+	if fn, _, yes := implementsBin(rt); yes {
+		engine = func(e *Encoder, v reflect.Value) {
+			buf, _ := fn(v.Interface().(encoding.BinaryMarshaler))
+			e.encUint(uint64(len(buf)))
+			e.buf = append(e.buf, buf...)
+		}
+		goto end
+	}
+	//if mfunc,_,yes:= implementsInterface(rt) ;yes{
+	//	engine = func(e *Encoder,v reflect.Value){
+	//		buf:= mfunc.Call([]reflect.Value{v})[0].Bytes()
+	//		e.encUint(uint64(len(buf)))
+	//		e.buf = append(e.buf, buf...)
+	//	}
+	//	goto end
+	//}
 
 	switch rt.Kind() {
 	case reflect.Complex64, reflect.Complex128:

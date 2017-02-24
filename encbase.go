@@ -42,3 +42,8 @@ func encString(e *Encoder, v reflect.Value) {
 	e.encUint(uint64(len(s)))
 	e.buf = append(e.buf, s...)
 }
+
+//func encTime(e *Encoder, v reflect.Value) {
+//t := v.Interface().(time.Time)
+
+//}

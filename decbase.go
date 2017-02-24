@@ -142,3 +142,8 @@ func decInt(d *Decoder, v reflect.Value)     { v.SetInt(d.decInt()) }
 func decFloat(d *Decoder, v reflect.Value)   { v.SetFloat(d.decFloat()) }
 func decComplex(d *Decoder, v reflect.Value) { v.SetComplex(d.decComplex()) }
 func decString(d *Decoder, v reflect.Value)  { v.SetString(d.decString()) }
+
+//func decTime(d *Decoder, v reflect.Value) {
+//t := v.Interface().(time.Time)
+
+//}
