@@ -1,14 +1,19 @@
 package gotiny
 
 import (
-	"encoding"
-	"encoding/gob"
-	"reflect"
 	"unsafe"
 )
 
-func floatToUint(f float64) uint64 {
-	return reverseByte(*((*uint64)(unsafe.Pointer(&f))))
+const ptrSize = 4 << (^uintptr(0) >> 63) // unsafe.Sizeof(uintptr(0)) but an ideal const
+
+type refVal struct {
+	typ unsafe.Pointer
+	ptr unsafe.Pointer
+	uintptr
+}
+
+func floatToUint(v float64) uint64 {
+	return reverseByte(*(*uint64)(unsafe.Pointer(&v)))
 }
 
 func uintToFloat(u uint64) float64 {
@@ -47,13 +52,21 @@ func uintToInt(u uint64) int64 {
 //	return encm.Func ,decm.Func, has&&has2
 //}
 
-func implementsGob(rt reflect.Type) (func(gob.GobEncoder) ([]byte, error), func(gob.GobDecoder, []byte) error, bool) {
-	_, has := rt.MethodByName("GobEncode")
-	_, has2 := reflect.PtrTo(rt).MethodByName("GobDecode")
-	return gob.GobEncoder.GobEncode, gob.GobDecoder.GobDecode, has && has2
+//func implementsGob(rt reflect.Type) (func(gob.GobEncoder) ([]byte, error), func(gob.GobDecoder, []byte) error, bool) {
+//	_, has := rt.MethodByName("GobEncode")
+//	_, has2 := reflect.PtrTo(rt).MethodByName("GobDecode")
+//	return gob.GobEncoder.GobEncode, gob.GobDecoder.GobDecode, has && has2
+//}
+//func implementsBin(rt reflect.Type) (func(encoding.BinaryMarshaler) ([]byte, error), func(encoding.BinaryUnmarshaler, []byte) error, bool) {
+//	_, has := rt.MethodByName("MarshalBinary")
+//	_, has2 := reflect.PtrTo(rt).MethodByName("UnmarshalBinary")
+//	return encoding.BinaryMarshaler.MarshalBinary, encoding.BinaryUnmarshaler.UnmarshalBinary, has && has2
+//}
+
+func isNil(p unsafe.Pointer) bool {
+	return *(*unsafe.Pointer)(p) == nil
 }
-func implementsBin(rt reflect.Type) (func(encoding.BinaryMarshaler) ([]byte, error), func(encoding.BinaryUnmarshaler, []byte) error, bool) {
-	_, has := rt.MethodByName("MarshalBinary")
-	_, has2 := reflect.PtrTo(rt).MethodByName("UnmarshalBinary")
-	return encoding.BinaryMarshaler.MarshalBinary, encoding.BinaryUnmarshaler.UnmarshalBinary, has && has2
+
+func elem(p unsafe.Pointer) unsafe.Pointer {
+	return *(*unsafe.Pointer)(p)
 }

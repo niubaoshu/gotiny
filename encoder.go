@@ -2,6 +2,7 @@ package gotiny
 
 import (
 	"reflect"
+	"unsafe"
 )
 
 type Encoder struct {
@@ -12,6 +13,8 @@ type Encoder struct {
 
 	encEngs []encEng
 	length  int
+
+	val *reflect.Value
 }
 
 func NewEncoder(is ...interface{}) *Encoder {
@@ -26,9 +29,10 @@ func NewEncoder(is ...interface{}) *Encoder {
 	return &Encoder{
 		length:  l,
 		encEngs: engs,
+		val:     new(reflect.Value),
 	}
 }
-func NewEncoderWithType(ts ...reflect.Type) *Encoder {
+func NewEncoderWithTypes(ts ...reflect.Type) *Encoder {
 	l := len(ts)
 	if l < 1 {
 		panic("must have argument!")
@@ -40,6 +44,7 @@ func NewEncoderWithType(ts ...reflect.Type) *Encoder {
 	return &Encoder{
 		length:  l,
 		encEngs: engs,
+		val:     new(reflect.Value),
 	}
 }
 
@@ -53,10 +58,10 @@ func (e *Encoder) SetBuf(buf []byte) {
 	e.Reset()
 }
 
-func (e *Encoder) Encodes(is ...interface{}) []byte {
+func (e *Encoder) Encodes(is ...unsafe.Pointer) []byte {
 	l, engs := e.length, e.encEngs
 	for i := 0; i < l; i++ {
-		engs[i](e, reflect.ValueOf(is[i]))
+		engs[i](e, is[i])
 	}
 	return e.buf
 }
@@ -64,7 +69,7 @@ func (e *Encoder) Encodes(is ...interface{}) []byte {
 func (e *Encoder) EncodeValues(vs ...reflect.Value) []byte {
 	l, engs := e.length, e.encEngs
 	for i := 0; i < l; i++ {
-		engs[i](e, vs[i])
+		engs[i](e, unsafe.Pointer(vs[i].UnsafeAddr()))
 	}
 	return e.buf
 }

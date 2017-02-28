@@ -2,6 +2,7 @@ package gotiny
 
 import (
 	"reflect"
+	"unsafe"
 )
 
 const (
@@ -64,16 +65,16 @@ func (d *Decoder) ResetWith(b []byte) {
 }
 
 // is is pointer of value
-func (d *Decoder) Decodes(is ...interface{}) {
+func (d *Decoder) Decodes(ps ...unsafe.Pointer) {
 	l, engs := d.length, d.decEngs
 	for i := 0; i < l; i++ {
-		engs[i](d, reflect.ValueOf(is[i]).Elem())
+		engs[i](d, ps[i])
 	}
 }
 
 func (d *Decoder) DecodeValues(vs ...reflect.Value) {
 	l, engs := d.length, d.decEngs
 	for i := 0; i < l; i++ {
-		engs[i](d, vs[i])
+		engs[i](d, unsafe.Pointer(vs[i].UnsafeAddr()))
 	}
 }

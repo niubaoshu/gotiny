@@ -1,7 +1,7 @@
 package gotiny
 
 import (
-	"reflect"
+	"unsafe"
 )
 
 func (d *Decoder) decBool() (b bool) {
@@ -22,13 +22,7 @@ func (d *Decoder) decBytes() (b []byte) {
 	return
 }
 
-func (d *Decoder) decString() (s string) {
-	l := int(d.decUint())
-	s = string(d.buf[d.index : d.index+l])
-	d.index += l
-	return
-}
-func (d *Decoder) decUint() (u uint64) {
+func (d *Decoder) decUintslow() (u uint64) {
 	buf, i := d.buf[d.index:], 0
 	s := uint(0)
 	for buf[i] > 0x7f {
@@ -42,7 +36,7 @@ func (d *Decoder) decUint() (u uint64) {
 	return u
 }
 
-func (d *Decoder) decUintFast() uint64 {
+func (d *Decoder) decUint() uint64 {
 	buf, i := d.buf, d.index
 	if buf[i] < 0x80 {
 		d.index++
@@ -125,25 +119,45 @@ done:
 	return x
 }
 
-func (d *Decoder) decUint8() (x uint8) { x = d.buf[d.index]; d.index++; return }
-func (d *Decoder) decInt8() int8       { return int8(d.decUint8()) }
-func (d *Decoder) decInt() int64       { return uintToInt(d.decUintFast()) }
-func (d *Decoder) decFloat() float64   { return uintToFloat(d.decUintFast()) }
-func (d *Decoder) decComplex() complex128 {
-	return complex(uintToFloat(d.decUintFast()), uintToFloat(d.decUintFast()))
+func (d *Decoder) decLength() int { return int(d.decUint()) }
+
+func decignore(d *Decoder, p unsafe.Pointer)    {}
+func decBool(d *Decoder, p unsafe.Pointer)      { *(*bool)(p) = d.decBool() }
+func decInt16(d *Decoder, p unsafe.Pointer)     { *(*int16)(p) = int16(uintToInt(d.decUint())) }
+func decInt32(d *Decoder, p unsafe.Pointer)     { *(*int32)(p) = int32(uintToInt(d.decUint())) }
+func decInt64(d *Decoder, p unsafe.Pointer)     { *(*int64)(p) = int64(uintToInt(d.decUint())) }
+func decInt(d *Decoder, p unsafe.Pointer)       { *(*int)(p) = int(uintToInt(d.decUint())) }
+func decUint8(d *Decoder, p unsafe.Pointer)     { *(*uint8)(p) = d.buf[d.index]; d.index++ }
+func decUint16(d *Decoder, p unsafe.Pointer)    { *(*uint16)(p) = uint16(d.decUint()) }
+func decUint32(d *Decoder, p unsafe.Pointer)    { *(*uint32)(p) = uint32(d.decUint()) }
+func decUint64(d *Decoder, p unsafe.Pointer)    { *(*uint64)(p) = d.decUint() }
+func decUint(d *Decoder, p unsafe.Pointer)      { *(*uint)(p) = uint(d.decUint()) }
+func decFloat32(d *Decoder, p unsafe.Pointer)   { *(*float32)(p) = float32(uintToFloat(d.decUint())) }
+func decFloat64(d *Decoder, p unsafe.Pointer)   { *(*float64)(p) = uintToFloat(d.decUint()) }
+func decComplex64(d *Decoder, p unsafe.Pointer) { *(*uint64)(p) = d.decUint() }
+func decComplex128(d *Decoder, p unsafe.Pointer) {
+	*(*uint64)(p) = d.decUint()
+	*(*uint64)(unsafe.Pointer(uintptr(p) + 8)) = d.decUint()
+}
+func decString(d *Decoder, p unsafe.Pointer) {
+	l := d.decLength()
+	start := d.index
+	d.index += l
+	//*(*string)(p) = string(d.buf[start:d.index])
+	var bytes []byte
+	if *(*int)(unsafe.Pointer(uintptr(p) + ptrSize)) < l {
+		bytes = make([]byte, l)
+		*(*unsafe.Pointer)(p) = *(*unsafe.Pointer)(unsafe.Pointer(&bytes))
+	} else {
+		*(*unsafe.Pointer)(unsafe.Pointer(&bytes)) = *(*unsafe.Pointer)(p)
+		*(*int)(unsafe.Pointer(uintptr(unsafe.Pointer(&bytes)) + ptrSize)) = l
+		*(*int)(unsafe.Pointer(uintptr(unsafe.Pointer(&bytes)) + ptrSize + ptrSize)) = l
+	}
+	copy(bytes, d.buf[start:d.index])
+	*(*int)(unsafe.Pointer(uintptr(p) + ptrSize)) = l
 }
 
-func decignore(d *Decoder, v reflect.Value)  {}
-func decBool(d *Decoder, v reflect.Value)    { v.SetBool(d.decBool()) }
-func decUint8(d *Decoder, v reflect.Value)   { v.SetUint(uint64(d.decUint8())) }
-func decInt8(d *Decoder, v reflect.Value)    { v.SetInt(int64(d.decInt8())) }
-func decUint(d *Decoder, v reflect.Value)    { v.SetUint(d.decUint()) }
-func decInt(d *Decoder, v reflect.Value)     { v.SetInt(d.decInt()) }
-func decFloat(d *Decoder, v reflect.Value)   { v.SetFloat(d.decFloat()) }
-func decComplex(d *Decoder, v reflect.Value) { v.SetComplex(d.decComplex()) }
-func decString(d *Decoder, v reflect.Value)  { v.SetString(d.decString()) }
-
-//func decTime(d *Decoder, v reflect.Value) {
+//func decTime(d *Decoder, p unsafe.Pointer) {
 //t := v.Interface().(time.Time)
 
 //}
