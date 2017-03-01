@@ -5,10 +5,6 @@ import (
 	"unsafe"
 )
 
-const (
-	maxVarintLen64 = 10
-)
-
 type Decoder struct {
 	buf     []byte //buf
 	index   int    //下一个要读取的字节

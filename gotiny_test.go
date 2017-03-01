@@ -10,26 +10,34 @@ import (
 	"unsafe"
 )
 
-type baseTyp struct {
-	fbool       bool
-	fint8       int8
-	fint16      int16
-	fint32      int32
-	fint64      int64
-	fint        int
-	fuint8      uint8
-	fuint16     uint16
-	fuint32     uint32
-	fuint64     uint64
-	fuint       uint
-	fuintptr    uintptr
-	ffloat32    float32
-	ffloat64    float64
-	fcomplex64  complex64
-	fcomplex128 complex128
-	fstring     string
-	array       [3]uint32
-}
+type (
+	baseTyp struct {
+		fbool       bool
+		fint8       int8
+		fint16      int16
+		fint32      int32
+		fint64      int64
+		fint        int
+		fuint8      uint8
+		fuint16     uint16
+		fuint32     uint32
+		fuint64     uint64
+		fuint       uint
+		fuintptr    uintptr
+		ffloat32    float32
+		ffloat64    float64
+		fcomplex64  complex64
+		fcomplex128 complex128
+		fstring     string
+		array       [3]uint32
+	}
+	cirTyp *cirTyp
+
+	cirStruct struct {
+		a   int
+		cir *cirStruct
+	}
+)
 
 func genBase() baseTyp {
 	return baseTyp{
@@ -53,36 +61,37 @@ func genBase() baseTyp {
 }
 
 var (
-	vbool     = true
-	vfbool    = false
-	vint8     = int8(123)
-	vint16    = int16(-12345)
-	vint32    = int32(123456)
-	vint64    = int64(-1234567)
-	v2int64   = int64(1<<63 - 1)
-	v3int64   = int64(rand.Int63())
-	vint      = int(123456)
-	vuint     = uint(123)
-	vuint8    = uint8(123)
-	vuint16   = uint16(12345)
-	vuint32   = uint32(123456)
-	vuint64   = uint64(1234567)
-	v2uint64  = uint64(1<<64 - 1)
-	v3uint64  = uint64(rand.Uint32() * rand.Uint32())
-	vuintptr  = uintptr(12345678)
-	vfloat32  = float32(1.2345)
-	vfloat64  = float64(1.2345678)
-	vcomp64   = complex(1.2345, 2.3456)
-	vcomp128  = complex(1.2345678, 2.3456789)
-	vstring   = string("hello,日本国")
-	base      = genBase()
-	vbytes    = []byte("aaaaaaaaaaaaaaaaaaa")
-	vmap      = map[int]int{1: 2, 2: 3, 3: 4, 4: 5, 5: 6}
-	vptr      = &vint
-	vsliceptr = &vbytes
-	vnilptr   *int
-	vtime     = time.Now()
-	vsliceStr = []baseTyp{
+	vbool      = true
+	vfbool     = false
+	vint8      = int8(123)
+	vint16     = int16(-12345)
+	vint32     = int32(123456)
+	vint64     = int64(-1234567)
+	v2int64    = int64(1<<63 - 1)
+	v3int64    = int64(rand.Int63())
+	vint       = int(123456)
+	vuint      = uint(123)
+	vuint8     = uint8(123)
+	vuint16    = uint16(12345)
+	vuint32    = uint32(123456)
+	vuint64    = uint64(1234567)
+	v2uint64   = uint64(1<<64 - 1)
+	v3uint64   = uint64(rand.Uint32() * rand.Uint32())
+	vuintptr   = uintptr(12345678)
+	vfloat32   = float32(1.2345)
+	vfloat64   = float64(1.2345678)
+	vcomp64    = complex(1.2345, 2.3456)
+	vcomp128   = complex(1.2345678, 2.3456789)
+	vstring    = string("hello,日本国")
+	base       = genBase()
+	vbytes     = []byte("aaaaaaaaaaaaaaaaaaa")
+	vmap       = map[int]int{1: 2, 2: 3, 3: 4, 4: 5, 5: 6}
+	vptr       = &vint
+	vsliceptr  = &vbytes
+	vnilptr    *int
+	vnilptrptr = &vnilptr
+	vtime      = time.Now()
+	vsliceStr  = []baseTyp{
 		genBase(),
 		genBase(),
 		genBase(),
@@ -98,6 +107,10 @@ var (
 		genBase(),
 		genBase(),
 	}
+	vcir  cirTyp
+	v2cir cirTyp = &vcir
+
+	vcirStruct = cirStruct{a: 1, cir: nil}
 
 	vs = []interface{}{
 		vbool,
@@ -128,10 +141,14 @@ var (
 		vptr,
 		vsliceptr,
 		vnilptr,
+		vnilptrptr,
 		vtime,
 		vsliceStr,
 		vslicestring,
 		varray,
+		vcir,
+		v2cir,
+		vcirStruct,
 	}
 
 	ptrs = []unsafe.Pointer{
@@ -163,10 +180,14 @@ var (
 		getPtr(&vptr),
 		getPtr(&vsliceptr),
 		getPtr(&vnilptr),
+		getPtr(&vnilptrptr),
 		getPtr(&vtime),
 		getPtr(&vsliceStr),
 		getPtr(&vslicestring),
 		getPtr(&varray),
+		getPtr(&vcir),
+		getPtr(&v2cir),
+		getPtr(&vcirStruct),
 	}
 
 	e = NewEncoder(vs...)
@@ -186,6 +207,10 @@ var (
 
 func init() {
 	fmt.Fprintln(ioutil.Discard, time.Now())
+	//v2cir = vcir
+	//vcir = &v2cir
+	//vcirStruct.cir = &vcirStruct
+	fmt.Println("total", len(vs), "value")
 	for i := 0; i < len(vs); i++ {
 		types[i] = reflect.TypeOf(vs[i])
 		vals[i] = reflect.NewAt(types[i], ptrs[i]).Elem()
@@ -236,6 +261,8 @@ func TestBasicEncoderDecoder(t *testing.T) {
 		r := result.Interface()
 		//fmt.Printf("%T: expected %v got %v ,%T\n", vs[i], vs[i], r, r)
 		if !reflect.DeepEqual(vs[i], r) {
+			//			t.Log(vals[i])
+			t.Log(i)
 			t.Fatalf("%T: expected %#v got %#v ,%T\n", vs[i], vs[i], r, r)
 		}
 	}
