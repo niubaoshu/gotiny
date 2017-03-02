@@ -3,6 +3,7 @@ package gotiny
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"math/rand"
 	"reflect"
 	"testing"
@@ -37,6 +38,7 @@ type (
 		a   int
 		cir *cirStruct
 	}
+	cirmap map[int]cirmap
 )
 
 func genBase() baseTyp {
@@ -61,37 +63,43 @@ func genBase() baseTyp {
 }
 
 var (
-	vbool      = true
-	vfbool     = false
-	vint8      = int8(123)
-	vint16     = int16(-12345)
-	vint32     = int32(123456)
-	vint64     = int64(-1234567)
-	v2int64    = int64(1<<63 - 1)
-	v3int64    = int64(rand.Int63())
-	vint       = int(123456)
-	vuint      = uint(123)
-	vuint8     = uint8(123)
-	vuint16    = uint16(12345)
-	vuint32    = uint32(123456)
-	vuint64    = uint64(1234567)
-	v2uint64   = uint64(1<<64 - 1)
-	v3uint64   = uint64(rand.Uint32() * rand.Uint32())
-	vuintptr   = uintptr(12345678)
-	vfloat32   = float32(1.2345)
-	vfloat64   = float64(1.2345678)
-	vcomp64    = complex(1.2345, 2.3456)
-	vcomp128   = complex(1.2345678, 2.3456789)
-	vstring    = string("hello,日本国")
-	base       = genBase()
-	vbytes     = []byte("aaaaaaaaaaaaaaaaaaa")
-	vmap       = map[int]int{1: 2, 2: 3, 3: 4, 4: 5, 5: 6}
-	vptr       = &vint
-	vsliceptr  = &vbytes
-	vnilptr    *int
-	vnilptrptr = &vnilptr
-	vtime      = time.Now()
-	vsliceStr  = []baseTyp{
+	vbool       = true
+	vfbool      = false
+	vint8       = int8(123)
+	vint16      = int16(-12345)
+	vint32      = int32(123456)
+	vint64      = int64(-1234567)
+	v2int64     = int64(1<<63 - 1)
+	v3int64     = int64(rand.Int63())
+	vint        = int(123456)
+	vuint       = uint(123)
+	vuint8      = uint8(123)
+	vuint16     = uint16(12345)
+	vuint32     = uint32(123456)
+	vuint64     = uint64(1234567)
+	v2uint64    = uint64(1<<64 - 1)
+	v3uint64    = uint64(rand.Uint32() * rand.Uint32())
+	vuintptr    = uintptr(12345678)
+	vfloat32    = float32(1.2345)
+	vfloat64    = float64(1.2345678)
+	vcomp64     = complex(1.2345, 2.3456)
+	vcomp128    = complex(1.2345678, 2.3456789)
+	vstring     = string("hello,日本国")
+	base        = genBase()
+	vbytes      = []byte("aaaaaaaaaaaaaaaaaaa")
+	vsliecbytes = [][]byte{[]byte("aaaaaaaaaaaaaaaaaaa"), []byte("bbbbbbbbbbbbbbb"), []byte("ccccccccccccc")}
+	vmap        = map[int]int{1: 2, 2: 3, 3: 4, 4: 5, 5: 6}
+	v2map       = map[int]map[int]int{1: {2: 3, 3: 4}}
+	v3map       = map[int][]byte{1: {2, 3, 3, 4}}
+	temp        = 1
+	v4map       = map[int]*int{1: &temp}
+	vptr        = &vint
+	vsliceptr   = &vbytes
+	vptrslice   = []*int{&vint, &vint, &vint}
+	vnilptr     *int
+	vnilptrptr  = &vnilptr
+	vtime       = time.Now()
+	vsliceStr   = []baseTyp{
 		genBase(),
 		genBase(),
 		genBase(),
@@ -110,84 +118,104 @@ var (
 	vcir  cirTyp
 	v2cir cirTyp = &vcir
 
-	vcirStruct = cirStruct{a: 1, cir: nil}
+	vcirStruct  = cirStruct{a: 1, cir: nil}
+	v2cirStruct = cirStruct{a: 1, cir: &vcirStruct}
+
+	vcirmap  = cirmap{1: nil}
+	v2cirmap = cirmap{2: vcirmap}
 
 	vs = []interface{}{
-		vbool,
-		vfbool,
-		vint8,
-		vint16,
-		vint32,
-		vint64,
-		v2int64,
-		v3int64,
-		vint,
-		vuint,
-		vuint8,
-		vuint16,
-		vuint32,
-		vuint64,
-		v2uint64,
-		v3uint64,
-		vuintptr,
-		vfloat32,
-		vfloat64,
-		vcomp64,
-		vcomp128,
-		vstring,
-		base,
+		//vbool,
+		//vfbool,
+		//vint8,
+		//vint16,
+		//vint32,
+		//vint64,
+		//v2int64,
+		//v3int64,
+		//vint,
+		//vuint,
+		//vuint8,
+		//vuint16,
+		//vuint32,
+		//vuint64,
+		//v2uint64,
+		//v3uint64,
+		//vuintptr,
+		//vfloat32,
+		//vfloat64,
+		//vcomp64,
+		//vcomp128,
+		//vstring,
+		//base,
 		vbytes,
-		vmap,
-		vptr,
-		vsliceptr,
-		vnilptr,
-		vnilptrptr,
-		vtime,
-		vsliceStr,
-		vslicestring,
-		varray,
-		vcir,
-		v2cir,
-		vcirStruct,
+		vsliecbytes,
+		//vmap,
+		//v2map,
+		//v3map,
+		//v4map,
+		//vptr,
+		//vsliceptr,
+		//vptrslice,
+		//vnilptr,
+		//vnilptrptr,
+		//vtime,
+		//vsliceStr,
+		//vslicestring,
+		//varray,
+		//vcir,
+		//v2cir,
+		//vcirStruct,
+		//v2cirStruct,
+		//vcirmap,
+		//v2cirmap,
 	}
 
 	ptrs = []unsafe.Pointer{
-		getPtr(&vbool),
-		getPtr(&vfbool),
-		getPtr(&vint8),
-		getPtr(&vint16),
-		getPtr(&vint32),
-		getPtr(&vint64),
-		getPtr(&v2int64),
-		getPtr(&v3int64),
-		getPtr(&vint),
-		getPtr(&vuint),
-		getPtr(&vuint8),
-		getPtr(&vuint16),
-		getPtr(&vuint32),
-		getPtr(&vuint64),
-		getPtr(&v2uint64),
-		getPtr(&v3uint64),
-		getPtr(&vuintptr),
-		getPtr(&vfloat32),
-		getPtr(&vfloat64),
-		getPtr(&vcomp64),
-		getPtr(&vcomp128),
-		getPtr(&vstring),
-		getPtr(&base),
+		//getPtr(&vbool),
+		//getPtr(&vfbool),
+		//getPtr(&vint8),
+		//getPtr(&vint16),
+		//getPtr(&vint32),
+		//getPtr(&vint64),
+		//getPtr(&v2int64),
+		//getPtr(&v3int64),
+		//getPtr(&vint),
+		//getPtr(&vuint),
+		//getPtr(&vuint8),
+		//getPtr(&vuint16),
+		//getPtr(&vuint32),
+		//getPtr(&vuint64),
+		//getPtr(&v2uint64),
+		//getPtr(&v3uint64),
+		//getPtr(&vuintptr),
+		//getPtr(&vfloat32),
+		//getPtr(&vfloat64),
+		//getPtr(&vcomp64),
+		//getPtr(&vcomp128),
+		//getPtr(&vstring),
+		//getPtr(&base),
 		getPtr(&vbytes),
-		getPtr(&vmap),
-		getPtr(&vptr),
-		getPtr(&vsliceptr),
-		getPtr(&vnilptr),
-		getPtr(&vnilptrptr),
-		getPtr(&vtime),
-		getPtr(&vsliceStr),
-		getPtr(&vslicestring),
-		getPtr(&varray),
-		getPtr(&vcir),
-		getPtr(&v2cir),
-		getPtr(&vcirStruct),
+		getPtr(&vsliecbytes),
+		//getPtr(&vmap),
+		//getPtr(&v2map),
+		//getPtr(&v3map),
+		//getPtr(&v4map),
+		//getPtr(&vptr),
+		//getPtr(&vsliceptr),
+		//getPtr(&vptrslice),
+		//getPtr(&vnilptr),
+		//getPtr(&vnilptrptr),
+		//getPtr(&vtime),
+		//getPtr(&vsliceStr),
+		//getPtr(&vslicestring),
+		//getPtr(&varray),
+		//getPtr(&vcir),
+		//getPtr(&v2cir),
+		//getPtr(&vcirStruct),
+		//getPtr(&v2cirStruct),
+		//getPtr(&vcirmap),
+		//getPtr(&v2cirmap),
 	}
 
 	e = NewEncoder(vs...)
@@ -210,7 +238,11 @@ func init() {
 	//v2cir = vcir
 	//vcir = &v2cir
 	//vcirStruct.cir = &vcirStruct
-	fmt.Println("total", len(vs), "value")
+	fmt.Println("total", len(vs), len(ptrs), "value")
+
+	if len(vs) != len(ptrs) {
+		log.Fatal(" vs ptrs 不相等")
+	}
 	for i := 0; i < len(vs); i++ {
 		types[i] = reflect.TypeOf(vs[i])
 		vals[i] = reflect.NewAt(types[i], ptrs[i]).Elem()
@@ -261,8 +293,16 @@ func TestBasicEncoderDecoder(t *testing.T) {
 		r := result.Interface()
 		//fmt.Printf("%T: expected %v got %v ,%T\n", vs[i], vs[i], r, r)
 		if !reflect.DeepEqual(vs[i], r) {
-			//			t.Log(vals[i])
-			t.Log(i)
+			//t.Log(i)
+			m := r.(map[int]*int)
+			for k := range m {
+				fmt.Println(m, k)
+				t.Log(k, *m[k])
+			}
+			m = vs[i].(map[int]*int)
+			for k := range m {
+				t.Log(k, *m[k])
+			}
 			t.Fatalf("%T: expected %#v got %#v ,%T\n", vs[i], vs[i], r, r)
 		}
 	}

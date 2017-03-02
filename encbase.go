@@ -51,6 +51,16 @@ var (
 		e.encLength(len(s))
 		e.buf = append(e.buf, s...)
 	}
+
+	encBytes = func(e *Encoder, p unsafe.Pointer) {
+		isNotNil := !isNil(p)
+		e.encBool(isNotNil)
+		if isNotNil {
+			buf := *(*[]byte)(p)
+			e.encLength(len(buf))
+			e.buf = append(e.buf, buf...)
+		}
+	}
 )
 
 //func encTime(e *Encoder, p unsafe.Pointer) {

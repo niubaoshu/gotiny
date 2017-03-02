@@ -30,6 +30,7 @@ var (
 		reflect.TypeOf((*uintptr)(nil)).Elem(): &encUint,
 		reflect.TypeOf((*float32)(nil)).Elem(): &encFloat32,
 		reflect.TypeOf((*float64)(nil)).Elem(): &encFloat64,
+		reflect.TypeOf((*[]byte)(nil)).Elem():  &encBytes,
 		reflect.TypeOf(nil):                    &encignore,
 	}
 	encLock sync.RWMutex
@@ -66,7 +67,7 @@ func buildEncEngine(rt reflect.Type) encEngPtr {
 			e.encUint(uint64(len(buf)))
 			e.buf = append(e.buf, buf...)
 		}
-		goto end
+		return engine
 	}
 
 	if fn, _, yes := implementsBin(rt); yes {
@@ -75,16 +76,16 @@ func buildEncEngine(rt reflect.Type) encEngPtr {
 			e.encUint(uint64(len(buf)))
 			e.buf = append(e.buf, buf...)
 		}
-		goto end
+		return engine
 	}
-
+	var eEng encEngPtr
 	switch rt.Kind() {
 	case reflect.Complex64:
 		*engine = encComplex64
 	case reflect.Complex128:
 		*engine = encComplex128
 	case reflect.Ptr:
-		eEng := buildEncEngine(rt.Elem())
+		eEng = buildEncEngine(rt.Elem())
 		*engine = func(e *Encoder, p unsafe.Pointer) {
 			isNotNil := !isNil(p)
 			e.encBool(isNotNil)
@@ -94,7 +95,7 @@ func buildEncEngine(rt reflect.Type) encEngPtr {
 		}
 	case reflect.Array:
 		et := rt.Elem()
-		eEng := buildEncEngine(et)
+		eEng = buildEncEngine(et)
 		l := rt.Len()
 		size := et.Size()
 		*engine = func(e *Encoder, p unsafe.Pointer) {
@@ -104,7 +105,7 @@ func buildEncEngine(rt reflect.Type) encEngPtr {
 		}
 	case reflect.Slice:
 		et := rt.Elem()
-		eEng := buildEncEngine(et)
+		eEng = buildEncEngine(et)
 		size := et.Size()
 		*engine = func(e *Encoder, p unsafe.Pointer) {
 			isNotNil := !isNil(p)
@@ -119,19 +120,47 @@ func buildEncEngine(rt reflect.Type) encEngPtr {
 			}
 		}
 	case reflect.Map:
-		kEng, eEng := buildEncEngine(rt.Key()), buildEncEngine(rt.Elem())
+		kEng := buildEncEngine(rt.Key())
+		eEng = buildEncEngine(rt.Elem())
 		//http://blog.csdn.net/hificamera/article/details/51701804
+		var encKey, encVal func(e *Encoder, v reflect.Value)
+		if rt.Elem().Kind() == reflect.Map {
+			eEng = func(eng encEngPtr) encEngPtr {
+				emEng := func(e *Encoder, p unsafe.Pointer) {
+					(*eng)(e, unsafe.Pointer(&p))
+				}
+				return &emEng
+			}(eEng)
+		}
+		if rt.Key().Kind() == reflect.Ptr {
+			encKey = func(e *Encoder, v reflect.Value) {
+				p := unsafe.Pointer(v.Pointer())
+				(*kEng)(e, unsafe.Pointer(&p))
+			}
+		} else {
+			encKey = func(e *Encoder, v reflect.Value) {
+				(*kEng)(e, (*refVal)(unsafe.Pointer(&v)).ptr)
+			}
+		}
+		if rt.Elem().Kind() == reflect.Ptr {
+			encVal = func(e *Encoder, v reflect.Value) {
+				p := unsafe.Pointer(v.Pointer())
+				(*eEng)(e, unsafe.Pointer(&p))
+			}
+		} else {
+			encVal = func(e *Encoder, v reflect.Value) {
+				(*eEng)(e, (*refVal)(unsafe.Pointer(&v)).ptr)
+			}
+		}
 		*engine = func(e *Encoder, p unsafe.Pointer) {
 			isNotNil := !isNil(p)
 			e.encBool(isNotNil)
 			if isNotNil {
 				e.encLength(*(*int)(*(*unsafe.Pointer)(p)))
 				v := reflect.NewAt(rt, p).Elem()
-				var val reflect.Value
 				for _, key := range v.MapKeys() {
-					(*kEng)(e, (*(*refVal)(unsafe.Pointer(&key))).ptr)
-					val = v.MapIndex(key)
-					(*eEng)(e, (*(*refVal)(unsafe.Pointer(&val))).ptr)
+					encKey(e, key)
+					encVal(e, v.MapIndex(key))
 				}
 			}
 		}
@@ -155,6 +184,5 @@ func buildEncEngine(rt reflect.Type) encEngPtr {
 	default:
 		*engine = encignore
 	}
-end:
 	return engine
 }

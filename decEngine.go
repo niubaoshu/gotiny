@@ -34,6 +34,7 @@ var (
 		reflect.TypeOf((*uintptr)(nil)).Elem(): &decUint,
 		reflect.TypeOf((*float64)(nil)).Elem(): &decFloat64,
 		reflect.TypeOf((*float32)(nil)).Elem(): &decFloat32,
+		reflect.TypeOf((*[]byte)(nil)).Elem():  &decBytes,
 		//reflect.TypeOf(nil):                    decignore,
 	}
 	englock sync.RWMutex
@@ -69,9 +70,8 @@ func buildDecEngine(rt reflect.Type) decEngPtr {
 			d.index += length
 			fn(reflect.NewAt(rt, p).Interface().(gob.GobDecoder), d.buf[start:d.index])
 		}
-		goto end
+		return engine
 	}
-
 	if _, fn, yes := implementsBin(rt); yes {
 		*engine = func(d *Decoder, p unsafe.Pointer) {
 			length := int(d.decUint())
@@ -79,7 +79,7 @@ func buildDecEngine(rt reflect.Type) decEngPtr {
 			d.index += length
 			fn(reflect.NewAt(rt, p).Interface().(encoding.BinaryUnmarshaler), d.buf[start:d.index])
 		}
-		goto end
+		return engine
 	}
 
 	switch rt.Kind() {
@@ -118,7 +118,7 @@ func buildDecEngine(rt reflect.Type) decEngPtr {
 			if d.decBool() {
 				l := d.decLength()
 				if isNil(p) || *(*int)(unsafe.Pointer(uintptr(p) + ptrSize + ptrSize)) < l {
-					*(*uintptr)(p) = reflect.MakeSlice(rt, l, l).Pointer()
+					*(*unsafe.Pointer)(p) = unsafe.Pointer(reflect.MakeSlice(rt, l, l).Pointer())
 				}
 				*(*int)(unsafe.Pointer(uintptr(p) + ptrSize)) = l
 				*(*int)(unsafe.Pointer(uintptr(p) + ptrSize + ptrSize)) = l
@@ -173,6 +173,5 @@ func buildDecEngine(rt reflect.Type) decEngPtr {
 	default:
 		*engine = decignore
 	}
-end:
 	return engine
 }
