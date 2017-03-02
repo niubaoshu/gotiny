@@ -50,10 +50,7 @@ func GetEncEng(rt reflect.Type) encEng {
 }
 
 func buildEncEngine(rt reflect.Type) encEngPtr {
-	//todo 循环类型和循环值处理
-	// 循环类型 type x *x
-	// 套嵌  type  a { b *a }
-	//接口类型处理
+	//todo  接口类型处理
 	engine, has := rt2Eng[rt]
 	if has {
 		return engine

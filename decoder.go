@@ -11,7 +11,6 @@ type Decoder struct {
 	boolean byte   //下一次要读取的bool在buf中的下标,即buf[boolPos]
 	boolBit byte   //下一次要读取的bool的buf[boolPos]中的bit位
 
-	//decEng  decEng
 	decEngs []decEng //解码器集合
 	length  int      //解码器数量
 }
@@ -61,7 +60,7 @@ func (d *Decoder) ResetWith(b []byte) {
 }
 
 // is is pointer of value
-func (d *Decoder) Decodes(ps ...unsafe.Pointer) {
+func (d *Decoder) DecodeByUPtr(ps ...unsafe.Pointer) {
 	l, engs := d.length, d.decEngs
 	for i := 0; i < l; i++ {
 		engs[i](d, ps[i])

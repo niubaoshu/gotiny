@@ -39,6 +39,14 @@ type (
 		cir *cirStruct
 	}
 	cirmap map[int]cirmap
+	A      struct {
+		Name     string
+		BirthDay time.Time
+		Phone    string
+		Siblings int
+		Spouse   bool
+		Money    float64
+	}
 )
 
 func genBase() baseTyp {
@@ -59,6 +67,17 @@ func genBase() baseTyp {
 		fcomplex128: complex(rand.Float64(), rand.Float64()),
 		fstring:     GetRandomString(20 + rand.Intn(256)),
 		array:       [3]uint32{rand.Uint32(), rand.Uint32()},
+	}
+}
+
+func genA() A {
+	return A{
+		Name:     GetRandomString(16),
+		BirthDay: time.Now(),
+		Phone:    GetRandomString(10),
+		Siblings: rand.Intn(5),
+		Spouse:   rand.Intn(2) == 1,
+		Money:    rand.Float64(),
 	}
 }
 
@@ -93,6 +112,7 @@ var (
 	v3map       = map[int][]byte{1: {2, 3, 3, 4}}
 	temp        = 1
 	v4map       = map[int]*int{1: &temp}
+	v5map       = map[int]baseTyp{1: genBase(), 2: genBase()}
 	vptr        = &vint
 	vsliceptr   = &vbytes
 	vptrslice   = []*int{&vint, &vint, &vint}
@@ -124,98 +144,104 @@ var (
 	vcirmap  = cirmap{1: nil}
 	v2cirmap = cirmap{2: vcirmap}
 
+	vAstruct = genA()
+
 	vs = []interface{}{
-		//vbool,
-		//vfbool,
-		//vint8,
-		//vint16,
-		//vint32,
-		//vint64,
-		//v2int64,
-		//v3int64,
-		//vint,
-		//vuint,
-		//vuint8,
-		//vuint16,
-		//vuint32,
-		//vuint64,
-		//v2uint64,
-		//v3uint64,
-		//vuintptr,
-		//vfloat32,
-		//vfloat64,
-		//vcomp64,
-		//vcomp128,
-		//vstring,
-		//base,
+		vbool,
+		vfbool,
+		vint8,
+		vint16,
+		vint32,
+		vint64,
+		v2int64,
+		v3int64,
+		vint,
+		vuint,
+		vuint8,
+		vuint16,
+		vuint32,
+		vuint64,
+		v2uint64,
+		v3uint64,
+		vuintptr,
+		vfloat32,
+		vfloat64,
+		vcomp64,
+		vcomp128,
+		vstring,
+		base,
 		vbytes,
 		vsliecbytes,
-		//vmap,
-		//v2map,
-		//v3map,
-		//v4map,
-		//vptr,
-		//vsliceptr,
-		//vptrslice,
-		//vnilptr,
-		//vnilptrptr,
-		//vtime,
-		//vsliceStr,
-		//vslicestring,
-		//varray,
-		//vcir,
-		//v2cir,
-		//vcirStruct,
-		//v2cirStruct,
-		//vcirmap,
-		//v2cirmap,
+		vmap,
+		v2map,
+		v3map,
+		v4map,
+		v5map,
+		vptr,
+		vsliceptr,
+		vptrslice,
+		vnilptr,
+		vnilptrptr,
+		vtime,
+		vsliceStr,
+		vslicestring,
+		varray,
+		vcir,
+		v2cir,
+		vcirStruct,
+		v2cirStruct,
+		vcirmap,
+		v2cirmap,
+		vAstruct,
 	}
 
 	ptrs = []unsafe.Pointer{
-		//getPtr(&vbool),
-		//getPtr(&vfbool),
-		//getPtr(&vint8),
-		//getPtr(&vint16),
-		//getPtr(&vint32),
-		//getPtr(&vint64),
-		//getPtr(&v2int64),
-		//getPtr(&v3int64),
-		//getPtr(&vint),
-		//getPtr(&vuint),
-		//getPtr(&vuint8),
-		//getPtr(&vuint16),
-		//getPtr(&vuint32),
-		//getPtr(&vuint64),
-		//getPtr(&v2uint64),
-		//getPtr(&v3uint64),
-		//getPtr(&vuintptr),
-		//getPtr(&vfloat32),
-		//getPtr(&vfloat64),
-		//getPtr(&vcomp64),
-		//getPtr(&vcomp128),
-		//getPtr(&vstring),
-		//getPtr(&base),
+		getPtr(&vbool),
+		getPtr(&vfbool),
+		getPtr(&vint8),
+		getPtr(&vint16),
+		getPtr(&vint32),
+		getPtr(&vint64),
+		getPtr(&v2int64),
+		getPtr(&v3int64),
+		getPtr(&vint),
+		getPtr(&vuint),
+		getPtr(&vuint8),
+		getPtr(&vuint16),
+		getPtr(&vuint32),
+		getPtr(&vuint64),
+		getPtr(&v2uint64),
+		getPtr(&v3uint64),
+		getPtr(&vuintptr),
+		getPtr(&vfloat32),
+		getPtr(&vfloat64),
+		getPtr(&vcomp64),
+		getPtr(&vcomp128),
+		getPtr(&vstring),
+		getPtr(&base),
 		getPtr(&vbytes),
 		getPtr(&vsliecbytes),
-		//getPtr(&vmap),
-		//getPtr(&v2map),
-		//getPtr(&v3map),
-		//getPtr(&v4map),
-		//getPtr(&vptr),
-		//getPtr(&vsliceptr),
-		//getPtr(&vptrslice),
-		//getPtr(&vnilptr),
-		//getPtr(&vnilptrptr),
-		//getPtr(&vtime),
-		//getPtr(&vsliceStr),
-		//getPtr(&vslicestring),
-		//getPtr(&varray),
-		//getPtr(&vcir),
-		//getPtr(&v2cir),
-		//getPtr(&vcirStruct),
-		//getPtr(&v2cirStruct),
-		//getPtr(&vcirmap),
-		//getPtr(&v2cirmap),
+		getPtr(&vmap),
+		getPtr(&v2map),
+		getPtr(&v3map),
+		getPtr(&v4map),
+		getPtr(&v5map),
+		getPtr(&vptr),
+		getPtr(&vsliceptr),
+		getPtr(&vptrslice),
+		getPtr(&vnilptr),
+		getPtr(&vnilptrptr),
+		getPtr(&vtime),
+		getPtr(&vsliceStr),
+		getPtr(&vslicestring),
+		getPtr(&varray),
+		getPtr(&vcir),
+		getPtr(&v2cir),
+		getPtr(&vcirStruct),
+		getPtr(&v2cirStruct),
+		getPtr(&vcirmap),
+		getPtr(&v2cirmap),
+		getPtr(&vAstruct),
 	}
 
 	e = NewEncoder(vs...)
@@ -284,25 +310,16 @@ func init() {
 func TestBasicEncoderDecoder(t *testing.T) {
 	//fmt.Println(vs...)
 	e.Reset()
-	b := e.Encodes(ptrs...)
+	b := e.EncodeByUPtr(ptrs...)
 	//t.Logf("%v\n", b)
-	fmt.Printf("length: %d, content: %v\n", len(b), b)
+	fmt.Printf("length: %d \n", len(b))
 	d.ResetWith(b)
-	d.Decodes(retPtrs...)
+	d.DecodeByUPtr(retPtrs...)
 	for i, result := range retVals {
 		r := result.Interface()
 		//fmt.Printf("%T: expected %v got %v ,%T\n", vs[i], vs[i], r, r)
 		if !reflect.DeepEqual(vs[i], r) {
-			//t.Log(i)
-			m := r.(map[int]*int)
-			for k := range m {
-				fmt.Println(m, k)
-				t.Log(k, *m[k])
-			}
-			m = vs[i].(map[int]*int)
-			for k := range m {
-				t.Log(k, *m[k])
-			}
+			t.Log(i)
 			t.Fatalf("%T: expected %#v got %#v ,%T\n", vs[i], vs[i], r, r)
 		}
 	}
@@ -345,8 +362,7 @@ func TestBasicEncoderDecoder(t *testing.T) {
 func BenchmarkEncodes(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		for i := 0; i < 1000; i++ {
-			e.Reset()
-			e.Encodes(ptrs...)
+			e.EncodeByUPtr(ptrs...)
 		}
 	}
 }
@@ -355,7 +371,7 @@ func BenchmarkDecodes(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		for i := 0; i < 1000; i++ {
 			d.Reset()
-			d.Decodes(retPtrs...)
+			d.DecodeByUPtr(retPtrs...)
 		}
 	}
 }

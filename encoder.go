@@ -7,14 +7,12 @@ import (
 
 type Encoder struct {
 	buf     []byte //编码目的数组
-	offset  int    //从buf[offset]开始写数据
+	offset  int    //开始从buf的offset 写入编码的结果
 	boolPos int    //下一次要设置的bool在buf中的下标,即buf[boolPos]
 	boolBit byte   //下一次要设置的bool的buf[boolPos]中的bit位
 
 	encEngs []encEng
 	length  int
-
-	val *reflect.Value
 }
 
 func NewEncoder(is ...interface{}) *Encoder {
@@ -29,7 +27,6 @@ func NewEncoder(is ...interface{}) *Encoder {
 	return &Encoder{
 		length:  l,
 		encEngs: engs,
-		val:     new(reflect.Value),
 	}
 }
 func NewEncoderWithTypes(ts ...reflect.Type) *Encoder {
@@ -44,34 +41,45 @@ func NewEncoderWithTypes(ts ...reflect.Type) *Encoder {
 	return &Encoder{
 		length:  l,
 		encEngs: engs,
-		val:     new(reflect.Value),
 	}
-}
-
-func (e *Encoder) SetOff(off int) {
-	e.buf = e.buf[:off]
-	e.offset = off
 }
 
 func (e *Encoder) SetBuf(buf []byte) {
 	e.buf = buf
-	e.Reset()
+	e.offset = len(buf)
+	e.boolBit = 0
+	e.boolPos = 0
 }
 
-func (e *Encoder) Encodes(is ...unsafe.Pointer) []byte {
+// is is point of value slice
+func (e *Encoder) Encodes(is ...interface{}) (buf []byte) {
 	l, engs := e.length, e.encEngs
 	for i := 0; i < l; i++ {
-		engs[i](e, is[i])
+		engs[i](e, unsafe.Pointer(reflect.ValueOf(is[i]).UnsafeAddr()))
 	}
-	return e.buf
+	buf = e.buf
+	e.Reset()
+	return
 }
 
-func (e *Encoder) EncodeValues(vs ...reflect.Value) []byte {
+func (e *Encoder) EncodeByUPtr(ps ...unsafe.Pointer) (buf []byte) {
+	l, engs := e.length, e.encEngs
+	for i := 0; i < l; i++ {
+		engs[i](e, ps[i])
+	}
+	buf = e.buf
+	e.Reset()
+	return
+}
+
+func (e *Encoder) EncodeValues(vs ...reflect.Value) (buf []byte) {
 	l, engs := e.length, e.encEngs
 	for i := 0; i < l; i++ {
 		engs[i](e, unsafe.Pointer(vs[i].UnsafeAddr()))
 	}
-	return e.buf
+	buf = e.buf
+	e.Reset()
+	return
 }
 
 func (e *Encoder) Reset() {
