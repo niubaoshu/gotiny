@@ -19,11 +19,11 @@ gotiny是一个注重效率的go语言序列化库。gotiny通个预先生成编
     }
 
 ## 特性
-- 效率非常的高，是golang自带序列化库gob的3倍以上,和一般的生成代码序列化框架处于统一水平。
-- 除map类型外0申请空间。
-- 编码所有的除func,interface{},chan 类型外的所有golang内置类型和自定义类型。
+- 效率非常的高，是golang自带序列化库gob的3倍以上,和一般的生成代码序列化框架处于同一水平，甚至高于它们。
+- 除map类型外0内存申请。
+- 支持编码所有的除func,interface,chan类型外的所有golang内置类型和自定义类型。
 - struct 类型会编码非导出字段。
-- 严格的类型转换。和gob中不同的是，gotiny中只要类型完全相同的才会正确编码和解码。
+- 严格的类型转换。和gob中不同的是，gotiny中只有类型完全相同的才会正确编码和解码。
 - 编码带类型的nil值。
 - 可以处理循环类型，不能编码循环值，会栈溢出。
 - 所有可以编码的类型都会完全的解码，不论原值是什么和目标值是什么。
@@ -59,3 +59,5 @@ float32和float64采用[gob](https://golang.org/pkg/encoding/gob/)中对浮点�
 ### 实现接口的类型
 对于实现encoding包BinaryMarshaler/BinaryUnmarshaler 或 实现 gob包GobEncoder/GobDecoder 接口的类型是实现的方法编码。
 对于实现了gotiny.GoTinySerialize包的类型将采用实现的方法编码和解码
+## benchmark
+[benchmark](https://github.com/niubaoshu/go_serialization_benchmarks)
