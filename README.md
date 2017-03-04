@@ -45,6 +45,7 @@ float32和float64采用[gob](https://golang.org/pkg/encoding/gob/)中对浮点�
 ### 复数类型
 - complex64类型会强转为一个uint64后采用uint64的编码方式。
 - complex128类型分别将虚实部分作为float64类型编码。
+
 ### 字符串类型
 字符串类型先将字符串长度强转为uint64类型编码，然后将字符串字节数组自身原样编码。
 ### 指针类型
