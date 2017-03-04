@@ -35,7 +35,31 @@ var (
 		reflect.TypeOf((*float64)(nil)).Elem(): &decFloat64,
 		reflect.TypeOf((*float32)(nil)).Elem(): &decFloat32,
 		reflect.TypeOf((*[]byte)(nil)).Elem():  &decBytes,
-		//reflect.TypeOf(nil):                    decignore,
+		reflect.TypeOf(nil):                    &decignore,
+	}
+	baseDecEng = []decEng{
+		reflect.Bool:          decBool,
+		reflect.String:        decString,
+		reflect.Uint8:         decUint8,
+		reflect.Int8:          decUint8,
+		reflect.Int:           decInt,
+		reflect.Uint:          decUint,
+		reflect.Int16:         decInt16,
+		reflect.Int32:         decInt32,
+		reflect.Int64:         decInt64,
+		reflect.Uint16:        decUint16,
+		reflect.Uint32:        decUint32,
+		reflect.Uint64:        decUint64,
+		reflect.Uintptr:       decUint,
+		reflect.Float32:       decFloat32,
+		reflect.Float64:       decFloat64,
+		reflect.Complex64:     decComplex64,
+		reflect.Complex128:    decComplex128,
+		reflect.Invalid:       decignore,
+		reflect.Chan:          decignore,
+		reflect.Func:          decignore,
+		reflect.Interface:     decignore,
+		reflect.UnsafePointer: decignore,
 	}
 	englock sync.RWMutex
 )
@@ -82,11 +106,14 @@ func buildDecEngine(rt reflect.Type) decEngPtr {
 		return engine
 	}
 
+	if _, fn, yes := implementsGotiny(reflect.PtrTo(rt)); yes {
+		*engine = func(d *Decoder, p unsafe.Pointer) {
+			d.index += fn(reflect.NewAt(rt, p).Interface().(GoTinySerializer), d.buf[d.index:])
+		}
+		return engine
+	}
+
 	switch rt.Kind() {
-	case reflect.Complex64:
-		*engine = decComplex64
-	case reflect.Complex128:
-		*engine = decComplex128
 	case reflect.Ptr:
 		et := rt.Elem()
 		eEng := buildDecEngine(et) // TODO 可以考虑在生成编码机的时候解引用掉子编码机，下同
@@ -171,7 +198,7 @@ func buildDecEngine(rt reflect.Type) decEngPtr {
 			*engine = decignore
 		}
 	default:
-		*engine = decignore
+		*engine = baseDecEng[rt.Kind()]
 	}
 	return engine
 }

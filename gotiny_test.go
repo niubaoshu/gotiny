@@ -2,7 +2,6 @@ package gotiny
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
 	"math/rand"
 	"reflect"
@@ -47,7 +46,20 @@ type (
 		Spouse   bool
 		Money    float64
 	}
+	gotinytest string
 )
+
+func (v *gotinytest) GotinyEncode(buf []byte) []byte {
+	vv := (string)(*v)
+	return append(buf, Encodes(&vv)...)
+}
+
+func (v *gotinytest) GotinyDecode(buf []byte) int {
+	var vv string
+	l := Decodes(buf, &vv)
+	*v = gotinytest(vv)
+	return l
+}
 
 func genBase() baseTyp {
 	return baseTyp{
@@ -146,6 +158,9 @@ var (
 
 	vAstruct = genA()
 
+	vGotinyTest  = gotinytest("aaaaaaaaaaaaaaaaaaaaa")
+	v2GotinyTest = &vGotinyTest
+
 	vs = []interface{}{
 		vbool,
 		vfbool,
@@ -193,6 +208,8 @@ var (
 		vcirmap,
 		v2cirmap,
 		vAstruct,
+		vGotinyTest,
+		v2GotinyTest,
 	}
 
 	ptrs = []unsafe.Pointer{
@@ -242,15 +259,19 @@ var (
 		getPtr(&vcirmap),
 		getPtr(&v2cirmap),
 		getPtr(&vAstruct),
+		getPtr(&vGotinyTest),
+		getPtr(&v2GotinyTest),
 	}
 
 	e = NewEncoder(vs...)
 	d = NewDecoder(vs...)
 
-	vals    = make([]reflect.Value, len(vs))
-	types   = make([]reflect.Type, len(vs))
-	retVals = make([]reflect.Value, len(vs))
-	retPtrs = make([]unsafe.Pointer, len(vs))
+	vals     = make([]reflect.Value, len(vs))
+	types    = make([]reflect.Type, len(vs))
+	valptrs  = make([]interface{}, len(vs))
+	retvptrs = make([]interface{}, len(vs))
+	retVals  = make([]reflect.Value, len(vs))
+	retPtrs  = make([]unsafe.Pointer, len(vs))
 
 	// buf     = make([]byte, 0, 1024)
 	// network = bytes.NewBuffer(buf) // Stand-in for a network connection
@@ -260,7 +281,7 @@ var (
 )
 
 func init() {
-	fmt.Fprintln(ioutil.Discard, time.Now())
+	//fmt.Fprintln(ioutil.Discard, time.Now())
 	//v2cir = vcir
 	//vcir = &v2cir
 	//vcirStruct.cir = &vcirStruct
@@ -287,6 +308,10 @@ func init() {
 		// 	vp = reflect.ValueOf(&a)
 		// } else {
 		//}
+		temp := reflect.New(types[i])
+		temp.Elem().Set(reflect.ValueOf(vs[i]))
+		valptrs[i] = temp.Interface()
+		retvptrs[i] = reflect.New(types[i]).Interface()
 		retVals[i] = reflect.New(types[i]).Elem()
 		retPtrs[i] = unsafe.Pointer(retVals[i].UnsafeAddr())
 	}
@@ -333,30 +358,43 @@ func TestBasicEncoderDecoder(t *testing.T) {
 			t.Fatalf("%T: expected %#v got %#v ,%T\n", vs[i], vs[i], r, r)
 		}
 	}
+
+	d.ResetWith(e.Encodes(valptrs...))
+	d.Decodes(retvptrs...)
+
+	for i, result := range retvptrs {
+
+		r := reflect.ValueOf(result).Elem().Interface()
+		//fmt.Printf("%T: expected %v got %v ,%T\n", vs[i], vs[i], r, r)
+		if !reflect.DeepEqual(vs[i], r) {
+			t.Fatalf("%T: expected %#v got %#v ,%T\n", vs[i], vs[i], r, r)
+		}
+	}
 }
 
-// func BenchmarkStdEncode(b *testing.B) {
-// 	for i := 0; i < b.N; i++ {
-// 		for j := 0; j < 1000; j++ {
-// 			for i := 0; i < len(vs); i++ {
-// 				enc.Encode(vs[i])
-// 			}
-// 		}
-// 	}
-// }
-
-// func BenchmarkStdDecode(b *testing.B) {
-// 	for i := 0; i < b.N; i++ {
-// 		for j := 0; j < 1000; j++ {
-// 			for i := 0; i < len(presults); i++ {
-// 				dec.Decode(presults[i])
-// 				//err := dec.Decode(presults[i])
-// 				//if err != nil {
-// 				//	b.Fatal(j, err.Error())
-// 				//}
-// 			}
-// 		}
-// 	}
+//
+//func BenchmarkStdEncode(b *testing.B) {
+//	for i := 0; i < b.N; i++ {
+//		for j := 0; j < 1000; j++ {
+//			for i := 0; i < len(vs); i++ {
+//				enc.Encode(vs[i])
+//			}
+//		}
+//	}
+//}
+//
+//func BenchmarkStdDecode(b *testing.B) {
+//	for i := 0; i < b.N; i++ {
+//		for j := 0; j < 1000; j++ {
+//			for i := 0; i < len(presults); i++ {
+//				dec.Decode(presults[i])
+//				//err := dec.Decode(presults[i])
+//				//if err != nil {
+//				//	b.Fatal(j, err.Error())
+//				//}
+//			}
+//		}
+//	}
 //}
 
 func BenchmarkEncodes(b *testing.B) {

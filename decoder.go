@@ -15,6 +15,28 @@ type Decoder struct {
 	length  int      //解码器数量
 }
 
+func Decodes(buf []byte, is ...interface{}) int {
+	d := NewDecoderWithPtr(is...)
+	d.buf = buf
+	d.Decodes(is...)
+	return d.index
+}
+
+func NewDecoderWithPtr(is ...interface{}) *Decoder {
+	l := len(is)
+	if l < 1 {
+		panic("must have argument!")
+	}
+	des := make([]decEng, l)
+	for i := 0; i < l; i++ {
+		des[i] = GetDecEngine(reflect.TypeOf(is[i]).Elem())
+	}
+	return &Decoder{
+		length:  l,
+		decEngs: des,
+	}
+}
+
 func NewDecoder(is ...interface{}) *Decoder {
 	l := len(is)
 	if l < 1 {
@@ -45,8 +67,8 @@ func NewDecoderWithTypes(ts ...reflect.Type) *Decoder {
 	}
 }
 
-func (d *Decoder) GetUnusedBytes() []byte {
-	return d.buf[d.index:]
+func (d *Decoder) GetUsedLength() int {
+	return d.index
 }
 func (d *Decoder) Reset() {
 	d.index = 0
@@ -57,6 +79,12 @@ func (d *Decoder) Reset() {
 func (d *Decoder) ResetWith(b []byte) {
 	d.buf = b
 	d.Reset()
+}
+func (d *Decoder) Decodes(is ...interface{}) {
+	l, engs := d.length, d.decEngs
+	for i := 0; i < l; i++ {
+		engs[i](d, unsafe.Pointer(reflect.ValueOf(is[i]).Pointer()))
+	}
 }
 
 // is is pointer of value

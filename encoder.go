@@ -15,6 +15,25 @@ type Encoder struct {
 	length  int
 }
 
+func Encodes(is ...interface{}) []byte {
+	return NewEncoderWithPtr(is...).Encodes(is...)
+}
+
+func NewEncoderWithPtr(is ...interface{}) *Encoder {
+	l := len(is)
+	if l < 1 {
+		panic("must have argument!")
+	}
+	engs := make([]encEng, l)
+	for i := 0; i < l; i++ {
+		engs[i] = GetEncEng(reflect.TypeOf(is[i]).Elem())
+	}
+	return &Encoder{
+		length:  l,
+		encEngs: engs,
+	}
+}
+
 func NewEncoder(is ...interface{}) *Encoder {
 	l := len(is)
 	if l < 1 {
@@ -55,7 +74,7 @@ func (e *Encoder) SetBuf(buf []byte) {
 func (e *Encoder) Encodes(is ...interface{}) (buf []byte) {
 	l, engs := e.length, e.encEngs
 	for i := 0; i < l; i++ {
-		engs[i](e, unsafe.Pointer(reflect.ValueOf(is[i]).UnsafeAddr()))
+		engs[i](e, unsafe.Pointer(reflect.ValueOf(is[i]).Pointer()))
 	}
 	buf = e.buf
 	e.Reset()

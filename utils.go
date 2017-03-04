@@ -66,10 +66,24 @@ func implementsBin(rt reflect.Type) (func(encoding.BinaryMarshaler) ([]byte, err
 	return encoding.BinaryMarshaler.MarshalBinary, encoding.BinaryUnmarshaler.UnmarshalBinary, has && has2
 }
 
+func implementsGotiny(rt reflect.Type) (func(GoTinySerializer, []byte) []byte, func(GoTinySerializer, []byte) int, bool) {
+	_, has := rt.MethodByName("GotinyEncode")
+	_, has2 := rt.MethodByName("GotinyDecode")
+	return GoTinySerializer.GotinyEncode, GoTinySerializer.GotinyDecode, has && has2
+}
+
 func isNil(p unsafe.Pointer) bool {
 	return *(*unsafe.Pointer)(p) == nil
 }
 
 func elem(p unsafe.Pointer) unsafe.Pointer {
 	return *(*unsafe.Pointer)(p)
+}
+
+//只应该有指针来实现该接口
+type GoTinySerializer interface {
+	//编码方法，将对象的序列化结果append到入参数并返回，方法不应该操纵入参数值原有的值
+	GotinyEncode([]byte) []byte
+	//解码方法，将入参解码到对象里并返回使用的长度。方法从入参的第0个字节开始使用，并且不应该修改入参中的任何数据
+	GotinyDecode([]byte) int
 }

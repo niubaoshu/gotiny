@@ -33,6 +33,32 @@ var (
 		reflect.TypeOf((*[]byte)(nil)).Elem():  &encBytes,
 		reflect.TypeOf(nil):                    &encignore,
 	}
+
+	baseEncEng = []encEng{
+		reflect.Bool:          encBool,
+		reflect.String:        encString,
+		reflect.Uint8:         encUint8,
+		reflect.Int8:          encUint8,
+		reflect.Int:           encInt,
+		reflect.Uint:          encUint,
+		reflect.Int16:         encInt16,
+		reflect.Int32:         encInt32,
+		reflect.Int64:         encInt64,
+		reflect.Uint16:        encUint16,
+		reflect.Uint32:        encUint32,
+		reflect.Uint64:        encUint64,
+		reflect.Uintptr:       encUint,
+		reflect.Float32:       encFloat32,
+		reflect.Float64:       encFloat64,
+		reflect.Complex64:     encComplex64,
+		reflect.Complex128:    encComplex128,
+		reflect.Invalid:       encignore,
+		reflect.Chan:          encignore,
+		reflect.Func:          encignore,
+		reflect.Interface:     encignore,
+		reflect.UnsafePointer: encignore,
+	}
+
 	encLock sync.RWMutex
 )
 
@@ -75,12 +101,16 @@ func buildEncEngine(rt reflect.Type) encEngPtr {
 		}
 		return engine
 	}
+
+	if fn, _, yes := implementsGotiny(reflect.PtrTo(rt)); yes {
+		*engine = func(e *Encoder, p unsafe.Pointer) {
+			e.buf = fn(reflect.NewAt(rt, p).Interface().(GoTinySerializer), e.buf)
+		}
+		return engine
+	}
+
 	var eEng encEngPtr
 	switch rt.Kind() {
-	case reflect.Complex64:
-		*engine = encComplex64
-	case reflect.Complex128:
-		*engine = encComplex128
 	case reflect.Ptr:
 		eEng = buildEncEngine(rt.Elem())
 		*engine = func(e *Encoder, p unsafe.Pointer) {
@@ -179,7 +209,7 @@ func buildEncEngine(rt reflect.Type) encEngPtr {
 			*engine = encignore
 		}
 	default:
-		*engine = encignore
+		*engine = baseEncEng[rt.Kind()]
 	}
 	return engine
 }
