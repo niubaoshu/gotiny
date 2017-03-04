@@ -39,6 +39,7 @@ bool类型占用一位，真值编码为1，假值编码为0。当第一次遇�
 - uint8和int8 类型作为一个字节编入字符串的下一个字节。
 - uint16,uint32,uint64,uint,uintptr 采用[Varints](https://developers.google.com/protocol-buffers/docs/encoding#varints)编码方式。
 - int16,int32,int64,int 采用[ZigZag](https://en.wikipedia.org/wiki/Zigzag_code)转换成一个无符号数后采用[Varints](https://developers.google.com/protocol-buffers/docs/encoding#varints)编码方式。
+
 ### 浮点数类型
 float32和float64采用[gob](https://golang.org/pkg/encoding/gob/)中对浮点类型的编码方式。
 ### 复数类型
