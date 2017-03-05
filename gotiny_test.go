@@ -328,14 +328,15 @@ func init() {
 	// }
 	// fmt.Println("stdgob length:", len(network.Bytes()))
 
-	e.SetBuf(make([]byte, 0, 2048))
+	e.ResetWith(make([]byte, 0, 2048))
 }
 
 // Test basic operations in a safe manner.
 func TestBasicEncoderDecoder(t *testing.T) {
 	//fmt.Println(vs...)
 	e.Reset()
-	b := e.EncodeByUPtr(ptrs...)
+	e.EncodeByUPtr(ptrs...)
+	b := e.Bytes()
 	//t.Logf("%v\n", b)
 	fmt.Printf("length: %d \n", len(b))
 	d.ResetWith(b)
@@ -348,8 +349,10 @@ func TestBasicEncoderDecoder(t *testing.T) {
 			t.Fatalf("%T: expected %#v got %#v ,%T\n", vs[i], vs[i], r, r)
 		}
 	}
+	e.Reset()
+	e.EncodeValues(vals...)
 
-	d.ResetWith(e.EncodeValues(vals...))
+	d.ResetWith(e.Bytes())
 	d.DecodeValues(retVals...)
 	for i, result := range retVals {
 		r := result.Interface()
@@ -359,7 +362,9 @@ func TestBasicEncoderDecoder(t *testing.T) {
 		}
 	}
 
-	d.ResetWith(e.Encodes(valptrs...))
+	e.Reset()
+	e.Encodes(valptrs...)
+	d.ResetWith(e.Bytes())
 	d.Decodes(retvptrs...)
 
 	for i, result := range retvptrs {
@@ -400,6 +405,7 @@ func TestBasicEncoderDecoder(t *testing.T) {
 func BenchmarkEncodes(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		for i := 0; i < 1000; i++ {
+			e.Reset()
 			e.EncodeByUPtr(ptrs...)
 		}
 	}

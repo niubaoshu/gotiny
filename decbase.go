@@ -168,7 +168,7 @@ var (
 			v := *vptr
 			if cap(v) < l {
 				*vptr = make([]byte, l)
-			} else if len(v) < l {
+			} else if len(v) > l {
 				*vptr = v[:l]
 			}
 			d.index += copy(*vptr, d.buf[d.index:d.index+l])
@@ -180,8 +180,3 @@ var (
 		}
 	}
 )
-
-//func decTime(d *Decoder, p unsafe.Pointer) {
-//t := v.Interface().(time.Time)
-
-//}

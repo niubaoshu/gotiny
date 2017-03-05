@@ -16,7 +16,9 @@ type Encoder struct {
 }
 
 func Encodes(is ...interface{}) []byte {
-	return NewEncoderWithPtr(is...).Encodes(is...)
+	e := NewEncoderWithPtr(is...)
+	e.Encodes(is...)
+	return e.Bytes()
 }
 
 func NewEncoderWithPtr(is ...interface{}) *Encoder {
@@ -26,7 +28,7 @@ func NewEncoderWithPtr(is ...interface{}) *Encoder {
 	}
 	engs := make([]encEng, l)
 	for i := 0; i < l; i++ {
-		engs[i] = GetEncEng(reflect.TypeOf(is[i]).Elem())
+		engs[i] = getEncEngine(reflect.TypeOf(is[i]).Elem())
 	}
 	return &Encoder{
 		length:  l,
@@ -41,7 +43,7 @@ func NewEncoder(is ...interface{}) *Encoder {
 	}
 	engs := make([]encEng, l)
 	for i := 0; i < l; i++ {
-		engs[i] = GetEncEng(reflect.TypeOf(is[i]))
+		engs[i] = getEncEngine(reflect.TypeOf(is[i]))
 	}
 	return &Encoder{
 		length:  l,
@@ -55,7 +57,7 @@ func NewEncoderWithTypes(ts ...reflect.Type) *Encoder {
 	}
 	engs := make([]encEng, l)
 	for i := 0; i < l; i++ {
-		engs[i] = GetEncEng(ts[i])
+		engs[i] = getEncEngine(ts[i])
 	}
 	return &Encoder{
 		length:  l,
@@ -63,7 +65,7 @@ func NewEncoderWithTypes(ts ...reflect.Type) *Encoder {
 	}
 }
 
-func (e *Encoder) SetBuf(buf []byte) {
+func (e *Encoder) ResetWith(buf []byte) {
 	e.buf = buf
 	e.offset = len(buf)
 	e.boolBit = 0
@@ -71,38 +73,33 @@ func (e *Encoder) SetBuf(buf []byte) {
 }
 
 // is is point of value slice
-func (e *Encoder) Encodes(is ...interface{}) (buf []byte) {
+func (e *Encoder) Encodes(is ...interface{}) {
 	l, engs := e.length, e.encEngs
 	for i := 0; i < l; i++ {
 		engs[i](e, unsafe.Pointer(reflect.ValueOf(is[i]).Pointer()))
 	}
-	buf = e.buf
-	e.Reset()
-	return
 }
 
-func (e *Encoder) EncodeByUPtr(ps ...unsafe.Pointer) (buf []byte) {
+func (e *Encoder) EncodeByUPtr(ps ...unsafe.Pointer) {
 	l, engs := e.length, e.encEngs
 	for i := 0; i < l; i++ {
 		engs[i](e, ps[i])
 	}
-	buf = e.buf
-	e.Reset()
-	return
 }
 
-func (e *Encoder) EncodeValues(vs ...reflect.Value) (buf []byte) {
+func (e *Encoder) EncodeValues(vs ...reflect.Value) {
 	l, engs := e.length, e.encEngs
 	for i := 0; i < l; i++ {
 		engs[i](e, unsafe.Pointer(vs[i].UnsafeAddr()))
 	}
-	buf = e.buf
-	e.Reset()
-	return
 }
 
 func (e *Encoder) Reset() {
 	e.buf = e.buf[:e.offset]
 	e.boolBit = 0
 	e.boolPos = 0
+}
+
+func (e *Encoder) Bytes() []byte {
+	return e.buf
 }

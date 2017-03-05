@@ -1,23 +1,20 @@
-## <font color="#FF4500" >gotiny 尚处于开发的早期阶段，不建议使用，但可以提意见和review代码。</font>
+## <font color="#FF4500" >gotiny 尚处于开发的早期阶段，暂不建议使用。</font>
 
 # gotiny
 gotiny是一个注重效率的go语言序列化库。gotiny通个预先生成编码机和减少使用reflect库等方式来提高效率，几乎和生成代码的序列化库有同样高的速度。
 ## hello word 
     package main
-    
     import (
-    	"fmt"
-    
-    	"github.com/niubaoshu/gotiny"
+   	    "fmt"
+   	    "github.com/niubaoshu/gotiny"
     )
     
     func main() {
-    	src := "hello world!"
-    	ret := ""
-    	gotiny.Decodes(gotiny.Encodes(&src), &ret)
-    	fmt.Println(ret) // print "hello world!"
+   	    src1, src2 := "hello", []byte(" world!")
+   	    ret1, ret2 := "", []byte{}
+   	    gotiny.Decodes(gotiny.Encodes(&src1, &src2), &ret1, &ret2)
+   	    fmt.Println(ret1 + string(ret2)) // print "hello world!"
     }
-
 ## 特性
 - 效率非常的高，是golang自带序列化库gob的3倍以上,和一般的生成代码序列化框架处于同一水平，甚至高于它们。
 - 除map类型外0内存申请。

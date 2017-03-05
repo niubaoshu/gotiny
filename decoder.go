@@ -29,7 +29,7 @@ func NewDecoderWithPtr(is ...interface{}) *Decoder {
 	}
 	des := make([]decEng, l)
 	for i := 0; i < l; i++ {
-		des[i] = GetDecEngine(reflect.TypeOf(is[i]).Elem())
+		des[i] = getDecEngine(reflect.TypeOf(is[i]).Elem())
 	}
 	return &Decoder{
 		length:  l,
@@ -44,7 +44,7 @@ func NewDecoder(is ...interface{}) *Decoder {
 	}
 	des := make([]decEng, l)
 	for i := 0; i < l; i++ {
-		des[i] = GetDecEngine(reflect.TypeOf(is[i]))
+		des[i] = getDecEngine(reflect.TypeOf(is[i]))
 	}
 	return &Decoder{
 		length:  l,
@@ -59,7 +59,7 @@ func NewDecoderWithTypes(ts ...reflect.Type) *Decoder {
 	}
 	des := make([]decEng, l)
 	for i := 0; i < l; i++ {
-		des[i] = GetDecEngine(ts[i])
+		des[i] = getDecEngine(ts[i])
 	}
 	return &Decoder{
 		length:  l,
@@ -67,9 +67,6 @@ func NewDecoderWithTypes(ts ...reflect.Type) *Decoder {
 	}
 }
 
-func (d *Decoder) GetUsedLength() int {
-	return d.index
-}
 func (d *Decoder) Reset() {
 	d.index = 0
 	d.boolean = 0

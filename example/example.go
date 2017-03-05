@@ -1,12 +1,15 @@
 package main
 
 import (
-	"github.com/niubaoshu/gotiny"
+	"log"
 	"reflect"
 	"runtime/pprof"
-	"log"
 
+	"github.com/niubaoshu/gotiny"
+
+	"fmt"
 	"os"
+	"time"
 )
 
 type str struct {
@@ -22,9 +25,9 @@ type ET0 struct {
 
 var (
 	//_   = rand.Intn(1)
-	//now = time.Now()
-	a = "234234"
-	i = map[int]map[int]string{
+	now = time.Now()
+	a   = "234234"
+	i   = map[int]map[int]string{
 		1: map[int]string{
 			1: a,
 		},
@@ -44,6 +47,7 @@ var (
 	ptrint   *int = &inta
 	nilint   *int
 	vs       = []interface{}{
+		ptrint,
 		strs,
 		`习近平离京对瑞士联邦进行国事访问
 		出席世界经济论坛2017年年会并访问在瑞士的国际组织
@@ -95,7 +99,7 @@ var (
 		}{1, 2},
 		et0,
 		[100]int{},
-		//	now,
+		now,
 		ptrint,
 		nilmap,
 		nilslice,
@@ -107,10 +111,12 @@ var (
 	e = gotiny.NewEncoder(vs...)
 	d = gotiny.NewDecoder(vs...)
 
-	rvalues = make([]reflect.Value, len(vs))
+	spvals = make([]interface{}, len(vs))
+	//rvalues = make([]reflect.Value, len(vs))
 	//rtypes   = make([]reflect.Type, len(vs))
-	results  = make([]reflect.Value, len(vs))
-	presults = make([]interface{}, len(vs))
+	//results  = make([]reflect.Value, len(vs))
+	//presults = make([]interface{}, len(vs))
+	rpvals = make([]interface{}, len(vs))
 
 	// buf     = make([]byte, 0, 1024)
 	// network = bytes.NewBuffer(buf) // Stand-in for a network connection
@@ -123,31 +129,20 @@ func init() {
 
 	//fmt.Println(now)
 	for i := 0; i < len(vs); i++ {
-		rtypes := reflect.TypeOf(vs[i])
-		rvalues[i] = reflect.ValueOf(vs[i])
+		typ := reflect.TypeOf(vs[i])
+		temp := reflect.New(typ)
+		temp.Elem().Set(reflect.ValueOf(vs[i]))
+		spvals[i] = temp.Interface()
 
-		if i == len(vs)-3 {
-			b := 2
-			var a *int = &b
-			//var a *int
-			vp := reflect.ValueOf(&a)
-			results[i] = vp.Elem()
-			presults[i] = vp.Interface()
-		} else if i == len(vs)-2 {
+		if i == len(vs)-2 {
 			a := make([]byte, 15)
-			vp := reflect.ValueOf(&a)
-			results[i] = vp.Elem()
-			presults[i] = vp.Interface()
+			rpvals[i] = &a
 		} else if i == len(vs)-1 {
 			//a := map[int]int{111: 233, 6: 7}
 			a := map[int]int{}
-			vp := reflect.ValueOf(&a)
-			results[i] = vp.Elem()
-			presults[i] = vp.Interface()
+			rpvals[i] = &a
 		} else {
-			vp := reflect.New(rtypes)
-			results[i] = vp.Elem()
-			presults[i] = vp.Interface()
+			rpvals[i] = reflect.New(typ).Interface()
 		}
 	}
 
@@ -163,8 +158,7 @@ func init() {
 	// }
 	// fmt.Println("stdgob length:", len(network.Bytes()))
 
-	e.SetBuf(make([]byte, 0, 2048))
-	d.ResetWith(e.Encodes(vs...))
+	e.ResetWith(make([]byte, 0, 2048))
 }
 
 func main() {
@@ -176,17 +170,22 @@ func main() {
 	pprof.StartCPUProfile(f)
 	defer pprof.StopCPUProfile()
 	var buf []byte
-	_ =buf
+	_ = buf
+	fmt.Println(len(vs))
 	for i := 0; i < 1000; i++ {
 		e.Reset()
 		for i := 0; i < 1000; i++ {
-			buf = e.Encodes(vs...)
+			e.Encodes(spvals...)
+			d.ResetWith(e.Bytes())
+			d.Decodes(rpvals...)
+			for i, result := range rpvals {
+				r := reflect.ValueOf(result).Elem().Interface()
+				//fmt.Printf("%T: expected %v got %v ,%T\n", vs[i], vs[i], r, r)
+				if !reflect.DeepEqual(vs[i], r) {
+					fmt.Println(i, vs[i])
+					fmt.Printf("%T: expected %#v got %#v ,%T\n", vs[i], vs[i], r, r)
+				}
+			}
 		}
-		//d.ResetWith(buf)
-		//
-		//for i := 0; i < 1000; i++ {
-		//	d.Decodes(presults...)
-		//}
-		//fmt.Println(i, len(buf))
 	}
 }

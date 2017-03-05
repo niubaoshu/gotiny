@@ -7,8 +7,8 @@ import (
 )
 
 func main() {
-	src := "hello world!"
-	ret := ""
-	gotiny.Decodes(gotiny.Encodes(&src), &ret)
-	fmt.Println(ret) // print "hello world!"
+	src1, src2 := "hello", []byte(" world!")
+	ret1, ret2 := "", []byte{}
+	gotiny.Decodes(gotiny.Encodes(&src1, &src2), &ret1, &ret2)
+	fmt.Println(ret1 + string(ret2)) // print "hello world!"
 }

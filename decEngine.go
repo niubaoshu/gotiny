@@ -64,7 +64,7 @@ var (
 	englock sync.RWMutex
 )
 
-func GetDecEngine(rt reflect.Type) decEng {
+func getDecEngine(rt reflect.Type) decEng {
 	englock.RLock()
 	engine := rt2decEng[rt]
 	englock.RUnlock()

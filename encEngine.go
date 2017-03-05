@@ -62,7 +62,7 @@ var (
 	encLock sync.RWMutex
 )
 
-func GetEncEng(rt reflect.Type) encEng {
+func getEncEngine(rt reflect.Type) encEng {
 	encLock.RLock()
 	engptr := rt2Eng[rt]
 	encLock.RUnlock()
