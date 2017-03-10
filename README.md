@@ -59,7 +59,7 @@ float32和float64采用[gob](https://golang.org/pkg/encoding/gob/)中对浮点�
 ### struct类型
 将结构体的所有成员按其类型编码，无论是否导出，非导出的字段也会编码。结构体会严格还原。
 ### 实现接口的类型
-- 对于实现encoding包BinaryMarshaler.BinaryUnmarshaler 或 实现 gob包GobEncoder.GobDecoder 接口的类型会用实现的方法编码。
+- 对于实现encoding包BinaryMarshaler/BinaryUnmarshaler 或 实现 gob包GobEncoder/GobDecoder 接口的类型会用实现的方法编码。
 - 对于实现了gotiny.GoTinySerialize包的类型将采用实现的方法编码和解码
 
 ## benchmark

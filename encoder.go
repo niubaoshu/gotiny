@@ -28,7 +28,11 @@ func NewEncoderWithPtr(is ...interface{}) *Encoder {
 	}
 	engs := make([]encEng, l)
 	for i := 0; i < l; i++ {
-		engs[i] = getEncEngine(reflect.TypeOf(is[i]).Elem())
+		rt := reflect.TypeOf(is[i])
+		if rt.Kind() != reflect.Ptr {
+			panic("must a pointer type!")
+		}
+		engs[i] = getEncEngine(rt.Elem())
 	}
 	return &Encoder{
 		length:  l,
@@ -57,6 +61,9 @@ func NewEncoderWithTypes(ts ...reflect.Type) *Encoder {
 	}
 	engs := make([]encEng, l)
 	for i := 0; i < l; i++ {
+		if ts[i].Kind() != reflect.Ptr {
+			panic("must a pointer type!")
+		}
 		engs[i] = getEncEngine(ts[i])
 	}
 	return &Encoder{
@@ -72,7 +79,7 @@ func (e *Encoder) ResetWith(buf []byte) {
 	e.boolPos = 0
 }
 
-// is is point of value slice
+// 入参是要编码的值得指针
 func (e *Encoder) Encodes(is ...interface{}) {
 	l, engs := e.length, e.encEngs
 	for i := 0; i < l; i++ {
@@ -80,7 +87,7 @@ func (e *Encoder) Encodes(is ...interface{}) {
 	}
 }
 
-func (e *Encoder) EncodeByUPtr(ps ...unsafe.Pointer) {
+func (e *Encoder) EncodeByUPtrs(ps ...unsafe.Pointer) {
 	l, engs := e.length, e.encEngs
 	for i := 0; i < l; i++ {
 		engs[i](e, ps[i])

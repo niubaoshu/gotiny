@@ -125,6 +125,7 @@ var (
 	temp        = 1
 	v4map       = map[int]*int{1: &temp}
 	v5map       = map[int]baseTyp{1: genBase(), 2: genBase()}
+	vnilmap     map[int]int
 	vptr        = &vint
 	vsliceptr   = &vbytes
 	vptrslice   = []*int{&vint, &vint, &vint}
@@ -192,6 +193,7 @@ var (
 		v3map,
 		v4map,
 		v5map,
+		vnilmap,
 		vptr,
 		vsliceptr,
 		vptrslice,
@@ -243,6 +245,7 @@ var (
 		getPtr(&v3map),
 		getPtr(&v4map),
 		getPtr(&v5map),
+		getPtr(&vnilmap),
 		getPtr(&vptr),
 		getPtr(&vsliceptr),
 		getPtr(&vptrslice),
@@ -335,7 +338,7 @@ func init() {
 func TestBasicEncoderDecoder(t *testing.T) {
 	//fmt.Println(vs...)
 	e.Reset()
-	e.EncodeByUPtr(ptrs...)
+	e.EncodeByUPtrs(ptrs...)
 	b := e.Bytes()
 	//t.Logf("%v\n", b)
 	fmt.Printf("length: %d \n", len(b))
@@ -406,7 +409,7 @@ func BenchmarkEncodes(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		for i := 0; i < 1000; i++ {
 			e.Reset()
-			e.EncodeByUPtr(ptrs...)
+			e.EncodeByUPtrs(ptrs...)
 		}
 	}
 }

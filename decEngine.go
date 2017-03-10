@@ -122,7 +122,7 @@ func buildDecEngine(rt reflect.Type) decEngPtr {
 				if isNil(p) {
 					*(*uintptr)(p) = reflect.New(et).Elem().UnsafeAddr()
 				}
-				(*eEng)(d, elem(p))
+				(*eEng)(d, *(*unsafe.Pointer)(p))
 			} else if !isNil(p) {
 				*(*unsafe.Pointer)(p) = nil
 			}

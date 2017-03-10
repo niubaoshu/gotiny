@@ -117,7 +117,7 @@ func buildEncEngine(rt reflect.Type) encEngPtr {
 			isNotNil := !isNil(p)
 			e.encBool(isNotNil)
 			if isNotNil {
-				(*eEng)(e, elem(p))
+				(*eEng)(e, *(*unsafe.Pointer)(p))
 			}
 		}
 	case reflect.Array:

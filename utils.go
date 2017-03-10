@@ -76,10 +76,6 @@ func isNil(p unsafe.Pointer) bool {
 	return *(*unsafe.Pointer)(p) == nil
 }
 
-func elem(p unsafe.Pointer) unsafe.Pointer {
-	return *(*unsafe.Pointer)(p)
-}
-
 //只应该有指针来实现该接口
 type GoTinySerializer interface {
 	//编码方法，将对象的序列化结果append到入参数并返回，方法不应该操纵入参数值原有的值

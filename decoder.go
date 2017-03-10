@@ -16,20 +16,24 @@ type Decoder struct {
 }
 
 func Decodes(buf []byte, is ...interface{}) int {
-	d := NewDecoderWithPtr(is...)
+	d := NewDecoderWithPtrs(is...)
 	d.buf = buf
 	d.Decodes(is...)
 	return d.index
 }
 
-func NewDecoderWithPtr(is ...interface{}) *Decoder {
+func NewDecoderWithPtrs(is ...interface{}) *Decoder {
 	l := len(is)
 	if l < 1 {
 		panic("must have argument!")
 	}
 	des := make([]decEng, l)
 	for i := 0; i < l; i++ {
-		des[i] = getDecEngine(reflect.TypeOf(is[i]).Elem())
+		rt := reflect.TypeOf(is[i])
+		if rt.Kind() != reflect.Ptr {
+			panic("must a pointer type!")
+		}
+		des[i] = getDecEngine(rt.Elem())
 	}
 	return &Decoder{
 		length:  l,
@@ -59,6 +63,9 @@ func NewDecoderWithTypes(ts ...reflect.Type) *Decoder {
 	}
 	des := make([]decEng, l)
 	for i := 0; i < l; i++ {
+		if ts[i].Kind() != reflect.Ptr {
+			panic("must a pointer type!")
+		}
 		des[i] = getDecEngine(ts[i])
 	}
 	return &Decoder{
