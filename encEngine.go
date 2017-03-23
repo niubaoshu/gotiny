@@ -11,6 +11,7 @@ import (
 type (
 	encEng    func(*Encoder, unsafe.Pointer)  //编码器
 	encEngPtr *func(*Encoder, unsafe.Pointer) //编码器指针
+	encEngVal func(*Encoder, reflect.Value)
 )
 
 var (
@@ -58,8 +59,10 @@ var (
 		reflect.Interface:     encignore,
 		reflect.UnsafePointer: encignore,
 	}
-
 	encLock sync.RWMutex
+
+	rt2EngVal  = map[reflect.Type]encEngVal{}
+	encValLock sync.RWMutex
 )
 
 func getEncEngine(rt reflect.Type) encEng {
@@ -147,38 +150,8 @@ func buildEncEngine(rt reflect.Type) encEngPtr {
 			}
 		}
 	case reflect.Map:
-		kEng := buildEncEngine(rt.Key())
-		eEng = buildEncEngine(rt.Elem())
-		//http://blog.csdn.net/hificamera/article/details/51701804
-		var encKey, encVal func(e *Encoder, v reflect.Value)
-		if rt.Elem().Kind() == reflect.Map {
-			eEng = func(eng encEngPtr) encEngPtr {
-				emEng := func(e *Encoder, p unsafe.Pointer) {
-					(*eng)(e, unsafe.Pointer(&p))
-				}
-				return &emEng
-			}(eEng)
-		}
-		if rt.Key().Kind() == reflect.Ptr {
-			encKey = func(e *Encoder, v reflect.Value) {
-				p := unsafe.Pointer(v.Pointer())
-				(*kEng)(e, unsafe.Pointer(&p))
-			}
-		} else {
-			encKey = func(e *Encoder, v reflect.Value) {
-				(*kEng)(e, (*refVal)(unsafe.Pointer(&v)).ptr)
-			}
-		}
-		if rt.Elem().Kind() == reflect.Ptr {
-			encVal = func(e *Encoder, v reflect.Value) {
-				p := unsafe.Pointer(v.Pointer())
-				(*eEng)(e, unsafe.Pointer(&p))
-			}
-		} else {
-			encVal = func(e *Encoder, v reflect.Value) {
-				(*eEng)(e, (*refVal)(unsafe.Pointer(&v)).ptr)
-			}
-		}
+		encKey := getValEncEng(rt.Key())
+		encVal := getValEncEng(rt.Elem())
 		*engine = func(e *Encoder, p unsafe.Pointer) {
 			isNotNil := !isNil(p)
 			e.encBool(isNotNil)
@@ -212,4 +185,41 @@ func buildEncEngine(rt reflect.Type) encEngPtr {
 		*engine = baseEncEng[rt.Kind()]
 	}
 	return engine
+}
+
+func getValEncEng(rt reflect.Type) encEngVal {
+	encValLock.RLock()
+	engine := rt2EngVal[rt]
+	encValLock.RUnlock()
+	if engine != nil {
+		return engine
+	}
+	encValLock.Lock()
+	engine = buildValEnc(rt)
+	encValLock.Unlock()
+	return engine
+}
+
+func buildValEnc(rt reflect.Type) (encengval encEngVal) {
+	engval, has := rt2EngVal[rt]
+	if has {
+		return engval
+	}
+	engine := buildEncEngine(rt)
+	if rt.Kind() == reflect.Map {
+		encengval = func(e *Encoder, v reflect.Value) {
+			(*engine)(e, unsafe.Pointer(&((*refVal)(unsafe.Pointer(&v))).ptr))
+		}
+	} else if rt.Kind() == reflect.Ptr {
+		encengval = func(e *Encoder, v reflect.Value) {
+			p := unsafe.Pointer(v.Pointer())
+			(*engine)(e, unsafe.Pointer(&p))
+		}
+	} else {
+		encengval = func(e *Encoder, v reflect.Value) {
+			(*engine)(e, (*refVal)(unsafe.Pointer(&v)).ptr)
+		}
+	}
+	rt2EngVal[rt] = encengval
+	return
 }

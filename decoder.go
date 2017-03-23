@@ -8,6 +8,7 @@ import (
 type Decoder struct {
 	buf     []byte //buf
 	index   int    //下一个要读取的字节
+	offset  int    //开始解码的偏移量
 	boolean byte   //下一次要读取的bool在buf中的下标,即buf[boolPos]
 	boolBit byte   //下一次要读取的bool的buf[boolPos]中的bit位
 
@@ -75,7 +76,7 @@ func NewDecoderWithTypes(ts ...reflect.Type) *Decoder {
 }
 
 func (d *Decoder) Reset() {
-	d.index = 0
+	d.index = d.offset
 	d.boolean = 0
 	d.boolBit = 0
 }
@@ -104,4 +105,9 @@ func (d *Decoder) DecodeValues(vs ...reflect.Value) {
 	for i := 0; i < l; i++ {
 		engs[i](d, unsafe.Pointer(vs[i].UnsafeAddr()))
 	}
+}
+
+func (d *Decoder) SetOff(off int) {
+	d.offset = off
+	d.index = off
 }

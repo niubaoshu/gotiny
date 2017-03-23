@@ -125,6 +125,7 @@ var (
 	temp        = 1
 	v4map       = map[int]*int{1: &temp}
 	v5map       = map[int]baseTyp{1: genBase(), 2: genBase()}
+	v6map       = map[*int]baseTyp{&vint: genBase(), &vint: genBase()}
 	vnilmap     map[int]int
 	vptr        = &vint
 	vsliceptr   = &vbytes
@@ -193,6 +194,7 @@ var (
 		v3map,
 		v4map,
 		v5map,
+		//v6map,
 		vnilmap,
 		vptr,
 		vsliceptr,
@@ -245,6 +247,7 @@ var (
 		getPtr(&v3map),
 		getPtr(&v4map),
 		getPtr(&v5map),
+		//getPtr(&v6map),
 		getPtr(&vnilmap),
 		getPtr(&vptr),
 		getPtr(&vsliceptr),
@@ -295,8 +298,9 @@ func init() {
 	}
 	for i := 0; i < len(vs); i++ {
 		types[i] = reflect.TypeOf(vs[i])
-		vals[i] = reflect.NewAt(types[i], ptrs[i]).Elem()
+		//vals[i] = reflect.NewAt(types[i], ptrs[i]).Elem()
 
+		vals[i] = reflect.ValueOf(vs[i])
 		//var vp reflect.Value
 		//if i == len(vs)-3 {
 		//	a := 2
