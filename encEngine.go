@@ -206,14 +206,9 @@ func buildValEnc(rt reflect.Type) (encengval encEngVal) {
 		return engval
 	}
 	engine := buildEncEngine(rt)
-	if rt.Kind() == reflect.Map {
+	if rt.Kind() == reflect.Map || rt.Kind() == reflect.Ptr {
 		encengval = func(e *Encoder, v reflect.Value) {
 			(*engine)(e, unsafe.Pointer(&((*refVal)(unsafe.Pointer(&v))).ptr))
-		}
-	} else if rt.Kind() == reflect.Ptr {
-		encengval = func(e *Encoder, v reflect.Value) {
-			p := unsafe.Pointer(v.Pointer())
-			(*engine)(e, unsafe.Pointer(&p))
 		}
 	} else {
 		encengval = func(e *Encoder, v reflect.Value) {

@@ -22,15 +22,15 @@ func Encodes(is ...interface{}) []byte {
 	return e.Bytes()
 }
 
-func NewEncoderWithPtr(is ...interface{}) *Encoder {
-	l := len(is)
+func NewEncoderWithPtr(ps ...interface{}) *Encoder {
+	l := len(ps)
 	if l < 1 {
 		panic("must have argument!")
 	}
 	engs := make([]encEng, l)
 	engvals := make([]encEngVal, l)
 	for i := 0; i < l; i++ {
-		rt := reflect.TypeOf(is[i])
+		rt := reflect.TypeOf(ps[i])
 		if rt.Kind() != reflect.Ptr {
 			panic("must a pointer type!")
 		}
@@ -70,9 +70,6 @@ func NewEncoderWithTypes(ts ...reflect.Type) *Encoder {
 	engs := make([]encEng, l)
 	engvals := make([]encEngVal, l)
 	for i := 0; i < l; i++ {
-		if ts[i].Kind() != reflect.Ptr {
-			panic("must a pointer type!")
-		}
 		engs[i] = getEncEngine(ts[i])
 		engvals[i] = getValEncEng(ts[i])
 	}
@@ -83,27 +80,25 @@ func NewEncoderWithTypes(ts ...reflect.Type) *Encoder {
 	}
 }
 
-// 入参是要编码的值得指针
+// 入参是要编码的值
 func (e *Encoder) Encodes(is ...interface{}) {
-	l, engs := e.length, e.encEngs
-	for i := 0; i < l; i++ {
-		engs[i](e, unsafe.Pointer(reflect.ValueOf(is[i]).Pointer()))
+	engs := e.encEngs
+	for i := 0; i < e.length; i++ {
+		engs[i](e, (*[2]unsafe.Pointer)(unsafe.Pointer(&is[i]))[1])
 	}
 }
 
 func (e *Encoder) EncodeByUPtrs(ps ...unsafe.Pointer) {
-	l, engs := e.length, e.encEngs
-	for i := 0; i < l; i++ {
+	engs := e.encEngs
+	for i := 0; i < e.length; i++ {
 		engs[i](e, ps[i])
 	}
 }
 
 // vs 是持有要编码的值
 func (e *Encoder) EncodeValues(vs ...reflect.Value) {
-	l, engs := e.length, e.encEngVals
-	for i := 0; i < l; i++ {
-		//engs[i](e, unsafe.Pointer(vs[i].UnsafeAddr()))
-		//engs[i](e, (*refVal)(unsafe.Pointer(&vs[i])).ptr)
+	engs := e.encEngVals
+	for i := 0; i < e.length; i++ {
 		engs[i](e, vs[i])
 	}
 }

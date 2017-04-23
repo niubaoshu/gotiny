@@ -2,7 +2,6 @@ package gotiny
 
 import (
 	"fmt"
-	"log"
 	"math/rand"
 	"reflect"
 	"testing"
@@ -216,214 +215,175 @@ var (
 		v2GotinyTest,
 	}
 
-	ptrs = []unsafe.Pointer{
-		getPtr(&vbool),
-		getPtr(&vfbool),
-		getPtr(&vint8),
-		getPtr(&vint16),
-		getPtr(&vint32),
-		getPtr(&vint64),
-		getPtr(&v2int64),
-		getPtr(&v3int64),
-		getPtr(&vint),
-		getPtr(&vuint),
-		getPtr(&vuint8),
-		getPtr(&vuint16),
-		getPtr(&vuint32),
-		getPtr(&vuint64),
-		getPtr(&v2uint64),
-		getPtr(&v3uint64),
-		getPtr(&vuintptr),
-		getPtr(&vfloat32),
-		getPtr(&vfloat64),
-		getPtr(&vcomp64),
-		getPtr(&vcomp128),
-		getPtr(&vstring),
-		getPtr(&base),
-		getPtr(&vbytes),
-		getPtr(&vsliecbytes),
-		getPtr(&vmap),
-		getPtr(&v2map),
-		getPtr(&v3map),
-		getPtr(&v4map),
-		getPtr(&v5map),
-		//getPtr(&v6map),
-		getPtr(&vnilmap),
-		getPtr(&vptr),
-		getPtr(&vsliceptr),
-		getPtr(&vptrslice),
-		getPtr(&vnilptr),
-		getPtr(&vnilptrptr),
-		getPtr(&vtime),
-		getPtr(&vsliceStr),
-		getPtr(&vslicestring),
-		getPtr(&varray),
-		getPtr(&vcir),
-		getPtr(&v2cir),
-		getPtr(&vcirStruct),
-		getPtr(&v2cirStruct),
-		getPtr(&vcirmap),
-		getPtr(&v2cirmap),
-		getPtr(&vAstruct),
-		getPtr(&vGotinyTest),
-		getPtr(&v2GotinyTest),
-	}
+	e      = NewEncoder(vs...)
+	d      = NewDecoder(vs...)
+	length = len(vs)
 
-	e = NewEncoder(vs...)
-	d = NewDecoder(vs...)
-
-	vals     = make([]reflect.Value, len(vs))
-	types    = make([]reflect.Type, len(vs))
-	valptrs  = make([]interface{}, len(vs))
-	retvptrs = make([]interface{}, len(vs))
-	retVals  = make([]reflect.Value, len(vs))
-	retPtrs  = make([]unsafe.Pointer, len(vs))
-
-	// buf     = make([]byte, 0, 1024)
-	// network = bytes.NewBuffer(buf) // Stand-in for a network connection
-	// //network bytes.Buffer
-	// enc = gob.NewEncoder(network) // Will write to network.
-	// dec = gob.NewDecoder(network) // Will read from network.
+	srci = make([]interface{}, length)
+	reti = make([]interface{}, length)
+	srcv = make([]reflect.Value, length)
+	retv = make([]reflect.Value, length)
+	srcp = make([]unsafe.Pointer, length)
+	retp = make([]unsafe.Pointer, length)
 )
 
 func init() {
-	//fmt.Fprintln(ioutil.Discard, time.Now())
-	//v2cir = vcir
-	//vcir = &v2cir
-	//vcirStruct.cir = &vcirStruct
-	fmt.Println("total", len(vs), len(ptrs), "value")
-
-	if len(vs) != len(ptrs) {
-		log.Fatal(" vs ptrs 不相等")
+	fmt.Println("total", length, "value")
+	for i := 0; i < length; i++ {
+		typ := reflect.TypeOf(vs[i])
+		srcv[i] = reflect.ValueOf(vs[i])
+		tempv := reflect.New(typ)
+		retv[i] = tempv.Elem()
+		tempi := reflect.New(typ)
+		tempi.Elem().Set(srcv[i])
+		srci[i] = tempi.Interface()
+		reti[i] = tempv.Interface()
+		srcp[i] = unsafe.Pointer(reflect.ValueOf(&srci[i]).Elem().InterfaceData()[1])
+		retp[i] = unsafe.Pointer(reflect.ValueOf(&reti[i]).Elem().InterfaceData()[1])
 	}
-	for i := 0; i < len(vs); i++ {
-		types[i] = reflect.TypeOf(vs[i])
-		//vals[i] = reflect.NewAt(types[i], ptrs[i]).Elem()
-
-		vals[i] = reflect.ValueOf(vs[i])
-		//var vp reflect.Value
-		//if i == len(vs)-3 {
-		//	a := 2
-		//	vp = reflect.ValueOf(&a)
-		//} else
-		// if i == len(vs)-2 {
-		// 	a := make([]byte, 15)
-		// 	vp = reflect.ValueOf(&a)
-		// } else if i == len(vs)-1 {
-		// 	//a := map[int]int{111: 233, 6: 7}
-		// 	a := map[int]int{}
-		// 	vp = reflect.ValueOf(&a)
-		// } else {
-		//}
-		temp := reflect.New(types[i])
-		temp.Elem().Set(reflect.ValueOf(vs[i]))
-		valptrs[i] = temp.Interface()
-		retvptrs[i] = reflect.New(types[i]).Interface()
-		retVals[i] = reflect.New(types[i]).Elem()
-		retPtrs[i] = unsafe.Pointer(retVals[i].UnsafeAddr())
-	}
-
-	//ee := NewEncoder(0)
-	//ret := ee.Encodes(vs...)
-	//fmt.Println("gotiny length:", len(ret))
-
-	// buf := make([]byte, 0, 1024)
-	// network := bytes.NewBuffer(buf) // Stand-in for a network connection
-	// enc := gob.NewEncoder(network)  // Will write to network.
-	// for i := 0; i < len(vs); i++ {
-	// 	enc.Encode(vs[i])
-	// }
-	// fmt.Println("stdgob length:", len(network.Bytes()))
-
 	e.ResetWith(make([]byte, 0, 2048))
 }
 
-// Test basic operations in a safe manner.
-func TestBasicEncoderDecoder(t *testing.T) {
-	//fmt.Println(vs...)
+func TestInterface(t *testing.T) {
 	e.Reset()
-	e.EncodeByUPtrs(ptrs...)
-	b := e.Bytes()
-	//t.Logf("%v\n", b)
-	fmt.Printf("length: %d \n", len(b))
-	d.ResetWith(b)
-	d.DecodeByUPtr(retPtrs...)
-	for i, result := range retVals {
-		r := result.Interface()
+	e.Encodes(srci...)
+	d.ResetWith(e.Bytes())
+	d.Decodes(reti...)
+	for i, r := range reti {
 		//fmt.Printf("%T: expected %v got %v ,%T\n", vs[i], vs[i], r, r)
-		if !reflect.DeepEqual(vs[i], r) {
+		if !reflect.DeepEqual(srci[i], r) {
+			t.Fatalf("%T: expected %#v got %#v ,%T\n", vs[i], vs[i], r, r)
+		}
+	}
+}
+
+func TestEncodeDecode(t *testing.T) {
+	Decodes(Encodes(srci...), reti...)
+	for i, r := range reti {
+		//fmt.Printf("%T: expected %v got %v ,%T\n", vs[i], vs[i], r, r)
+		if !reflect.DeepEqual(srci[i], r) {
 			t.Log(i)
 			t.Fatalf("%T: expected %#v got %#v ,%T\n", vs[i], vs[i], r, r)
 		}
 	}
-	e.Reset()
-	e.EncodeValues(vals...)
+}
 
-	d.ResetWith(e.Bytes())
-	d.DecodeValues(retVals...)
-	for i, result := range retVals {
-		r := result.Interface()
+func TestPtr(t *testing.T) {
+	e.EncodeByUPtrs(srcp...)
+	b := e.Bytes()
+	fmt.Printf("length: %d \n", len(b))
+	d.ResetWith(b)
+	d.DecodeByUPtr(retp...)
+	for i, r := range reti {
 		//fmt.Printf("%T: expected %v got %v ,%T\n", vs[i], vs[i], r, r)
-		if !reflect.DeepEqual(vs[i], r) {
+		if !reflect.DeepEqual(srci[i], r) {
+			t.Log(i)
 			t.Fatalf("%T: expected %#v got %#v ,%T\n", vs[i], vs[i], r, r)
 		}
 	}
 
+}
+
+func TestValue(t *testing.T) {
 	e.Reset()
-	e.Encodes(valptrs...)
+	e.EncodeValues(srcv...)
 	d.ResetWith(e.Bytes())
-	d.Decodes(retvptrs...)
-
-	for i, result := range retvptrs {
-
-		r := reflect.ValueOf(result).Elem().Interface()
+	d.DecodeValues(retv...)
+	for i, r := range reti {
 		//fmt.Printf("%T: expected %v got %v ,%T\n", vs[i], vs[i], r, r)
-		if !reflect.DeepEqual(vs[i], r) {
+		if !reflect.DeepEqual(srci[i], r) {
 			t.Fatalf("%T: expected %#v got %#v ,%T\n", vs[i], vs[i], r, r)
 		}
 	}
+
 }
 
 //
-//func BenchmarkStdEncode(b *testing.B) {
+//var enctest = NewEncoder(1)
+//var enctest2 = NewEncoder(1, 2, 3, 4, 5, 6, 7)
+//
+//func BenchmarkFIEnc(b *testing.B) {
 //	for i := 0; i < b.N; i++ {
-//		for j := 0; j < 1000; j++ {
-//			for i := 0; i < len(vs); i++ {
-//				enc.Encode(vs[i])
-//			}
-//		}
+//		encitest(1, 2, 3, 3, 3, 4, 5, 2, 23)
 //	}
 //}
 //
-//func BenchmarkStdDecode(b *testing.B) {
+//func BenchmarkJson(b *testing.B) {
 //	for i := 0; i < b.N; i++ {
-//		for j := 0; j < 1000; j++ {
-//			for i := 0; i < len(presults); i++ {
-//				dec.Decode(presults[i])
-//				//err := dec.Decode(presults[i])
-//				//if err != nil {
-//				//	b.Fatal(j, err.Error())
-//				//}
-//			}
-//		}
+//		jsonf(1)
 //	}
 //}
+//func jsonf(is interface{}) {
+//	json.Marshal(is)
+//}
+//
+//func encitest(is ...interface{}) {
+//	enctest.Encodes(is...)
+//}
+//
+//func BenchmarkFPEnc(b *testing.B) {
+//	for i := 0; i < b.N; i++ {
+//		encptest()
+//	}
+//}
+//
+//func encptest() {
+//	a0, a1, a2, a3, a4, a5, a6 := 1, 2, 3, 4, 5, 6, 7
+//	enctest2.EncodeByUPtrs(unsafe.Pointer(&a0), unsafe.Pointer(&a1), unsafe.Pointer(&a2),
+//		unsafe.Pointer(&a3), unsafe.Pointer(&a4), unsafe.Pointer(&a5), unsafe.Pointer(&a6))
+//}
+
+var buf []byte
 
 func BenchmarkEncodes(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		for i := 0; i < 1000; i++ {
-			e.Reset()
-			e.EncodeByUPtrs(ptrs...)
-		}
+		buf = Encodes(srci...)
 	}
 }
 
 func BenchmarkDecodes(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		for i := 0; i < 1000; i++ {
-			d.Reset()
-			d.DecodeByUPtr(retPtrs...)
-		}
+		Decodes(buf, reti...)
+	}
+}
+
+func BenchmarkEncodesPtr(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		e.Reset()
+		e.EncodeByUPtrs(srcp...)
+	}
+}
+
+func BenchmarkDecodesPtr(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		d.Reset()
+		d.DecodeByUPtr(retp...)
+	}
+}
+func BenchmarkEncodesValue(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		e.Reset()
+		e.EncodeValues(srcv...)
+	}
+}
+
+func BenchmarkDecodesValue(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		d.Reset()
+		d.DecodeValues(retv...)
+	}
+}
+func BenchmarkEncodesInterface(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		e.Reset()
+		e.Encodes(srci...)
+	}
+}
+
+func BenchmarkDecodesInterface(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		d.Reset()
+		d.Decodes(reti...)
 	}
 }
 

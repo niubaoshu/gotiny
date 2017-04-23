@@ -64,9 +64,6 @@ func NewDecoderWithTypes(ts ...reflect.Type) *Decoder {
 	}
 	des := make([]decEng, l)
 	for i := 0; i < l; i++ {
-		if ts[i].Kind() != reflect.Ptr {
-			panic("must a pointer type!")
-		}
 		des[i] = getDecEngine(ts[i])
 	}
 	return &Decoder{
@@ -86,23 +83,23 @@ func (d *Decoder) ResetWith(b []byte) {
 	d.Reset()
 }
 func (d *Decoder) Decodes(is ...interface{}) {
-	l, engs := d.length, d.decEngs
-	for i := 0; i < l; i++ {
-		engs[i](d, unsafe.Pointer(reflect.ValueOf(is[i]).Pointer()))
+	engs := d.decEngs
+	for i := 0; i < d.length; i++ {
+		engs[i](d, (*[2]unsafe.Pointer)(unsafe.Pointer(&is[i]))[1])
 	}
 }
 
 // is is pointer of value
 func (d *Decoder) DecodeByUPtr(ps ...unsafe.Pointer) {
-	l, engs := d.length, d.decEngs
-	for i := 0; i < l; i++ {
+	engs := d.decEngs
+	for i := 0; i < d.length; i++ {
 		engs[i](d, ps[i])
 	}
 }
 
 func (d *Decoder) DecodeValues(vs ...reflect.Value) {
-	l, engs := d.length, d.decEngs
-	for i := 0; i < l; i++ {
+	engs := d.decEngs
+	for i := 0; i < d.length; i++ {
 		engs[i](d, unsafe.Pointer(vs[i].UnsafeAddr()))
 	}
 }
