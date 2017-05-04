@@ -61,8 +61,8 @@ var (
 	}
 	encLock sync.RWMutex
 
-	rt2EngVal  = map[reflect.Type]encEngVal{}
-	encValLock sync.RWMutex
+	rt2EngVal = map[reflect.Type]encEngVal{}
+	//encValLock sync.RWMutex
 )
 
 func getEncEngine(rt reflect.Type) encEng {
@@ -150,8 +150,8 @@ func buildEncEngine(rt reflect.Type) encEngPtr {
 			}
 		}
 	case reflect.Map:
-		encKey := getValEncEng(rt.Key())
-		encVal := getValEncEng(rt.Elem())
+		encKey := buildValEnc(rt.Key())
+		encVal := buildValEnc(rt.Elem())
 		*engine = func(e *Encoder, p unsafe.Pointer) {
 			isNotNil := !isNil(p)
 			e.encBool(isNotNil)
@@ -188,15 +188,15 @@ func buildEncEngine(rt reflect.Type) encEngPtr {
 }
 
 func getValEncEng(rt reflect.Type) encEngVal {
-	encValLock.RLock()
+	encLock.RLock()
 	engine := rt2EngVal[rt]
-	encValLock.RUnlock()
+	encLock.RUnlock()
 	if engine != nil {
 		return engine
 	}
-	encValLock.Lock()
+	encLock.Lock()
 	engine = buildValEnc(rt)
-	encValLock.Unlock()
+	encLock.Unlock()
 	return engine
 }
 
