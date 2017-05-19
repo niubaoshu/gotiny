@@ -1,7 +1,6 @@
 package gotiny
 
 import (
-	"reflect"
 	"unsafe"
 )
 
@@ -152,30 +151,20 @@ var (
 		*(*int)(unsafe.Pointer(uintptr(p) + ptrSize)) = l
 	}
 
-	byteTpy = reflect.TypeOf((*[]byte)(nil)).Elem()
-
 	decBytes = func(d *Decoder, p unsafe.Pointer) {
 		vptr := (*[]byte)(p)
 		if d.decBool() {
 			l := d.decLength()
-
-			//if isNil(p) || *(*int)(unsafe.Pointer(uintptr(p) + ptrSize + ptrSize)) < l {
-			//*(*unsafe.Pointer)(p) = unsafe.Pointer(reflect.MakeSlice(byteTpy, l, l).Pointer())
-			//}
-			//*(*int)(unsafe.Pointer(uintptr(p) + ptrSize)) = l
-			//*(*int)(unsafe.Pointer(uintptr(p) + ptrSize + ptrSize)) = l
-			//d.index += copy(*(*[]byte)(p), d.buf[d.index:d.index+l])
-			v := *vptr
-			if cap(v) < l {
+			if *(*int)(unsafe.Pointer(uintptr(p) + ptrSize + ptrSize)) < l {
 				*vptr = make([]byte, l)
-			} else if len(v) > l {
-				*vptr = v[:l]
+			} else {
+				lenptr := (*int)(unsafe.Pointer(uintptr(p) + ptrSize))
+				if *lenptr > l {
+					*lenptr = l
+				}
 			}
 			d.index += copy(*vptr, d.buf[d.index:d.index+l])
 		} else if !isNil(p) {
-			//*(*unsafe.Pointer)(p) = nil
-			//*(*int)(unsafe.Pointer(uintptr(p) + ptrSize)) = 0
-			//*(*int)(unsafe.Pointer(uintptr(p) + ptrSize + ptrSize)) = 0
 			*vptr = nil
 		}
 	}
