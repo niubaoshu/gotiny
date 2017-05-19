@@ -79,7 +79,7 @@ func getEncEngine(rt reflect.Type) encEng {
 }
 
 func buildEncEngine(rt reflect.Type) encEngPtr {
-	//todo  接口类型处理
+	//TODO  接口类型处理
 	engine, has := rt2Eng[rt]
 	if has {
 		return engine

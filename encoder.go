@@ -80,7 +80,7 @@ func NewEncoderWithTypes(ts ...reflect.Type) *Encoder {
 	}
 }
 
-// 入参是要编码的值
+// 入参是要编码值的指针
 func (e *Encoder) Encodes(is ...interface{}) {
 	engs := e.encEngs
 	for i := 0; i < e.length; i++ {

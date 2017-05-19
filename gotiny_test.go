@@ -399,6 +399,14 @@ func BenchmarkDecodesInterface(b *testing.B) {
 // 	}
 // }
 
+func BenchmarkUintToInt(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		for j := 0; j < 100000; j++ {
+			uintToInt(uint64(i))
+		}
+	}
+}
+
 // var (
 // 	ee        = NewEncoder(0)
 // 	maxuint64 = uint64(1<<64 - 1)
