@@ -7,10 +7,10 @@ import (
 func (d *Decoder) decBool() (b bool) {
 	if d.boolBit == 0 {
 		d.boolBit = 1
-		d.boolean = d.buf[d.index]
+		d.boolPos = d.buf[d.index]
 		d.index++
 	}
-	b = d.boolean&d.boolBit != 0
+	b = d.boolPos&d.boolBit != 0
 	d.boolBit <<= 1
 	return
 }
