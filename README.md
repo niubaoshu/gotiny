@@ -1,6 +1,6 @@
 ## <font color="#FF4500" >gotiny 尚处于开发的早期阶段，暂不建议使用。</font>
 
-# gotiny
+# gotiny   [![Build Status](https://travis-ci.org/niubaoshu/gotiny.svg?branch=master)](https://travis-ci.org/niubaoshu/gotiny)
 gotiny是一个注重效率的go语言序列化库。gotiny通个预先生成编码机和减少使用reflect库等方式来提高效率，几乎和生成代码的序列化库有同样高的速度。
 ## hello word 
     package main
