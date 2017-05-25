@@ -7,4 +7,5 @@ go:
   - master
 
 script:
-  - go test  ./...
+  - go test  .
+  - go run   example/helloworld.go
