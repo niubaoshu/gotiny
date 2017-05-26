@@ -1,7 +1,7 @@
 ## <font color="#FF4500" >gotiny 尚处于开发的早期阶段，暂不建议使用。</font>
 
-# gotiny   [![Build Status](https://travis-ci.org/niubaoshu/gotiny.svg?branch=master)](https://travis-ci.org/niubaoshu/gotiny)
-gotiny是一个注重效率的go语言序列化库。gotiny通个预先生成编码机和减少使用reflect库等方式来提高效率，几乎和生成代码的序列化库有同样高的速度。
+# gotiny   [![Build status][travis-img]][travis-url] [![License][license-img]][license-url] [![GoDoc][doc-img]][doc-url]
+gotiny是一个注重效率的go语言序列化库。gotiny通过预先生成编码机和减少使用reflect库等方式来提高效率，几乎和生成代码的序列化库有同样高的速度。
 ## hello word 
     package main
     import (
@@ -15,9 +15,6 @@ gotiny是一个注重效率的go语言序列化库。gotiny通个预先生成编
    	    gotiny.Decodes(gotiny.Encodes(&src1, &src2), &ret1, &ret2)
    	    fmt.Println(ret1 + string(ret2)) // print "hello world!"
     }
-## API
-- [godoc](https://godoc.org/github.com/niubaoshu/gotiny)
-- [gowalker](https://gowalker.org/github.com/niubaoshu/gotiny)
 
 ## 特性
 - 效率非常的高，是golang自带序列化库gob的3倍以上,和一般的生成代码序列化框架处于同一水平，甚至高于它们。
@@ -64,3 +61,14 @@ float32和float64采用[gob](https://golang.org/pkg/encoding/gob/)中对浮点�
 
 ## benchmark
 [benchmark](https://github.com/niubaoshu/go_serialization_benchmarks)
+
+
+### License
+MIT
+
+[travis-img]: https://travis-ci.org/niubaoshu/gotiny.svg?branch=master
+[travis-url]: https://travis-ci.org/niubaoshu/gotiny
+[license-img]: http://img.shields.io/badge/license-MIT-green.svg?style=flat-square
+[license-url]: http://opensource.org/licenses/MIT
+[doc-img]: http://img.shields.io/badge/GoDoc-reference-blue.svg?style=flat-square
+[doc-url]: https://godoc.org/github.com/niubaoshu/gotiny
