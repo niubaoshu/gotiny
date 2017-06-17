@@ -241,7 +241,7 @@ func init() {
 		srcp[i] = unsafe.Pointer(reflect.ValueOf(&srci[i]).Elem().InterfaceData()[1])
 		retp[i] = unsafe.Pointer(reflect.ValueOf(&reti[i]).Elem().InterfaceData()[1])
 	}
-	e.ResetWith(make([]byte, 0, 2048))
+	e.ResetWithBuf(make([]byte, 0, 2048))
 }
 
 func TestInterface(t *testing.T) {

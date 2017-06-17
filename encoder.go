@@ -103,7 +103,7 @@ func (e *Encoder) EncodeValues(vs ...reflect.Value) {
 	}
 }
 
-func (e *Encoder) ResetWith(buf []byte) {
+func (e *Encoder) ResetWithBuf(buf []byte) {
 	e.buf = buf
 	e.offset = len(buf)
 	e.boolBit = 0

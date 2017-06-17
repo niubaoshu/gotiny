@@ -158,7 +158,7 @@ func init() {
 	// }
 	// fmt.Println("stdgob length:", len(network.Bytes()))
 
-	e.ResetWith(make([]byte, 0, 2048))
+	e.ResetWithBuf(make([]byte, 0, 2048))
 }
 
 func main() {
