@@ -1,6 +1,6 @@
 ## <font color="#FF4500" >gotiny 尚处于开发的早期阶段，暂不建议使用。</font>
 
-# gotiny   [![Build status][travis-img]][travis-url] [![License][license-img]][license-url] [![GoDoc][doc-img]][doc-url]
+# gotiny   [![Build status][travis-img]][travis-url] [![License][license-img]][license-url] [![GoDoc][doc-img]][doc-url] [![Go Report Card](https://goreportcard.com/badge/github.com/niubaoshu/gotiny)](https://goreportcard.com/report/github.com/niubaoshu/gotiny)
 gotiny是一个注重效率的go语言序列化库。gotiny通过预先生成编码机和减少使用reflect库等方式来提高效率，几乎和生成代码的序列化库有同样高的速度。
 ## hello word 
     package main
@@ -37,7 +37,7 @@ bool类型占用一位，真值编码为1，假值编码为0。当第一次遇�
 ### 整数类型
 - uint8和int8 类型作为一个字节编入字符串的下一个字节。
 - uint16,uint32,uint64,uint,uintptr 采用[Varints](https://developers.google.com/protocol-buffers/docs/encoding#varints)编码方式。
-- int16,int32,int64,int 采用[ZigZag](https://en.wikipedia.org/wiki/Zigzag_code)转换成一个无符号数后采用[Varints](https://developers.google.com/protocol-buffers/docs/encoding#varints)编码方式。
+- int16,int32,int64,int 采用ZigZag转换成一个无符号数后采用[Varints](https://developers.google.com/protocol-buffers/docs/encoding#varints)编码方式。
 
 ### 浮点数类型
 float32和float64采用[gob](https://golang.org/pkg/encoding/gob/)中对浮点类型的编码方式。

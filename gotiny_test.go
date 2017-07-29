@@ -1,4 +1,4 @@
-package gotiny
+package gotiny_test
 
 import (
 	"fmt"
@@ -7,6 +7,9 @@ import (
 	"testing"
 	"time"
 	"unsafe"
+
+	"github.com/niubaoshu/gotiny"
+	"github.com/niubaoshu/goutils"
 )
 
 type (
@@ -50,12 +53,12 @@ type (
 
 func (v *gotinytest) GotinyEncode(buf []byte) []byte {
 	vv := (string)(*v)
-	return append(buf, Encodes(&vv)...)
+	return append(buf, gotiny.Encodes(&vv)...)
 }
 
 func (v *gotinytest) GotinyDecode(buf []byte) int {
 	var vv string
-	l := Decodes(buf, &vv)
+	l := gotiny.Decodes(buf, &vv)
 	*v = gotinytest(vv)
 	return l
 }
@@ -102,6 +105,8 @@ var (
 	v2int64     = int64(1<<63 - 1)
 	v3int64     = int64(rand.Int63())
 	vint        = int(123456)
+	vint1       = int(123456)
+	vint2       = int(1234567)
 	vuint       = uint(123)
 	vuint8      = uint8(123)
 	vuint16     = uint16(12345)
@@ -124,7 +129,7 @@ var (
 	temp        = 1
 	v4map       = map[int]*int{1: &temp}
 	v5map       = map[int]baseTyp{1: genBase(), 2: genBase()}
-	v6map       = map[*int]baseTyp{&vint: genBase(), &vint: genBase()}
+	v6map       = map[*int]baseTyp{&vint1: genBase(), &vint2: genBase()}
 	vnilmap     map[int]int
 	vptr        = &vint
 	vsliceptr   = &vbytes
@@ -172,6 +177,8 @@ var (
 		v2int64,
 		v3int64,
 		vint,
+		vint1,
+		vint2,
 		vuint,
 		vuint8,
 		vuint16,
@@ -193,7 +200,7 @@ var (
 		v3map,
 		v4map,
 		v5map,
-		//v6map,
+		v6map,
 		vnilmap,
 		vptr,
 		vsliceptr,
@@ -215,8 +222,8 @@ var (
 		v2GotinyTest,
 	}
 
-	e      = NewEncoder(vs...)
-	d      = NewDecoder(vs...)
+	e      = gotiny.NewEncoder(vs...)
+	d      = gotiny.NewDecoder(vs...)
 	length = len(vs)
 
 	srci = make([]interface{}, length)
@@ -225,6 +232,8 @@ var (
 	retv = make([]reflect.Value, length)
 	srcp = make([]unsafe.Pointer, length)
 	retp = make([]unsafe.Pointer, length)
+
+	c = goutils.NewComparer()
 )
 
 func init() {
@@ -250,21 +259,14 @@ func TestInterface(t *testing.T) {
 	d.ResetWith(e.Bytes())
 	d.Decodes(reti...)
 	for i, r := range reti {
-		//fmt.Printf("%T: expected %v got %v ,%T\n", vs[i], vs[i], r, r)
-		if !reflect.DeepEqual(srci[i], r) {
-			t.Fatalf("%T: expected %#v got %#v ,%T\n", vs[i], vs[i], r, r)
-		}
+		Assert(t, srci[i], r)
 	}
 }
 
 func TestEncodeDecode(t *testing.T) {
-	Decodes(Encodes(srci...), reti...)
+	gotiny.Decodes(gotiny.Encodes(srci...), reti...)
 	for i, r := range reti {
-		//fmt.Printf("%T: expected %v got %v ,%T\n", vs[i], vs[i], r, r)
-		if !reflect.DeepEqual(srci[i], r) {
-			t.Log(i)
-			t.Fatalf("%T: expected %#v got %#v ,%T\n", vs[i], vs[i], r, r)
-		}
+		Assert(t, srci[i], r)
 	}
 }
 
@@ -275,11 +277,7 @@ func TestPtr(t *testing.T) {
 	d.ResetWith(b)
 	d.DecodeByUPtr(retp...)
 	for i, r := range reti {
-		//fmt.Printf("%T: expected %v got %v ,%T\n", vs[i], vs[i], r, r)
-		if !reflect.DeepEqual(srci[i], r) {
-			t.Log(i)
-			t.Fatalf("%T: expected %#v got %#v ,%T\n", vs[i], vs[i], r, r)
-		}
+		Assert(t, srci[i], r)
 	}
 
 }
@@ -290,10 +288,7 @@ func TestValue(t *testing.T) {
 	d.ResetWith(e.Bytes())
 	d.DecodeValues(retv...)
 	for i, r := range reti {
-		//fmt.Printf("%T: expected %v got %v ,%T\n", vs[i], vs[i], r, r)
-		if !reflect.DeepEqual(srci[i], r) {
-			t.Fatalf("%T: expected %#v got %#v ,%T\n", vs[i], vs[i], r, r)
-		}
+		Assert(t, srci[i], r)
 	}
 
 }
@@ -337,13 +332,13 @@ var buf []byte
 
 func BenchmarkEncodes(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		buf = Encodes(srci...)
+		buf = gotiny.Encodes(srci...)
 	}
 }
 
 func BenchmarkDecodes(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		Decodes(buf, reti...)
+		gotiny.Decodes(buf, reti...)
 	}
 }
 
@@ -399,14 +394,14 @@ func BenchmarkDecodesInterface(b *testing.B) {
 // 	}
 // }
 
-func BenchmarkUintToInt(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		for j := 0; j < 100000; j++ {
-			uintToInt(uint64(i))
-		}
-	}
-}
-
+//func BenchmarkUintToInt(b *testing.B) {
+//	for i := 0; i < b.N; i++ {
+//		for j := 0; j < 100000; j++ {
+//			uintToInt(uint64(i))
+//		}
+//	}
+//}
+//
 // var (
 // 	ee        = NewEncoder(0)
 // 	maxuint64 = uint64(1<<64 - 1)
@@ -433,6 +428,12 @@ func BenchmarkUintToInt(b *testing.B) {
 // 		dd.DecUint()
 // 	}
 // }
+
+func Assert(t *testing.T, x, y interface{}) {
+	if !c.DeepEqual(x, y) {
+		t.Fatalf("\n exp type =  %T; value = %#v;\n got type = %T; value = %#v ", x, x, y, y)
+	}
+}
 
 func getPtr(i interface{}) unsafe.Pointer {
 	v := reflect.ValueOf(i)

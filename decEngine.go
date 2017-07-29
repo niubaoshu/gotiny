@@ -31,7 +31,7 @@ var (
 		reflect.TypeOf((*uint16)(nil)).Elem():  &decUint16,
 		reflect.TypeOf((*uint32)(nil)).Elem():  &decUint32,
 		reflect.TypeOf((*uint64)(nil)).Elem():  &decUint64,
-		reflect.TypeOf((*uintptr)(nil)).Elem(): &decUint,
+		reflect.TypeOf((*uintptr)(nil)).Elem(): &decUintptr,
 		reflect.TypeOf((*float64)(nil)).Elem(): &decFloat64,
 		reflect.TypeOf((*float32)(nil)).Elem(): &decFloat32,
 		reflect.TypeOf((*[]byte)(nil)).Elem():  &decBytes,
@@ -50,7 +50,7 @@ var (
 		reflect.Uint16:        decUint16,
 		reflect.Uint32:        decUint32,
 		reflect.Uint64:        decUint64,
-		reflect.Uintptr:       decUint,
+		reflect.Uintptr:       decUintptr,
 		reflect.Float32:       decFloat32,
 		reflect.Float64:       decFloat64,
 		reflect.Complex64:     decComplex64,
@@ -120,7 +120,7 @@ func buildDecEngine(rt reflect.Type) decEngPtr {
 		*engine = func(d *Decoder, p unsafe.Pointer) {
 			if d.decBool() {
 				if isNil(p) {
-					*(*uintptr)(p) = reflect.New(et).Elem().UnsafeAddr()
+					*(*unsafe.Pointer)(p) = unsafe.Pointer(reflect.New(et).Elem().UnsafeAddr())
 				}
 				(*eEng)(d, *(*unsafe.Pointer)(p))
 			} else if !isNil(p) {
@@ -167,9 +167,10 @@ func buildDecEngine(rt reflect.Type) decEngPtr {
 			if d.decBool() {
 				l := d.decLength()
 				if isNil(p) {
-					*(*uintptr)(p) = reflect.MakeMap(rt).Pointer()
+					*(*unsafe.Pointer)(p) = unsafe.Pointer(reflect.MakeMap(rt).Pointer())
 				}
 				v := reflect.NewAt(rt, p).Elem()
+				v.Len()
 				for i := 0; i < l; i++ {
 					key, val := reflect.New(kt).Elem(), reflect.New(vt).Elem()
 					(*kEng)(d, unsafe.Pointer(key.UnsafeAddr()))
