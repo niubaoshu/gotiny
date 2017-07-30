@@ -1,10 +1,6 @@
 package gotiny
 
 import (
-
-	//"encoding"
-	//"encoding/gob"
-
 	"encoding"
 	"encoding/gob"
 	"reflect"
@@ -37,6 +33,7 @@ var (
 		reflect.TypeOf((*[]byte)(nil)).Elem():  &decBytes,
 		reflect.TypeOf(nil):                    &decignore,
 	}
+
 	baseDecEng = []decEng{
 		reflect.Bool:          decBool,
 		reflect.String:        decString,
@@ -55,12 +52,13 @@ var (
 		reflect.Float64:       decFloat64,
 		reflect.Complex64:     decComplex64,
 		reflect.Complex128:    decComplex128,
-		reflect.Invalid:       decignore,
 		reflect.Chan:          decignore,
 		reflect.Func:          decignore,
 		reflect.Interface:     decignore,
 		reflect.UnsafePointer: decignore,
+		reflect.Invalid:       decignore,
 	}
+
 	englock sync.RWMutex
 )
 
@@ -74,9 +72,7 @@ func getDecEngine(rt reflect.Type) decEng {
 	englock.Lock()
 	engine = buildDecEngine(rt)
 	englock.Unlock()
-
 	return *engine
-
 }
 
 func buildDecEngine(rt reflect.Type) decEngPtr {
@@ -89,19 +85,23 @@ func buildDecEngine(rt reflect.Type) decEngPtr {
 	rt2decEng[rt] = engine
 	if _, fn, yes := implementsGob(rt); yes {
 		*engine = func(d *Decoder, p unsafe.Pointer) {
-			length := int(d.decUint())
+			length := d.decLength()
 			start := d.index
 			d.index += length
-			fn(reflect.NewAt(rt, p).Interface().(gob.GobDecoder), d.buf[start:d.index])
+			if err := fn(reflect.NewAt(rt, p).Interface().(gob.GobDecoder), d.buf[start:d.index]); err != nil {
+				panic(err)
+			}
 		}
 		return engine
 	}
 	if _, fn, yes := implementsBin(rt); yes {
 		*engine = func(d *Decoder, p unsafe.Pointer) {
-			length := int(d.decUint())
+			length := d.decLength()
 			start := d.index
 			d.index += length
-			fn(reflect.NewAt(rt, p).Interface().(encoding.BinaryUnmarshaler), d.buf[start:d.index])
+			if err := fn(reflect.NewAt(rt, p).Interface().(encoding.BinaryUnmarshaler), d.buf[start:d.index]); err != nil {
+				panic(err)
+			}
 		}
 		return engine
 	}
@@ -144,19 +144,19 @@ func buildDecEngine(rt reflect.Type) decEngPtr {
 		*engine = func(d *Decoder, p unsafe.Pointer) {
 			if d.decBool() {
 				l := d.decLength()
-				if isNil(p) || *(*int)(unsafe.Pointer(uintptr(p) + ptrSize + ptrSize)) < l {
+				if isNil(p) || *(*int)(next2Ptr(p)) < l {
 					*(*unsafe.Pointer)(p) = unsafe.Pointer(reflect.MakeSlice(rt, l, l).Pointer())
 				}
-				*(*int)(unsafe.Pointer(uintptr(p) + ptrSize)) = l
-				*(*int)(unsafe.Pointer(uintptr(p) + ptrSize + ptrSize)) = l
+				*(*int)(next1Ptr(p)) = l
+				*(*int)(next2Ptr(p)) = l
 				pp := *(*unsafe.Pointer)(p)
 				for i := 0; i < l; i++ {
 					(*eEng)(d, unsafe.Pointer(uintptr(pp)+uintptr(i)*size))
 				}
 			} else if !isNil(p) {
 				*(*unsafe.Pointer)(p) = nil
-				*(*int)(unsafe.Pointer(uintptr(p) + ptrSize)) = 0
-				*(*int)(unsafe.Pointer(uintptr(p) + ptrSize + ptrSize)) = 0
+				*(*int)(next1Ptr(p)) = 0
+				*(*int)(next2Ptr(p)) = 0
 			}
 		}
 	case reflect.Map:

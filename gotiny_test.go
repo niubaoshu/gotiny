@@ -33,14 +33,8 @@ type (
 		fstring     string
 		array       [3]uint32
 	}
-	cirTyp *cirTyp
 
-	cirStruct struct {
-		a   int
-		cir *cirStruct
-	}
-	cirmap map[int]cirmap
-	A      struct {
+	A struct {
 		Name     string
 		BirthDay time.Time
 		Phone    string
@@ -48,19 +42,23 @@ type (
 		Spouse   bool
 		Money    float64
 	}
+
+	cirTyp    *cirTyp
+	cirStruct struct {
+		a int
+		*cirStruct
+	}
+	cirmap map[int]cirmap
+
 	gotinytest string
 )
 
 func (v *gotinytest) GotinyEncode(buf []byte) []byte {
-	vv := (string)(*v)
-	return append(buf, gotiny.Encodes(&vv)...)
+	return append(buf, gotiny.Encodes((*string)(v))...)
 }
 
 func (v *gotinytest) GotinyDecode(buf []byte) int {
-	var vv string
-	l := gotiny.Decodes(buf, &vv)
-	*v = gotinytest(vv)
-	return l
+	return gotiny.Decodes(buf, (*string)(v))
 }
 
 func genBase() baseTyp {
@@ -137,7 +135,7 @@ var (
 	vnilptr     *int
 	vnilptrptr  = &vnilptr
 	vtime       = time.Now()
-	vsliceStr   = []baseTyp{
+	vslicebase  = []baseTyp{
 		genBase(),
 		genBase(),
 		genBase(),
@@ -156,8 +154,8 @@ var (
 	vcir  cirTyp
 	v2cir cirTyp = &vcir
 
-	vcirStruct  = cirStruct{a: 1, cir: nil}
-	v2cirStruct = cirStruct{a: 1, cir: &vcirStruct}
+	vcirStruct  = cirStruct{a: 1}
+	v2cirStruct = cirStruct{a: 1, cirStruct: &vcirStruct}
 
 	vcirmap  = cirmap{1: nil}
 	v2cirmap = cirmap{2: vcirmap}
@@ -208,7 +206,7 @@ var (
 		vnilptr,
 		vnilptrptr,
 		vtime,
-		vsliceStr,
+		vslicebase,
 		vslicestring,
 		varray,
 		vcir,
@@ -220,6 +218,7 @@ var (
 		vAstruct,
 		vGotinyTest,
 		v2GotinyTest,
+		struct{}{},
 	}
 
 	e      = gotiny.NewEncoder(vs...)

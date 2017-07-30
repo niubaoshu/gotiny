@@ -136,35 +136,32 @@ var (
 	}
 	decString = func(d *Decoder, p unsafe.Pointer) {
 		l := d.decLength()
-		start := d.index
-		d.index += l
-		//*(*string)(p) = string(d.buf[start:d.index])
 		var bytes []byte
-		if *(*int)(unsafe.Pointer(uintptr(p) + ptrSize)) < l {
+		if *(*int)(next1Ptr(p)) < l { // len(str) < l
 			bytes = make([]byte, l)
 			*(*unsafe.Pointer)(p) = *(*unsafe.Pointer)(unsafe.Pointer(&bytes))
 		} else {
 			*(*unsafe.Pointer)(unsafe.Pointer(&bytes)) = *(*unsafe.Pointer)(p)
-			*(*int)(unsafe.Pointer(uintptr(unsafe.Pointer(&bytes)) + ptrSize)) = l
-			*(*int)(unsafe.Pointer(uintptr(unsafe.Pointer(&bytes)) + ptrSize + ptrSize)) = l
+			*(*int)(next1Ptr(unsafe.Pointer(&bytes))) = l
+			*(*int)(next2Ptr(unsafe.Pointer(&bytes))) = l
 		}
-		copy(bytes, d.buf[start:d.index])
-		*(*int)(unsafe.Pointer(uintptr(p) + ptrSize)) = l
+		d.index += copy(bytes, d.buf[d.index:])
+		*(*int)(next1Ptr(p)) = l
 	}
 
 	decBytes = func(d *Decoder, p unsafe.Pointer) {
 		vptr := (*[]byte)(p)
 		if d.decBool() {
 			l := d.decLength()
-			if *(*int)(unsafe.Pointer(uintptr(p) + ptrSize + ptrSize)) < l {
+			if *(*int)(next2Ptr(p)) < l { // cap(bytes) < l
 				*vptr = make([]byte, l)
 			} else {
-				lenptr := (*int)(unsafe.Pointer(uintptr(p) + ptrSize))
+				lenptr := (*int)(next1Ptr(p))
 				if *lenptr > l {
 					*lenptr = l
 				}
 			}
-			d.index += copy(*vptr, d.buf[d.index:d.index+l])
+			d.index += copy(*vptr, d.buf[d.index:])
 		} else if !isNil(p) {
 			*vptr = nil
 		}

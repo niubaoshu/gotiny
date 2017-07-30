@@ -1,15 +1,14 @@
 package main
 
 import (
+	"fmt"
 	"log"
+	"os"
 	"reflect"
 	"runtime/pprof"
+	"time"
 
 	"github.com/niubaoshu/gotiny"
-
-	"fmt"
-	"os"
-	"time"
 )
 
 type str struct {

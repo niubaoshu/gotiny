@@ -34,7 +34,6 @@ var (
 		reflect.TypeOf((*[]byte)(nil)).Elem():  &encBytes,
 		reflect.TypeOf(nil):                    &encignore,
 	}
-
 	baseEncEng = []encEng{
 		reflect.Bool:          encBool,
 		reflect.String:        encString,
@@ -53,16 +52,14 @@ var (
 		reflect.Float64:       encFloat64,
 		reflect.Complex64:     encComplex64,
 		reflect.Complex128:    encComplex128,
-		reflect.Invalid:       encignore,
 		reflect.Chan:          encignore,
 		reflect.Func:          encignore,
 		reflect.Interface:     encignore,
 		reflect.UnsafePointer: encignore,
+		reflect.Invalid:       encignore,
 	}
-	encLock sync.RWMutex
-
+	encLock   sync.RWMutex
 	rt2EngVal = map[reflect.Type]encEngVal{}
-	//encValLock sync.RWMutex
 )
 
 func getEncEngine(rt reflect.Type) encEng {
@@ -89,8 +86,11 @@ func buildEncEngine(rt reflect.Type) encEngPtr {
 
 	if fn, _, yes := implementsGob(rt); yes {
 		*engine = func(e *Encoder, p unsafe.Pointer) {
-			buf, _ := fn(reflect.NewAt(rt, p).Elem().Interface().(gob.GobEncoder))
-			e.encUint(uint64(len(buf)))
+			buf, err := fn(reflect.NewAt(rt, p).Elem().Interface().(gob.GobEncoder))
+			if err != nil {
+				panic(err)
+			}
+			e.encLength(len(buf))
 			e.buf = append(e.buf, buf...)
 		}
 		return engine
@@ -98,8 +98,11 @@ func buildEncEngine(rt reflect.Type) encEngPtr {
 
 	if fn, _, yes := implementsBin(rt); yes {
 		*engine = func(e *Encoder, p unsafe.Pointer) {
-			buf, _ := fn(reflect.NewAt(rt, p).Elem().Interface().(encoding.BinaryMarshaler))
-			e.encUint(uint64(len(buf)))
+			buf, err := fn(reflect.NewAt(rt, p).Elem().Interface().(encoding.BinaryMarshaler))
+			if err != nil {
+				panic(err)
+			}
+			e.encLength(len(buf))
 			e.buf = append(e.buf, buf...)
 		}
 		return engine
@@ -141,7 +144,7 @@ func buildEncEngine(rt reflect.Type) encEngPtr {
 			isNotNil := !isNil(p)
 			e.encBool(isNotNil)
 			if isNotNil {
-				l := *(*int)(unsafe.Pointer(uintptr(p) + ptrSize))
+				l := *(*int)(next1Ptr(p))
 				e.encLength(l)
 				pp := *(*unsafe.Pointer)(p)
 				for i := 0; i < l; i++ {
