@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
 	"reflect"
 	"runtime/pprof"
@@ -60,14 +61,14 @@ var (
 		int32(123456),
 		int64(-1234567),
 		int64(1<<63 - 1),
-		//		int64(rand.Int63()),
+		int64(rand.Int63()),
 		uint(123),
 		uint8(123),
 		uint16(12345),
 		uint32(123456),
 		uint64(1234567),
 		uint64(1<<64 - 1),
-		//uint64(rand.Uint32() * rand.Uint32()),
+		uint64(rand.Uint32() * rand.Uint32()),
 		uintptr(12345678),
 		float32(1.2345),
 		float64(1.2345678),
@@ -111,22 +112,11 @@ var (
 	d = gotiny.NewDecoder(vs...)
 
 	spvals = make([]interface{}, len(vs))
-	//rvalues = make([]reflect.Value, len(vs))
-	//rtypes   = make([]reflect.Type, len(vs))
-	//results  = make([]reflect.Value, len(vs))
-	//presults = make([]interface{}, len(vs))
 	rpvals = make([]interface{}, len(vs))
-
-	// buf     = make([]byte, 0, 1024)
-	// network = bytes.NewBuffer(buf) // Stand-in for a network connection
-	// //network bytes.Buffer
-	// enc = gob.NewEncoder(network) // Will write to network.
-	// dec = gob.NewDecoder(network) // Will read from network.
 )
 
 func init() {
 
-	//fmt.Println(now)
 	for i := 0; i < len(vs); i++ {
 		typ := reflect.TypeOf(vs[i])
 		temp := reflect.New(typ)
@@ -144,18 +134,6 @@ func init() {
 			rpvals[i] = reflect.New(typ).Interface()
 		}
 	}
-
-	//ee := NewEncoder(0)
-	//ret := ee.Encodes(vs...)
-	//fmt.Println("gotiny length:", len(ret))
-
-	// buf := make([]byte, 0, 1024)
-	// network := bytes.NewBuffer(buf) // Stand-in for a network connection
-	// enc := gob.NewEncoder(network)  // Will write to network.
-	// for i := 0; i < len(vs); i++ {
-	// 	enc.Encode(vs[i])
-	// }
-	// fmt.Println("stdgob length:", len(network.Bytes()))
 
 	e.ResetWithBuf(make([]byte, 0, 2048))
 }

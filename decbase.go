@@ -132,7 +132,7 @@ var (
 	decComplex64  = func(d *Decoder, p unsafe.Pointer) { *(*uint64)(p) = d.decUint() }
 	decComplex128 = func(d *Decoder, p unsafe.Pointer) {
 		*(*uint64)(p) = d.decUint()
-		*(*uint64)(unsafe.Pointer(uintptr(p) + 8)) = d.decUint()
+		*(*uint64)(next1Ptr(p)) = d.decUint()
 	}
 	decString = func(d *Decoder, p unsafe.Pointer) {
 		l := d.decLength()

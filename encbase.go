@@ -44,7 +44,7 @@ var (
 	encComplex64  = func(e *Encoder, p unsafe.Pointer) { e.encUint(*(*uint64)(p)) }
 	encComplex128 = func(e *Encoder, p unsafe.Pointer) {
 		e.encUint(*(*uint64)(p))
-		e.encUint(*(*uint64)(unsafe.Pointer(uintptr(p) + 8)))
+		e.encUint(*(*uint64)(next1Ptr(p)))
 	}
 
 	encString = func(e *Encoder, p unsafe.Pointer) {

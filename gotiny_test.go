@@ -120,7 +120,8 @@ var (
 	vstring     = string("hello,日本国")
 	base        = genBase()
 	vbytes      = []byte("aaaaaaaaaaaaaaaaaaa")
-	vsliecbytes = [][]byte{[]byte("aaaaaaaaaaaaaaaaaaa"), []byte("bbbbbbbbbbbbbbb"), []byte("ccccccccccccc")}
+	vslicebytes = [][]byte{[]byte("aaaaaaaaaaaaaaaaaaa"), []byte("bbbbbbbbbbbbbbb"), []byte("ccccccccccccc")}
+	v2slice     = []int{1, 2, 3, 4, 5}
 	vmap        = map[int]int{1: 2, 2: 3, 3: 4, 4: 5, 5: 6}
 	v2map       = map[int]map[int]int{1: {2: 3, 3: 4}}
 	v3map       = map[int][]byte{1: {2, 3, 3, 4}}
@@ -192,7 +193,8 @@ var (
 		vstring,
 		base,
 		vbytes,
-		vsliecbytes,
+		vslicebytes,
+		v2slice,
 		vmap,
 		v2map,
 		v3map,
