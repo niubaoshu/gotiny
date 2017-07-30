@@ -4,6 +4,10 @@ go:
   - 1.6
   - 1.7
   - 1.8
+  - master
+
+install:
+  - go get github.com/niubaoshu/goutils
 
 script:
   - go test  .
