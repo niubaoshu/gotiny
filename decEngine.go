@@ -148,7 +148,6 @@ func buildDecEngine(rt reflect.Type) decEngPtr {
 					*(*unsafe.Pointer)(p) = unsafe.Pointer(reflect.MakeSlice(rt, l, l).Pointer())
 				}
 				*(*int)(next1Ptr(p)) = l
-				*(*int)(next2Ptr(p)) = l
 				pp := *(*unsafe.Pointer)(p)
 				for i := 0; i < l; i++ {
 					(*eEng)(d, unsafe.Pointer(uintptr(pp)+uintptr(i)*size))
