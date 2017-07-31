@@ -345,19 +345,6 @@ func BenchmarkDecodes(b *testing.B) {
 	}
 }
 
-func BenchmarkEncodesPtr(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		e.Reset()
-		e.EncodeByUPtrs(srcp...)
-	}
-}
-
-func BenchmarkDecodesPtr(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		d.Reset()
-		d.DecodeByUPtr(retp...)
-	}
-}
 func BenchmarkEncodesValue(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		e.Reset()
@@ -371,6 +358,21 @@ func BenchmarkDecodesValue(b *testing.B) {
 		d.DecodeValues(retv...)
 	}
 }
+
+func BenchmarkEncodesPtr(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		e.Reset()
+		e.EncodeByUPtrs(srcp...)
+	}
+}
+
+func BenchmarkDecodesPtr(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		d.Reset()
+		d.DecodeByUPtr(retp...)
+	}
+}
+
 func BenchmarkEncodesInterface(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		e.Reset()
