@@ -122,6 +122,7 @@ var (
 	vbytes      = []byte("aaaaaaaaaaaaaaaaaaa")
 	vslicebytes = [][]byte{[]byte("aaaaaaaaaaaaaaaaaaa"), []byte("bbbbbbbbbbbbbbb"), []byte("ccccccccccccc")}
 	v2slice     = []int{1, 2, 3, 4, 5}
+	varr        = [3]baseTyp{genBase(), genBase(), genBase()}
 	vmap        = map[int]int{1: 2, 2: 3, 3: 4, 4: 5, 5: 6}
 	v2map       = map[int]map[int]int{1: {2: 3, 3: 4}}
 	v3map       = map[int][]byte{1: {2, 3, 3, 4}}
@@ -195,6 +196,7 @@ var (
 		vbytes,
 		vslicebytes,
 		v2slice,
+		varr,
 		vmap,
 		v2map,
 		v3map,
