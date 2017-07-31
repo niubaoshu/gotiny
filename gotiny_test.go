@@ -440,13 +440,6 @@ func Assert(t *testing.T, x, y interface{}) {
 	}
 }
 
-func getPtr(i interface{}) unsafe.Pointer {
-	v := reflect.ValueOf(i)
-	if v.Kind() != reflect.Ptr {
-		panic("不是指针")
-	}
-	return unsafe.Pointer(v.Elem().UnsafeAddr())
-}
 func GetRandomString(l int) string {
 	str := "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	bytes := []byte(str)
