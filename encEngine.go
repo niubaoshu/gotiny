@@ -15,48 +15,28 @@ type (
 
 var (
 	rt2Eng = map[reflect.Type]encEngPtr{
-		reflect.TypeOf((*string)(nil)).Elem():  &encString,
-		reflect.TypeOf((*bool)(nil)).Elem():    &encBool,
-		reflect.TypeOf((*uint8)(nil)).Elem():   &encUint8,
-		reflect.TypeOf((*int8)(nil)).Elem():    &encUint8,
-		reflect.TypeOf((*int)(nil)).Elem():     &encInt,
-		reflect.TypeOf((*uint)(nil)).Elem():    &encUint,
-		reflect.TypeOf((*int16)(nil)).Elem():   &encInt16,
-		reflect.TypeOf((*int32)(nil)).Elem():   &encInt32,
-		reflect.TypeOf((*int64)(nil)).Elem():   &encInt64,
-		reflect.TypeOf((*uint16)(nil)).Elem():  &encUint16,
-		reflect.TypeOf((*uint32)(nil)).Elem():  &encUint32,
-		reflect.TypeOf((*uint64)(nil)).Elem():  &encUint64,
-		reflect.TypeOf((*uintptr)(nil)).Elem(): &encUintptr,
-		reflect.TypeOf((*float32)(nil)).Elem(): &encFloat32,
-		reflect.TypeOf((*float64)(nil)).Elem(): &encFloat64,
-		reflect.TypeOf((*[]byte)(nil)).Elem():  &encBytes,
-		reflect.TypeOf(nil):                    &encignore,
+		reflect.TypeOf((*string)(nil)).Elem():     &encString,
+		reflect.TypeOf((*bool)(nil)).Elem():       &encBool,
+		reflect.TypeOf((*uint8)(nil)).Elem():      &encUint8,
+		reflect.TypeOf((*int8)(nil)).Elem():       &encUint8,
+		reflect.TypeOf((*int)(nil)).Elem():        &encInt,
+		reflect.TypeOf((*uint)(nil)).Elem():       &encUint,
+		reflect.TypeOf((*int16)(nil)).Elem():      &encInt16,
+		reflect.TypeOf((*int32)(nil)).Elem():      &encInt32,
+		reflect.TypeOf((*int64)(nil)).Elem():      &encInt64,
+		reflect.TypeOf((*uint16)(nil)).Elem():     &encUint16,
+		reflect.TypeOf((*uint32)(nil)).Elem():     &encUint32,
+		reflect.TypeOf((*uint64)(nil)).Elem():     &encUint64,
+		reflect.TypeOf((*uintptr)(nil)).Elem():    &encUintptr,
+		reflect.TypeOf((*float32)(nil)).Elem():    &encFloat32,
+		reflect.TypeOf((*float64)(nil)).Elem():    &encFloat64,
+		reflect.TypeOf((*[]byte)(nil)).Elem():     &encBytes,
+		reflect.TypeOf((*complex64)(nil)).Elem():  &encComplex64,
+		reflect.TypeOf((*complex128)(nil)).Elem(): &encComplex128,
+		reflect.TypeOf((*struct{})(nil)):          &encignore,
+		reflect.TypeOf(nil):                       &encignore,
 	}
-	baseEncEng = []encEng{
-		reflect.Bool:          encBool,
-		reflect.String:        encString,
-		reflect.Uint8:         encUint8,
-		reflect.Int8:          encUint8,
-		reflect.Int:           encInt,
-		reflect.Uint:          encUint,
-		reflect.Int16:         encInt16,
-		reflect.Int32:         encInt32,
-		reflect.Int64:         encInt64,
-		reflect.Uint16:        encUint16,
-		reflect.Uint32:        encUint32,
-		reflect.Uint64:        encUint64,
-		reflect.Uintptr:       encUintptr,
-		reflect.Float32:       encFloat32,
-		reflect.Float64:       encFloat64,
-		reflect.Complex64:     encComplex64,
-		reflect.Complex128:    encComplex128,
-		reflect.Chan:          encignore,
-		reflect.Func:          encignore,
-		reflect.Interface:     encignore,
-		reflect.UnsafePointer: encignore,
-		reflect.Invalid:       encignore,
-	}
+
 	encLock sync.RWMutex
 )
 
@@ -159,7 +139,7 @@ func buildEncEngine(rt reflect.Type) encEngPtr {
 			if isNotNil {
 				e.encLength(*(*int)(*(*unsafe.Pointer)(p)))
 				v := reflect.NewAt(rt, p).Elem()
-				// TOOD flag&flagIndir 在编译时确定
+				// TODO flag&flagIndir 在编译时确定
 				for _, key := range v.MapKeys() {
 					val := v.MapIndex(key)
 					kv := (*refVal)(unsafe.Pointer(&key))
@@ -179,23 +159,19 @@ func buildEncEngine(rt reflect.Type) encEngPtr {
 		}
 	case reflect.Struct:
 		nf := rt.NumField()
-		if nf > 0 {
-			engs, offs := make([]encEngPtr, nf), make([]uintptr, nf)
-			for i := 0; i < nf; i++ {
-				ft := rt.Field(i)
-				engs[i] = buildEncEngine(ft.Type)
-				offs[i] = ft.Offset
-			}
-			*engine = func(e *Encoder, p unsafe.Pointer) {
-				for i := 0; i < nf; i++ {
-					(*engs[i])(e, unsafe.Pointer(uintptr(p)+offs[i]))
-				}
-			}
-		} else {
-			*engine = encignore
+		engs, offs := make([]encEngPtr, nf), make([]uintptr, nf)
+		for i := 0; i < nf; i++ {
+			ft := rt.Field(i)
+			engs[i] = buildEncEngine(ft.Type)
+			offs[i] = ft.Offset
 		}
-	default:
-		*engine = baseEncEng[rt.Kind()]
+		*engine = func(e *Encoder, p unsafe.Pointer) {
+			for i := 0; i < nf; i++ {
+				(*engs[i])(e, unsafe.Pointer(uintptr(p)+offs[i]))
+			}
+		}
+	case reflect.Chan, reflect.Func, reflect.Interface, reflect.UnsafePointer, reflect.Invalid:
+		panic("not suport type")
 	}
 	return engine
 }
