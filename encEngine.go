@@ -11,7 +11,6 @@ import (
 type (
 	encEng    func(*Encoder, unsafe.Pointer)  //编码器
 	encEngPtr *func(*Encoder, unsafe.Pointer) //编码器指针
-	encEngVal func(*Encoder, reflect.Value)
 )
 
 var (
@@ -58,8 +57,7 @@ var (
 		reflect.UnsafePointer: encignore,
 		reflect.Invalid:       encignore,
 	}
-	encLock   sync.RWMutex
-	rt2EngVal = map[reflect.Type]encEngVal{}
+	encLock sync.RWMutex
 )
 
 func getEncEngine(rt reflect.Type) encEng {
@@ -144,26 +142,38 @@ func buildEncEngine(rt reflect.Type) encEngPtr {
 			isNotNil := !isNil(p)
 			e.encBool(isNotNil)
 			if isNotNil {
-				l := *(*int)(next1Ptr(p))
+				header := (*sliceHeader)(p)
+				l := header.len
 				e.encLength(l)
-				pp := *(*unsafe.Pointer)(p)
-				for i := 0; i < l; i++ {
-					(*eEng)(e, unsafe.Pointer(uintptr(pp)+uintptr(i)*size))
+				for i := uintptr(0); i < uintptr(l); i++ {
+					(*eEng)(e, unsafe.Pointer(uintptr(header.data)+i*size))
 				}
 			}
 		}
 	case reflect.Map:
-		encKey := buildValEnc(rt.Key())
-		encVal := buildValEnc(rt.Elem())
+		eKey := buildEncEngine(rt.Key())
+		eEng = buildEncEngine(rt.Elem())
 		*engine = func(e *Encoder, p unsafe.Pointer) {
 			isNotNil := !isNil(p)
 			e.encBool(isNotNil)
 			if isNotNil {
 				e.encLength(*(*int)(*(*unsafe.Pointer)(p)))
 				v := reflect.NewAt(rt, p).Elem()
+				// TOOD flag&flagIndir 在编译时确定
 				for _, key := range v.MapKeys() {
-					encKey(e, key)
-					encVal(e, v.MapIndex(key))
+					val := v.MapIndex(key)
+					kv := (*refVal)(unsafe.Pointer(&key))
+					vv := (*refVal)(unsafe.Pointer(&val))
+					if kv.flag&flagIndir == 0 {
+						(*eKey)(e, unsafe.Pointer(&kv.ptr))
+					} else {
+						(*eKey)(e, kv.ptr)
+					}
+					if vv.flag&flagIndir == 0 {
+						(*eEng)(e, unsafe.Pointer(&vv.ptr))
+					} else {
+						(*eEng)(e, vv.ptr)
+					}
 				}
 			}
 		}
@@ -188,36 +198,4 @@ func buildEncEngine(rt reflect.Type) encEngPtr {
 		*engine = baseEncEng[rt.Kind()]
 	}
 	return engine
-}
-
-func getValEncEng(rt reflect.Type) encEngVal {
-	encLock.RLock()
-	engine := rt2EngVal[rt]
-	encLock.RUnlock()
-	if engine != nil {
-		return engine
-	}
-	encLock.Lock()
-	engine = buildValEnc(rt)
-	encLock.Unlock()
-	return engine
-}
-
-func buildValEnc(rt reflect.Type) (encengval encEngVal) {
-	engval, has := rt2EngVal[rt]
-	if has {
-		return engval
-	}
-	engine := buildEncEngine(rt)
-	if rt.Kind() == reflect.Map || rt.Kind() == reflect.Ptr {
-		encengval = func(e *Encoder, v reflect.Value) {
-			(*engine)(e, unsafe.Pointer(&((*refVal)(unsafe.Pointer(&v))).ptr))
-		}
-	} else {
-		encengval = func(e *Encoder, v reflect.Value) {
-			(*engine)(e, (*refVal)(unsafe.Pointer(&v)).ptr)
-		}
-	}
-	rt2EngVal[rt] = encengval
-	return
 }

@@ -17,9 +17,8 @@ func main() {
 	enc := gotiny.NewEncoder(src1, src2)
 	dec := gotiny.NewDecoder(ret1, ret2)
 
-	enc.EncodeValues(reflect.ValueOf(src1), reflect.ValueOf(src2))
-	dec.ResetWith(enc.Bytes())
 	ret1, ret2 = "", []byte{3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 5, 6, 7, 44, 7, 5, 6, 4, 7}
-	dec.DecodeValues(reflect.ValueOf(&ret1).Elem(), reflect.ValueOf(&ret2).Elem())
+	dec.DecodeValues(enc.EncodeValues(reflect.ValueOf(src1), reflect.ValueOf(src2)),
+		reflect.ValueOf(&ret1).Elem(), reflect.ValueOf(&ret2).Elem())
 	fmt.Println(ret1 + string(ret2)) // print "hello world!"
 }

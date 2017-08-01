@@ -7,7 +7,7 @@ import (
 
 type Decoder struct {
 	buf     []byte //buf
-	index   int    //下一个要读取的字节
+	index   int    //下一个要使用的字节在buf中的下标
 	boolPos byte   //下一次要读取的bool在buf中的下标,即buf[boolPos]
 	boolBit byte   //下一次要读取的bool的buf[boolPos]中的bit位
 
@@ -16,10 +16,7 @@ type Decoder struct {
 }
 
 func Decodes(buf []byte, is ...interface{}) int {
-	d := NewDecoderWithPtrs(is...)
-	d.buf = buf
-	d.Decodes(is...)
-	return d.index
+	return NewDecoderWithPtrs(is...).Decodes(buf, is...)
 }
 
 func NewDecoderWithPtrs(is ...interface{}) *Decoder {
@@ -71,34 +68,39 @@ func NewDecoderWithTypes(ts ...reflect.Type) *Decoder {
 	}
 }
 
-func (d *Decoder) Reset() {
+func (d *Decoder) reset() int {
+	index := d.index
 	d.index = 0
 	d.boolPos = 0
 	d.boolBit = 0
+	return index
 }
 
-func (d *Decoder) ResetWith(b []byte) {
-	d.buf = b
-	d.Reset()
-}
-func (d *Decoder) Decodes(is ...interface{}) {
+// is is pointer of variable
+func (d *Decoder) Decodes(buf []byte, is ...interface{}) int {
+	d.buf = buf
 	engs := d.decEngs
 	for i := 0; i < d.length; i++ {
 		engs[i](d, (*[2]unsafe.Pointer)(unsafe.Pointer(&is[i]))[1])
 	}
+	return d.reset()
 }
 
-// is is pointer of value
-func (d *Decoder) DecodeByUPtr(ps ...unsafe.Pointer) {
+// ps is a unsafe.Pointer of the variable
+func (d *Decoder) DecodeByUPtr(buf []byte, ps ...unsafe.Pointer) int {
+	d.buf = buf
 	engs := d.decEngs
 	for i := 0; i < d.length; i++ {
 		engs[i](d, ps[i])
 	}
+	return d.reset()
 }
 
-func (d *Decoder) DecodeValues(vs ...reflect.Value) {
+func (d *Decoder) DecodeValues(buf []byte, vs ...reflect.Value) int {
+	d.buf = buf
 	engs := d.decEngs
 	for i := 0; i < d.length; i++ {
 		engs[i](d, unsafe.Pointer(vs[i].UnsafeAddr()))
 	}
+	return d.reset()
 }

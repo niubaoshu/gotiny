@@ -8,12 +8,37 @@ import (
 )
 
 const ptr1Size = 4 << (^uintptr(0) >> 63) // unsafe.Sizeof(uintptr(0)) but an ideal const
-const ptr2Size = ptr1Size + ptr1Size
 
 type refVal struct {
-	typ unsafe.Pointer
-	ptr unsafe.Pointer
-	uintptr
+	typ  unsafe.Pointer
+	ptr  unsafe.Pointer
+	flag flag
+}
+
+type flag uintptr
+
+//go:linkname flagIndir reflect.flagIndir
+const flagIndir flag = 1 << 7
+
+func getPtr(rv reflect.Value) unsafe.Pointer {
+	v := (*refVal)(unsafe.Pointer(&rv))
+	if v.flag&flagIndir == 0 {
+		return unsafe.Pointer(&v.ptr)
+	}
+	return v.ptr
+}
+
+// sliceHeader is a safe version of SliceHeader used within this package.
+type sliceHeader struct {
+	data unsafe.Pointer
+	len  int
+	cap  int
+}
+
+// stringHeader is a safe version of StringHeader used within this package.
+type stringHeader struct {
+	data unsafe.Pointer
+	len  int
 }
 
 func floatToUint(v float64) uint64 {
@@ -30,14 +55,6 @@ func reverseByte(u uint64) uint64 {
 	u = ((u << 16) & 0xFFFF0000FFFF0000) | ((u >> 16) & 0xFFFF0000FFFF)
 	u = ((u << 8) & 0xFF00FF00FF00FF00) | ((u >> 8) & 0xFF00FF00FF00FF)
 	return u
-}
-
-func next1Ptr(p unsafe.Pointer) unsafe.Pointer {
-	return unsafe.Pointer(uintptr(p) + ptr1Size)
-}
-
-func next2Ptr(p unsafe.Pointer) unsafe.Pointer {
-	return unsafe.Pointer(uintptr(p) + ptr2Size)
 }
 
 // int -5 -4 -3 -2 -1 0 1 2 3 4 5  6

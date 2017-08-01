@@ -7,19 +7,15 @@ import (
 
 type Encoder struct {
 	buf     []byte //编码目的数组
-	offset  int    //开始从buf的offset 写入编码的结果
 	boolPos int    //下一次要设置的bool在buf中的下标,即buf[boolPos]
 	boolBit byte   //下一次要设置的bool的buf[boolPos]中的bit位
 
-	encEngs    []encEng
-	encEngVals []encEngVal
-	length     int
+	encEngs []encEng
+	length  int
 }
 
 func Encodes(is ...interface{}) []byte {
-	e := NewEncoderWithPtr(is...)
-	e.Encodes(is...)
-	return e.Bytes()
+	return NewEncoderWithPtr(is...).Encodes(is...)
 }
 
 func NewEncoderWithPtr(ps ...interface{}) *Encoder {
@@ -28,19 +24,16 @@ func NewEncoderWithPtr(ps ...interface{}) *Encoder {
 		panic("must have argument!")
 	}
 	engs := make([]encEng, l)
-	engvals := make([]encEngVal, l)
 	for i := 0; i < l; i++ {
 		rt := reflect.TypeOf(ps[i])
 		if rt.Kind() != reflect.Ptr {
 			panic("must a pointer type!")
 		}
 		engs[i] = getEncEngine(rt.Elem())
-		engvals[i] = getValEncEng(rt.Elem())
 	}
 	return &Encoder{
-		length:     l,
-		encEngs:    engs,
-		encEngVals: engvals,
+		length:  l,
+		encEngs: engs,
 	}
 }
 
@@ -50,16 +43,13 @@ func NewEncoder(is ...interface{}) *Encoder {
 		panic("must have argument!")
 	}
 	engs := make([]encEng, l)
-	engvals := make([]encEngVal, l)
 	for i := 0; i < l; i++ {
 		rt := reflect.TypeOf(is[i])
 		engs[i] = getEncEngine(rt)
-		engvals[i] = getValEncEng(rt)
 	}
 	return &Encoder{
-		length:     l,
-		encEngs:    engs,
-		encEngVals: engvals,
+		length:  l,
+		encEngs: engs,
 	}
 }
 func NewEncoderWithTypes(ts ...reflect.Type) *Encoder {
@@ -68,54 +58,51 @@ func NewEncoderWithTypes(ts ...reflect.Type) *Encoder {
 		panic("must have argument!")
 	}
 	engs := make([]encEng, l)
-	engvals := make([]encEngVal, l)
 	for i := 0; i < l; i++ {
 		engs[i] = getEncEngine(ts[i])
-		engvals[i] = getValEncEng(ts[i])
 	}
 	return &Encoder{
-		length:     l,
-		encEngs:    engs,
-		encEngVals: engvals,
+		length:  l,
+		encEngs: engs,
 	}
 }
 
 // 入参是要编码值的指针
-func (e *Encoder) Encodes(is ...interface{}) {
+func (e *Encoder) Encodes(is ...interface{}) []byte {
 	engs := e.encEngs
 	for i := 0; i < e.length; i++ {
 		engs[i](e, (*[2]unsafe.Pointer)(unsafe.Pointer(&is[i]))[1])
 	}
+	return e.reset()
 }
 
-func (e *Encoder) EncodeByUPtrs(ps ...unsafe.Pointer) {
+// 入参是要编码的值得unsafe.Pointer 指针
+func (e *Encoder) EncodeByUPtrs(ps ...unsafe.Pointer) []byte {
 	engs := e.encEngs
 	for i := 0; i < e.length; i++ {
 		engs[i](e, ps[i])
 	}
+	return e.reset()
 }
 
 // vs 是持有要编码的值
-func (e *Encoder) EncodeValues(vs ...reflect.Value) {
-	engs := e.encEngVals
+func (e *Encoder) EncodeValues(vs ...reflect.Value) []byte {
+	engs := e.encEngs
 	for i := 0; i < e.length; i++ {
-		engs[i](e, vs[i])
+		engs[i](e, getPtr(vs[i]))
 	}
+	return e.reset()
 }
 
-func (e *Encoder) ResetWithBuf(buf []byte) {
+// 编码产生的数据将append到buf上
+func (e *Encoder) AppendTo(buf []byte) {
 	e.buf = buf
-	e.offset = len(buf)
-	e.boolBit = 0
-	e.boolPos = 0
 }
 
-func (e *Encoder) Reset() {
-	e.buf = e.buf[:e.offset]
+func (e *Encoder) reset() []byte {
+	buf := e.buf
+	e.buf = nil
 	e.boolBit = 0
 	e.boolPos = 0
-}
-
-func (e *Encoder) Bytes() []byte {
-	return e.buf
+	return buf
 }

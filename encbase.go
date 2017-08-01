@@ -1,8 +1,6 @@
 package gotiny
 
-import (
-	"unsafe"
-)
+import "unsafe"
 
 func (e *Encoder) encBool(v bool) {
 	if e.boolBit == 0 {
@@ -44,7 +42,7 @@ var (
 	encComplex64  = func(e *Encoder, p unsafe.Pointer) { e.encUint(*(*uint64)(p)) }
 	encComplex128 = func(e *Encoder, p unsafe.Pointer) {
 		e.encUint(*(*uint64)(p))
-		e.encUint(*(*uint64)(next1Ptr(p)))
+		e.encUint(*(*uint64)(unsafe.Pointer(uintptr(p) + ptr1Size)))
 	}
 
 	encString = func(e *Encoder, p unsafe.Pointer) {
@@ -63,8 +61,3 @@ var (
 		}
 	}
 )
-
-//func encTime(e *Encoder, p unsafe.Pointer) {
-//t := v.Interface().(time.Time)
-
-//}

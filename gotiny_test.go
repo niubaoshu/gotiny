@@ -130,6 +130,7 @@ var (
 	v4map       = map[int]*int{1: &temp}
 	v5map       = map[int]baseTyp{1: genBase(), 2: genBase()}
 	v6map       = map[*int]baseTyp{&vint1: genBase(), &vint2: genBase()}
+	v7map       = map[int][3]baseTyp{1: varr}
 	vnilmap     map[int]int
 	vptr        = &vint
 	vsliceptr   = &vbytes
@@ -203,6 +204,7 @@ var (
 		v4map,
 		v5map,
 		v6map,
+		v7map,
 		vnilmap,
 		vptr,
 		vsliceptr,
@@ -225,9 +227,11 @@ var (
 		struct{}{},
 	}
 
+	length = len(vs)
+	buf    = make([]byte, 0, 1<<13)
 	e      = gotiny.NewEncoder(vs...)
 	d      = gotiny.NewDecoder(vs...)
-	length = len(vs)
+	c      = goutils.NewComparer()
 
 	srci = make([]interface{}, length)
 	reti = make([]interface{}, length)
@@ -235,12 +239,10 @@ var (
 	retv = make([]reflect.Value, length)
 	srcp = make([]unsafe.Pointer, length)
 	retp = make([]unsafe.Pointer, length)
-
-	c = goutils.NewComparer()
 )
 
 func init() {
-	fmt.Println("total", length, "value")
+	fmt.Printf("total %d value\n", length)
 	for i := 0; i < length; i++ {
 		typ := reflect.TypeOf(vs[i])
 		srcv[i] = reflect.ValueOf(vs[i])
@@ -253,43 +255,36 @@ func init() {
 		srcp[i] = unsafe.Pointer(reflect.ValueOf(&srci[i]).Elem().InterfaceData()[1])
 		retp[i] = unsafe.Pointer(reflect.ValueOf(&reti[i]).Elem().InterfaceData()[1])
 	}
-	e.ResetWithBuf(make([]byte, 0, 2048))
 }
 
-func TestInterface(t *testing.T) {
-	e.Reset()
-	e.Encodes(srci...)
-	d.ResetWith(e.Bytes())
-	d.Decodes(reti...)
+func TestEncodeDecode(t *testing.T) {
+	e.AppendTo(buf)
+	l := gotiny.Decodes(gotiny.Encodes(srci...), reti...)
+	fmt.Printf("encoded length: %d \n", l)
 	for i, r := range reti {
 		Assert(t, srci[i], r)
 	}
 }
 
-func TestEncodeDecode(t *testing.T) {
-	gotiny.Decodes(gotiny.Encodes(srci...), reti...)
+func TestInterface(t *testing.T) {
+	e.AppendTo(buf)
+	d.Decodes(e.Encodes(srci...), reti...)
 	for i, r := range reti {
 		Assert(t, srci[i], r)
 	}
 }
 
 func TestPtr(t *testing.T) {
-	e.EncodeByUPtrs(srcp...)
-	b := e.Bytes()
-	fmt.Printf("length: %d \n", len(b))
-	d.ResetWith(b)
-	d.DecodeByUPtr(retp...)
+	e.AppendTo(buf)
+	d.DecodeByUPtr(e.EncodeByUPtrs(srcp...), retp...)
 	for i, r := range reti {
 		Assert(t, srci[i], r)
 	}
-
 }
 
 func TestValue(t *testing.T) {
-	e.Reset()
-	e.EncodeValues(srcv...)
-	d.ResetWith(e.Bytes())
-	d.DecodeValues(retv...)
+	e.AppendTo(buf)
+	d.DecodeValues(e.EncodeValues(srcv...), retv...)
 	for i, r := range reti {
 		Assert(t, srci[i], r)
 	}
@@ -331,8 +326,6 @@ func TestValue(t *testing.T) {
 //		unsafe.Pointer(&a3), unsafe.Pointer(&a4), unsafe.Pointer(&a5), unsafe.Pointer(&a6))
 //}
 
-var buf []byte
-
 func BenchmarkEncodes(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		buf = gotiny.Encodes(srci...)
@@ -347,43 +340,40 @@ func BenchmarkDecodes(b *testing.B) {
 
 func BenchmarkEncodesValue(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		e.Reset()
+		e.AppendTo(buf[:0])
 		e.EncodeValues(srcv...)
 	}
 }
 
 func BenchmarkDecodesValue(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		d.Reset()
-		d.DecodeValues(retv...)
+		d.DecodeValues(buf, retv...)
 	}
 }
 
 func BenchmarkEncodesPtr(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		e.Reset()
+		e.AppendTo(buf[:0])
 		e.EncodeByUPtrs(srcp...)
 	}
 }
 
 func BenchmarkDecodesPtr(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		d.Reset()
-		d.DecodeByUPtr(retp...)
+		d.DecodeByUPtr(buf, retp...)
 	}
 }
 
 func BenchmarkEncodesInterface(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		e.Reset()
+		e.AppendTo(buf[:0])
 		e.Encodes(srci...)
 	}
 }
 
 func BenchmarkDecodesInterface(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		d.Reset()
-		d.Decodes(reti...)
+		d.Decodes(buf, reti...)
 	}
 }
 

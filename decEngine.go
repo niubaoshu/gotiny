@@ -142,26 +142,24 @@ func buildDecEngine(rt reflect.Type) decEngPtr {
 		eEng := buildDecEngine(et)
 		size := et.Size()
 		*engine = func(d *Decoder, p unsafe.Pointer) {
+			header := (*sliceHeader)(p)
 			if d.decBool() {
 				l := d.decLength()
-				if isNil(p) || *(*int)(next2Ptr(p)) < l {
-					*(*unsafe.Pointer)(p) = unsafe.Pointer(reflect.MakeSlice(rt, l, l).Pointer())
+				if isNil(p) || header.cap < l {
+					*header = sliceHeader{unsafe.Pointer(reflect.MakeSlice(rt, l, l).Pointer()), l, l}
+				} else {
+					header.len = l
 				}
-				*(*int)(next1Ptr(p)) = l
-				pp := *(*unsafe.Pointer)(p)
-				for i := 0; i < l; i++ {
-					(*eEng)(d, unsafe.Pointer(uintptr(pp)+uintptr(i)*size))
+				for i := uintptr(0); i < uintptr(l); i++ {
+					(*eEng)(d, unsafe.Pointer(uintptr(header.data)+i*size))
 				}
 			} else if !isNil(p) {
-				*(*unsafe.Pointer)(p) = nil
-				*(*int)(next1Ptr(p)) = 0
-				*(*int)(next2Ptr(p)) = 0
+				*header = sliceHeader{}
 			}
 		}
 	case reflect.Map:
 		kt, vt := rt.Key(), rt.Elem()
 		kEng, vEng := buildDecEngine(kt), buildDecEngine(vt)
-		// todo 原始key 值和value值重复使用
 		*engine = func(d *Decoder, p unsafe.Pointer) {
 			if d.decBool() {
 				l := d.decLength()
@@ -169,7 +167,7 @@ func buildDecEngine(rt reflect.Type) decEngPtr {
 					*(*unsafe.Pointer)(p) = unsafe.Pointer(reflect.MakeMap(rt).Pointer())
 				}
 				v := reflect.NewAt(rt, p).Elem()
-				v.Len()
+				// TODO 考虑重用v中的key和value，可以重用v.Len()个
 				for i := 0; i < l; i++ {
 					key, val := reflect.New(kt).Elem(), reflect.New(vt).Elem()
 					(*kEng)(d, unsafe.Pointer(key.UnsafeAddr()))

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/niubaoshu/gotiny"
+	"github.com/niubaoshu/goutils"
 )
 
 type str struct {
@@ -113,6 +114,9 @@ var (
 
 	spvals = make([]interface{}, len(vs))
 	rpvals = make([]interface{}, len(vs))
+	c      = goutils.NewComparer()
+
+	buf = make([]byte, 0, 2048)
 )
 
 func init() {
@@ -134,8 +138,7 @@ func init() {
 			rpvals[i] = reflect.New(typ).Interface()
 		}
 	}
-
-	e.ResetWithBuf(make([]byte, 0, 2048))
+	e.AppendTo(buf[:0])
 }
 
 func main() {
@@ -146,23 +149,23 @@ func main() {
 	defer f.Close()
 	pprof.StartCPUProfile(f)
 	defer pprof.StopCPUProfile()
-	var buf []byte
-	_ = buf
-	fmt.Println(len(vs))
 	for i := 0; i < 1000; i++ {
-		e.Reset()
 		for i := 0; i < 1000; i++ {
-			e.Encodes(spvals...)
-			d.ResetWith(e.Bytes())
-			d.Decodes(rpvals...)
+			e.AppendTo(buf[:0])
+			d.Decodes(e.Encodes(spvals...), rpvals...)
 			for i, result := range rpvals {
 				r := reflect.ValueOf(result).Elem().Interface()
-				//fmt.Printf("%T: expected %v got %v ,%T\n", vs[i], vs[i], r, r)
-				if !reflect.DeepEqual(vs[i], r) {
-					fmt.Println(i, vs[i])
-					fmt.Printf("%T: expected %#v got %#v ,%T\n", vs[i], vs[i], r, r)
+				if Assert(vs[i], r) != nil {
+					fmt.Println(err)
 				}
 			}
 		}
 	}
+}
+
+func Assert(x, y interface{}) error {
+	if !c.DeepEqual(x, y) {
+		return fmt.Errorf("\n exp type =  %T; value = %#v;\n got type = %T; value = %#v ", x, x, y, y)
+	}
+	return nil
 }
