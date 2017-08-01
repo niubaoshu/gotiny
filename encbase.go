@@ -22,15 +22,17 @@ func (e *Encoder) encUint(v uint64) {
 	}
 	e.buf = append(buf, uint8(v))
 }
+
 func (e *Encoder) encLength(v int) { e.encUint(uint64(v)) }
 
 var (
 	encignore     = func(e *Encoder, p unsafe.Pointer) {}
 	encBool       = func(e *Encoder, p unsafe.Pointer) { e.encBool(*(*bool)(p)) }
+	encInt        = func(e *Encoder, p unsafe.Pointer) { e.encUint(intToUint(int64(*(*int)(p)))) }
+	encInt8       = func(e *Encoder, p unsafe.Pointer) { e.buf = append(e.buf, *(*uint8)(p)) }
 	encInt16      = func(e *Encoder, p unsafe.Pointer) { e.encUint(intToUint(int64(*(*int16)(p)))) }
 	encInt32      = func(e *Encoder, p unsafe.Pointer) { e.encUint(intToUint(int64(*(*int32)(p)))) }
 	encInt64      = func(e *Encoder, p unsafe.Pointer) { e.encUint(intToUint(int64(*(*int64)(p)))) }
-	encInt        = func(e *Encoder, p unsafe.Pointer) { e.encUint(intToUint(int64(*(*int)(p)))) }
 	encUint8      = func(e *Encoder, p unsafe.Pointer) { e.buf = append(e.buf, *(*uint8)(p)) }
 	encUint16     = func(e *Encoder, p unsafe.Pointer) { e.encUint(uint64(*(*uint16)(p))) }
 	encUint32     = func(e *Encoder, p unsafe.Pointer) { e.encUint(uint64(*(*uint32)(p))) }

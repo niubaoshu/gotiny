@@ -16,10 +16,10 @@ type Decoder struct {
 }
 
 func Decodes(buf []byte, is ...interface{}) int {
-	return NewDecoderWithPtrs(is...).Decodes(buf, is...)
+	return NewDecoderWithPtr(is...).Decode(buf, is...)
 }
 
-func NewDecoderWithPtrs(is ...interface{}) *Decoder {
+func NewDecoderWithPtr(is ...interface{}) *Decoder {
 	l := len(is)
 	if l < 1 {
 		panic("must have argument!")
@@ -53,7 +53,7 @@ func NewDecoder(is ...interface{}) *Decoder {
 	}
 }
 
-func NewDecoderWithTypes(ts ...reflect.Type) *Decoder {
+func NewDecoderWithType(ts ...reflect.Type) *Decoder {
 	l := len(ts)
 	if l < 1 {
 		panic("must have argument!")
@@ -77,7 +77,7 @@ func (d *Decoder) reset() int {
 }
 
 // is is pointer of variable
-func (d *Decoder) Decodes(buf []byte, is ...interface{}) int {
+func (d *Decoder) Decode(buf []byte, is ...interface{}) int {
 	d.buf = buf
 	engs := d.decEngs
 	for i := 0; i < d.length; i++ {
@@ -87,7 +87,7 @@ func (d *Decoder) Decodes(buf []byte, is ...interface{}) int {
 }
 
 // ps is a unsafe.Pointer of the variable
-func (d *Decoder) DecodeByUPtr(buf []byte, ps ...unsafe.Pointer) int {
+func (d *Decoder) DecodePtr(buf []byte, ps ...unsafe.Pointer) int {
 	d.buf = buf
 	engs := d.decEngs
 	for i := 0; i < d.length; i++ {
@@ -96,7 +96,7 @@ func (d *Decoder) DecodeByUPtr(buf []byte, ps ...unsafe.Pointer) int {
 	return d.reset()
 }
 
-func (d *Decoder) DecodeValues(buf []byte, vs ...reflect.Value) int {
+func (d *Decoder) DecodeValue(buf []byte, vs ...reflect.Value) int {
 	d.buf = buf
 	engs := d.decEngs
 	for i := 0; i < d.length; i++ {

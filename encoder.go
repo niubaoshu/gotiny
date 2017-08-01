@@ -15,7 +15,7 @@ type Encoder struct {
 }
 
 func Encodes(is ...interface{}) []byte {
-	return NewEncoderWithPtr(is...).Encodes(is...)
+	return NewEncoderWithPtr(is...).Encode(is...)
 }
 
 func NewEncoderWithPtr(ps ...interface{}) *Encoder {
@@ -52,7 +52,7 @@ func NewEncoder(is ...interface{}) *Encoder {
 		encEngs: engs,
 	}
 }
-func NewEncoderWithTypes(ts ...reflect.Type) *Encoder {
+func NewEncoderWithType(ts ...reflect.Type) *Encoder {
 	l := len(ts)
 	if l < 1 {
 		panic("must have argument!")
@@ -68,7 +68,7 @@ func NewEncoderWithTypes(ts ...reflect.Type) *Encoder {
 }
 
 // 入参是要编码值的指针
-func (e *Encoder) Encodes(is ...interface{}) []byte {
+func (e *Encoder) Encode(is ...interface{}) []byte {
 	engs := e.encEngs
 	for i := 0; i < e.length; i++ {
 		engs[i](e, (*[2]unsafe.Pointer)(unsafe.Pointer(&is[i]))[1])
@@ -77,7 +77,7 @@ func (e *Encoder) Encodes(is ...interface{}) []byte {
 }
 
 // 入参是要编码的值得unsafe.Pointer 指针
-func (e *Encoder) EncodeByUPtrs(ps ...unsafe.Pointer) []byte {
+func (e *Encoder) EncodePtr(ps ...unsafe.Pointer) []byte {
 	engs := e.encEngs
 	for i := 0; i < e.length; i++ {
 		engs[i](e, ps[i])
@@ -86,7 +86,7 @@ func (e *Encoder) EncodeByUPtrs(ps ...unsafe.Pointer) []byte {
 }
 
 // vs 是持有要编码的值
-func (e *Encoder) EncodeValues(vs ...reflect.Value) []byte {
+func (e *Encoder) EncodeValue(vs ...reflect.Value) []byte {
 	engs := e.encEngs
 	for i := 0; i < e.length; i++ {
 		engs[i](e, getPtr(vs[i]))

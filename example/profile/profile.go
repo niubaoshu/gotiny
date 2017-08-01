@@ -152,7 +152,7 @@ func main() {
 	for i := 0; i < 1000; i++ {
 		for i := 0; i < 1000; i++ {
 			e.AppendTo(buf[:0])
-			d.Decodes(e.Encodes(spvals...), rpvals...)
+			d.Decode(e.Encode(spvals...), rpvals...)
 			for i, result := range rpvals {
 				r := reflect.ValueOf(result).Elem().Interface()
 				if Assert(vs[i], r) != nil {

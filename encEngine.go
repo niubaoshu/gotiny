@@ -14,25 +14,25 @@ type (
 )
 
 var (
-	rt2Eng = map[reflect.Type]encEngPtr{
-		reflect.TypeOf((*string)(nil)).Elem():     &encString,
+	rt2encEng = map[reflect.Type]encEngPtr{
 		reflect.TypeOf((*bool)(nil)).Elem():       &encBool,
-		reflect.TypeOf((*uint8)(nil)).Elem():      &encUint8,
-		reflect.TypeOf((*int8)(nil)).Elem():       &encUint8,
 		reflect.TypeOf((*int)(nil)).Elem():        &encInt,
-		reflect.TypeOf((*uint)(nil)).Elem():       &encUint,
+		reflect.TypeOf((*int8)(nil)).Elem():       &encInt8,
 		reflect.TypeOf((*int16)(nil)).Elem():      &encInt16,
 		reflect.TypeOf((*int32)(nil)).Elem():      &encInt32,
 		reflect.TypeOf((*int64)(nil)).Elem():      &encInt64,
+		reflect.TypeOf((*uint)(nil)).Elem():       &encUint,
+		reflect.TypeOf((*uint8)(nil)).Elem():      &encUint8,
 		reflect.TypeOf((*uint16)(nil)).Elem():     &encUint16,
 		reflect.TypeOf((*uint32)(nil)).Elem():     &encUint32,
 		reflect.TypeOf((*uint64)(nil)).Elem():     &encUint64,
 		reflect.TypeOf((*uintptr)(nil)).Elem():    &encUintptr,
 		reflect.TypeOf((*float32)(nil)).Elem():    &encFloat32,
 		reflect.TypeOf((*float64)(nil)).Elem():    &encFloat64,
-		reflect.TypeOf((*[]byte)(nil)).Elem():     &encBytes,
 		reflect.TypeOf((*complex64)(nil)).Elem():  &encComplex64,
 		reflect.TypeOf((*complex128)(nil)).Elem(): &encComplex128,
+		reflect.TypeOf((*[]byte)(nil)).Elem():     &encBytes,
+		reflect.TypeOf((*string)(nil)).Elem():     &encString,
 		reflect.TypeOf((*struct{})(nil)):          &encignore,
 		reflect.TypeOf(nil):                       &encignore,
 	}
@@ -42,7 +42,7 @@ var (
 
 func getEncEngine(rt reflect.Type) encEng {
 	encLock.RLock()
-	engptr := rt2Eng[rt]
+	engptr := rt2encEng[rt]
 	encLock.RUnlock()
 	if engptr != nil && *engptr != nil {
 		return *engptr
@@ -55,12 +55,12 @@ func getEncEngine(rt reflect.Type) encEng {
 
 func buildEncEngine(rt reflect.Type) encEngPtr {
 	//TODO  接口类型处理
-	engine, has := rt2Eng[rt]
+	engine, has := rt2encEng[rt]
 	if has {
 		return engine
 	}
 	engine = new(func(*Encoder, unsafe.Pointer))
-	rt2Eng[rt] = engine
+	rt2encEng[rt] = engine
 
 	if fn, _, yes := implementsGob(rt); yes {
 		*engine = func(e *Encoder, p unsafe.Pointer) {
@@ -161,9 +161,9 @@ func buildEncEngine(rt reflect.Type) encEngPtr {
 		nf := rt.NumField()
 		engs, offs := make([]encEngPtr, nf), make([]uintptr, nf)
 		for i := 0; i < nf; i++ {
-			ft := rt.Field(i)
-			engs[i] = buildEncEngine(ft.Type)
-			offs[i] = ft.Offset
+			field := rt.Field(i)
+			engs[i] = buildEncEngine(field.Type)
+			offs[i] = field.Offset
 		}
 		*engine = func(e *Encoder, p unsafe.Pointer) {
 			for i := 0; i < nf; i++ {

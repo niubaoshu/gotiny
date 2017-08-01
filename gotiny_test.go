@@ -268,7 +268,7 @@ func TestEncodeDecode(t *testing.T) {
 
 func TestInterface(t *testing.T) {
 	e.AppendTo(buf)
-	d.Decodes(e.Encodes(srci...), reti...)
+	d.Decode(e.Encode(srci...), reti...)
 	for i, r := range reti {
 		Assert(t, srci[i], r)
 	}
@@ -276,7 +276,7 @@ func TestInterface(t *testing.T) {
 
 func TestPtr(t *testing.T) {
 	e.AppendTo(buf)
-	d.DecodeByUPtr(e.EncodeByUPtrs(srcp...), retp...)
+	d.DecodePtr(e.EncodePtr(srcp...), retp...)
 	for i, r := range reti {
 		Assert(t, srci[i], r)
 	}
@@ -284,7 +284,7 @@ func TestPtr(t *testing.T) {
 
 func TestValue(t *testing.T) {
 	e.AppendTo(buf)
-	d.DecodeValues(e.EncodeValues(srcv...), retv...)
+	d.DecodeValue(e.EncodeValue(srcv...), retv...)
 	for i, r := range reti {
 		Assert(t, srci[i], r)
 	}
@@ -341,39 +341,39 @@ func BenchmarkDecodes(b *testing.B) {
 func BenchmarkEncodesValue(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		e.AppendTo(buf[:0])
-		e.EncodeValues(srcv...)
+		e.EncodeValue(srcv...)
 	}
 }
 
 func BenchmarkDecodesValue(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		d.DecodeValues(buf, retv...)
+		d.DecodeValue(buf, retv...)
 	}
 }
 
 func BenchmarkEncodesPtr(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		e.AppendTo(buf[:0])
-		e.EncodeByUPtrs(srcp...)
+		e.EncodePtr(srcp...)
 	}
 }
 
 func BenchmarkDecodesPtr(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		d.DecodeByUPtr(buf, retp...)
+		d.DecodePtr(buf, retp...)
 	}
 }
 
 func BenchmarkEncodesInterface(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		e.AppendTo(buf[:0])
-		e.Encodes(srci...)
+		e.Encode(srci...)
 	}
 }
 
 func BenchmarkDecodesInterface(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		d.Decodes(buf, reti...)
+		d.Decode(buf, reti...)
 	}
 }
 

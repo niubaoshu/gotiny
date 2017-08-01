@@ -15,10 +15,9 @@ type (
 
 var (
 	rt2decEng = map[reflect.Type]decEngPtr{
-		reflect.TypeOf((*string)(nil)).Elem():     &decString,
 		reflect.TypeOf((*bool)(nil)).Elem():       &decBool,
 		reflect.TypeOf((*int)(nil)).Elem():        &decInt,
-		reflect.TypeOf((*int8)(nil)).Elem():       &decUint8,
+		reflect.TypeOf((*int8)(nil)).Elem():       &decInt8,
 		reflect.TypeOf((*int16)(nil)).Elem():      &decInt16,
 		reflect.TypeOf((*int32)(nil)).Elem():      &decInt32,
 		reflect.TypeOf((*int64)(nil)).Elem():      &decInt64,
@@ -28,11 +27,12 @@ var (
 		reflect.TypeOf((*uint32)(nil)).Elem():     &decUint32,
 		reflect.TypeOf((*uint64)(nil)).Elem():     &decUint64,
 		reflect.TypeOf((*uintptr)(nil)).Elem():    &decUintptr,
-		reflect.TypeOf((*float64)(nil)).Elem():    &decFloat64,
 		reflect.TypeOf((*float32)(nil)).Elem():    &decFloat32,
+		reflect.TypeOf((*float64)(nil)).Elem():    &decFloat64,
 		reflect.TypeOf((*complex64)(nil)).Elem():  &decComplex64,
 		reflect.TypeOf((*complex128)(nil)).Elem(): &decComplex128,
 		reflect.TypeOf((*[]byte)(nil)).Elem():     &decBytes,
+		reflect.TypeOf((*string)(nil)).Elem():     &decString,
 		reflect.TypeOf((*struct{})(nil)):          &decignore,
 		reflect.TypeOf(nil):                       &decignore,
 	}
