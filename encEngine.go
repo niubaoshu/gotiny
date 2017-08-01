@@ -15,26 +15,27 @@ type (
 
 var (
 	rt2encEng = map[reflect.Type]encEngPtr{
-		reflect.TypeOf((*bool)(nil)).Elem():       &encBool,
-		reflect.TypeOf((*int)(nil)).Elem():        &encInt,
-		reflect.TypeOf((*int8)(nil)).Elem():       &encInt8,
-		reflect.TypeOf((*int16)(nil)).Elem():      &encInt16,
-		reflect.TypeOf((*int32)(nil)).Elem():      &encInt32,
-		reflect.TypeOf((*int64)(nil)).Elem():      &encInt64,
-		reflect.TypeOf((*uint)(nil)).Elem():       &encUint,
-		reflect.TypeOf((*uint8)(nil)).Elem():      &encUint8,
-		reflect.TypeOf((*uint16)(nil)).Elem():     &encUint16,
-		reflect.TypeOf((*uint32)(nil)).Elem():     &encUint32,
-		reflect.TypeOf((*uint64)(nil)).Elem():     &encUint64,
-		reflect.TypeOf((*uintptr)(nil)).Elem():    &encUintptr,
-		reflect.TypeOf((*float32)(nil)).Elem():    &encFloat32,
-		reflect.TypeOf((*float64)(nil)).Elem():    &encFloat64,
-		reflect.TypeOf((*complex64)(nil)).Elem():  &encComplex64,
-		reflect.TypeOf((*complex128)(nil)).Elem(): &encComplex128,
-		reflect.TypeOf((*[]byte)(nil)).Elem():     &encBytes,
-		reflect.TypeOf((*string)(nil)).Elem():     &encString,
-		reflect.TypeOf((*struct{})(nil)):          &encignore,
-		reflect.TypeOf(nil):                       &encignore,
+		reflect.TypeOf((*bool)(nil)).Elem():           &encBool,
+		reflect.TypeOf((*int)(nil)).Elem():            &encInt,
+		reflect.TypeOf((*int8)(nil)).Elem():           &encInt8,
+		reflect.TypeOf((*int16)(nil)).Elem():          &encInt16,
+		reflect.TypeOf((*int32)(nil)).Elem():          &encInt32,
+		reflect.TypeOf((*int64)(nil)).Elem():          &encInt64,
+		reflect.TypeOf((*uint)(nil)).Elem():           &encUint,
+		reflect.TypeOf((*uint8)(nil)).Elem():          &encUint8,
+		reflect.TypeOf((*uint16)(nil)).Elem():         &encUint16,
+		reflect.TypeOf((*uint32)(nil)).Elem():         &encUint32,
+		reflect.TypeOf((*uint64)(nil)).Elem():         &encUint64,
+		reflect.TypeOf((*uintptr)(nil)).Elem():        &encUintptr,
+		reflect.TypeOf((*unsafe.Pointer)(nil)).Elem(): &encPointer,
+		reflect.TypeOf((*float32)(nil)).Elem():        &encFloat32,
+		reflect.TypeOf((*float64)(nil)).Elem():        &encFloat64,
+		reflect.TypeOf((*complex64)(nil)).Elem():      &encComplex64,
+		reflect.TypeOf((*complex128)(nil)).Elem():     &encComplex128,
+		reflect.TypeOf((*[]byte)(nil)).Elem():         &encBytes,
+		reflect.TypeOf((*string)(nil)).Elem():         &encString,
+		reflect.TypeOf((*struct{})(nil)):              &encignore,
+		reflect.TypeOf(nil):                           &encignore,
 	}
 
 	encLock sync.RWMutex
@@ -170,8 +171,8 @@ func buildEncEngine(rt reflect.Type) encEngPtr {
 				(*engs[i])(e, unsafe.Pointer(uintptr(p)+offs[i]))
 			}
 		}
-	case reflect.Chan, reflect.Func, reflect.Interface, reflect.UnsafePointer, reflect.Invalid:
-		panic("not suport type")
+	case reflect.Chan, reflect.Func, reflect.Interface:
+		panic("not suport " + rt.String() + " type")
 	}
 	return engine
 }

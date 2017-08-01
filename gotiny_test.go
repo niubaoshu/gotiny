@@ -126,8 +126,7 @@ var (
 	vmap        = map[int]int{1: 2, 2: 3, 3: 4, 4: 5, 5: 6}
 	v2map       = map[int]map[int]int{1: {2: 3, 3: 4}}
 	v3map       = map[int][]byte{1: {2, 3, 3, 4}}
-	temp        = 1
-	v4map       = map[int]*int{1: &temp}
+	v4map       = map[int]*int{1: &vint}
 	v5map       = map[int]baseTyp{1: genBase(), 2: genBase()}
 	v6map       = map[*int]baseTyp{&vint1: genBase(), &vint2: genBase()}
 	v7map       = map[int][3]baseTyp{1: varr}
@@ -137,6 +136,7 @@ var (
 	vptrslice   = []*int{&vint, &vint, &vint}
 	vnilptr     *int
 	vnilptrptr  = &vnilptr
+	varrptr     = &varr
 	vtime       = time.Now()
 	vslicebase  = []baseTyp{
 		genBase(),
@@ -154,11 +154,14 @@ var (
 		genBase(),
 		genBase(),
 	}
-	vcir  cirTyp
-	v2cir cirTyp = &vcir
+	vinterface interface{} = varr
 
-	vcirStruct  = cirStruct{a: 1}
-	v2cirStruct = cirStruct{a: 1, cirStruct: &vcirStruct}
+	unsafePointer = unsafe.Pointer(&vtime)
+
+	vcir        cirTyp
+	v2cir       cirTyp = &vcir
+	vcirStruct         = cirStruct{a: 1}
+	v2cirStruct        = cirStruct{a: 1, cirStruct: &vcirStruct}
 
 	vcirmap  = cirmap{1: nil}
 	v2cirmap = cirmap{2: vcirmap}
@@ -211,10 +214,13 @@ var (
 		vptrslice,
 		vnilptr,
 		vnilptrptr,
+		varrptr,
 		vtime,
 		vslicebase,
 		vslicestring,
 		varray,
+		vinterface,
+		unsafePointer,
 		vcir,
 		v2cir,
 		vcirStruct,
@@ -242,16 +248,18 @@ var (
 )
 
 func init() {
-	fmt.Printf("total %d value\n", length)
+	fmt.Printf("total %d value. buf length: %d\n", length, cap(buf))
 	for i := 0; i < length; i++ {
 		typ := reflect.TypeOf(vs[i])
 		srcv[i] = reflect.ValueOf(vs[i])
-		tempv := reflect.New(typ)
-		retv[i] = tempv.Elem()
 		tempi := reflect.New(typ)
 		tempi.Elem().Set(srcv[i])
 		srci[i] = tempi.Interface()
+
+		tempv := reflect.New(typ)
+		retv[i] = tempv.Elem()
 		reti[i] = tempv.Interface()
+
 		srcp[i] = unsafe.Pointer(reflect.ValueOf(&srci[i]).Elem().InterfaceData()[1])
 		retp[i] = unsafe.Pointer(reflect.ValueOf(&reti[i]).Elem().InterfaceData()[1])
 	}
@@ -290,41 +298,6 @@ func TestValue(t *testing.T) {
 	}
 
 }
-
-//
-//var enctest = NewEncoder(1)
-//var enctest2 = NewEncoder(1, 2, 3, 4, 5, 6, 7)
-//
-//func BenchmarkFIEnc(b *testing.B) {
-//	for i := 0; i < b.N; i++ {
-//		encitest(1, 2, 3, 3, 3, 4, 5, 2, 23)
-//	}
-//}
-//
-//func BenchmarkJson(b *testing.B) {
-//	for i := 0; i < b.N; i++ {
-//		jsonf(1)
-//	}
-//}
-//func jsonf(is interface{}) {
-//	json.Marshal(is)
-//}
-//
-//func encitest(is ...interface{}) {
-//	enctest.Encodes(is...)
-//}
-//
-//func BenchmarkFPEnc(b *testing.B) {
-//	for i := 0; i < b.N; i++ {
-//		encptest()
-//	}
-//}
-//
-//func encptest() {
-//	a0, a1, a2, a3, a4, a5, a6 := 1, 2, 3, 4, 5, 6, 7
-//	enctest2.EncodeByUPtrs(unsafe.Pointer(&a0), unsafe.Pointer(&a1), unsafe.Pointer(&a2),
-//		unsafe.Pointer(&a3), unsafe.Pointer(&a4), unsafe.Pointer(&a5), unsafe.Pointer(&a6))
-//}
 
 func BenchmarkEncodes(b *testing.B) {
 	for i := 0; i < b.N; i++ {
@@ -377,56 +350,9 @@ func BenchmarkDecodesInterface(b *testing.B) {
 	}
 }
 
-// func BenchmarkFloatToUint(b *testing.B) {
-// 	var f = 1.0
-// 	for i := 0; i < b.N; i++ {
-// 		floatToUint(f)
-// 	}
-// }
-// func BenchmarkIntToUint(b *testing.B) {
-// 	for i := 0; i < b.N; i++ {
-// 		intToUint(1)
-// 	}
-// }
-
-//func BenchmarkUintToInt(b *testing.B) {
-//	for i := 0; i < b.N; i++ {
-//		for j := 0; j < 100000; j++ {
-//			uintToInt(uint64(i))
-//		}
-//	}
-//}
-//
-// var (
-// 	ee        = NewEncoder(0)
-// 	maxuint64 = uint64(1<<64 - 1)
-// )
-
-// func BenchmarkEncUint(b *testing.B) {
-// 	for i := 0; i < b.N; i++ {
-// 		ee.encUint(maxuint64)
-// 	}
-// }
-
-// func BenchmarkEncUint2(b *testing.B) {
-// 	for i := 0; i < b.N; i++ {
-// 		ee.encUint(maxuint64)
-// 	}
-// }
-
-// func BenchmarkDecUint(b *testing.B) {
-// 	b.StopTimer()
-// 	dd := NewDecoder(ee.Bytes())
-// 	dd.Reset()
-// 	b.StartTimer()
-// 	for i := 0; i < b.N; i++ {
-// 		dd.DecUint()
-// 	}
-// }
-
 func Assert(t *testing.T, x, y interface{}) {
 	if !c.DeepEqual(x, y) {
-		t.Fatalf("\n exp type =  %T; value = %#v;\n got type = %T; value = %#v ", x, x, y, y)
+		t.Errorf("\n exp type = %T; value = %+v;\n got type = %T; value = %+v \n", x, x, y, y)
 	}
 }
 
