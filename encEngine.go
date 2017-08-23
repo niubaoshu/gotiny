@@ -94,10 +94,9 @@ func buildEncEngine(rt reflect.Type) encEngPtr {
 		return engine
 	}
 
-	var eEng encEngPtr
 	switch rt.Kind() {
 	case reflect.Ptr:
-		eEng = buildEncEngine(rt.Elem())
+		eEng := buildEncEngine(rt.Elem())
 		*engine = func(e *Encoder, p unsafe.Pointer) {
 			isNotNil := !isNil(p)
 			e.encBool(isNotNil)
@@ -106,9 +105,8 @@ func buildEncEngine(rt reflect.Type) encEngPtr {
 			}
 		}
 	case reflect.Array:
-		et := rt.Elem()
-		eEng = buildEncEngine(et)
-		l := rt.Len()
+		et, l := rt.Elem(), rt.Len()
+		eEng := buildEncEngine(et)
 		size := et.Size()
 		*engine = func(e *Encoder, p unsafe.Pointer) {
 			for i := 0; i < l; i++ {
@@ -117,8 +115,7 @@ func buildEncEngine(rt reflect.Type) encEngPtr {
 		}
 	case reflect.Slice:
 		et := rt.Elem()
-		eEng = buildEncEngine(et)
-		size := et.Size()
+		eEng, size := buildEncEngine(et), et.Size()
 		*engine = func(e *Encoder, p unsafe.Pointer) {
 			isNotNil := !isNil(p)
 			e.encBool(isNotNil)
@@ -132,8 +129,7 @@ func buildEncEngine(rt reflect.Type) encEngPtr {
 			}
 		}
 	case reflect.Map:
-		eKey := buildEncEngine(rt.Key())
-		eEng = buildEncEngine(rt.Elem())
+		eKey, eEng := buildEncEngine(rt.Key()), buildEncEngine(rt.Elem())
 		*engine = func(e *Encoder, p unsafe.Pointer) {
 			isNotNil := !isNil(p)
 			e.encBool(isNotNil)

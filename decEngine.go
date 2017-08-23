@@ -38,19 +38,19 @@ var (
 		reflect.TypeOf(nil):                           &decignore,
 	}
 
-	englock sync.RWMutex
+	declock sync.RWMutex
 )
 
 func getDecEngine(rt reflect.Type) decEng {
-	englock.RLock()
+	declock.RLock()
 	engine := rt2decEng[rt]
-	englock.RUnlock()
+	declock.RUnlock()
 	if engine != nil && *engine != nil {
 		return *engine
 	}
-	englock.Lock()
+	declock.Lock()
 	engine = buildDecEngine(rt)
-	englock.Unlock()
+	declock.Unlock()
 	return *engine
 }
 
@@ -107,10 +107,8 @@ func buildDecEngine(rt reflect.Type) decEngPtr {
 			}
 		}
 	case reflect.Array:
-		l := rt.Len()
-		et := rt.Elem()
-		eEng := buildDecEngine(et)
-		size := et.Size()
+		l, et := rt.Len(), rt.Elem()
+		eEng, size := buildDecEngine(et), et.Size()
 		*engine = func(d *Decoder, p unsafe.Pointer) {
 			for i := 0; i < l; i++ {
 				(*eEng)(d, unsafe.Pointer(uintptr(p)+uintptr(i)*size))
@@ -118,8 +116,7 @@ func buildDecEngine(rt reflect.Type) decEngPtr {
 		}
 	case reflect.Slice:
 		et := rt.Elem()
-		eEng := buildDecEngine(et)
-		size := et.Size()
+		eEng, size := buildDecEngine(et), et.Size()
 		*engine = func(d *Decoder, p unsafe.Pointer) {
 			header := (*sliceHeader)(p)
 			if d.decBool() {
