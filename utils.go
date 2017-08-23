@@ -20,14 +20,6 @@ type flag uintptr
 //go:linkname flagIndir reflect.flagIndir
 const flagIndir flag = 1 << 7
 
-func getPtr(rv reflect.Value) unsafe.Pointer {
-	v := (*refVal)(unsafe.Pointer(&rv))
-	if v.flag&flagIndir == 0 {
-		return unsafe.Pointer(&v.ptr)
-	}
-	return v.ptr
-}
-
 // sliceHeader is a safe version of SliceHeader used within this package.
 type sliceHeader struct {
 	data unsafe.Pointer

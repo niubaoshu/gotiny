@@ -219,7 +219,7 @@ var (
 		vslicebase,
 		vslicestring,
 		varray,
-		vinterface,
+		//vinterface,
 		unsafePointer,
 		vcir,
 		v2cir,
@@ -263,10 +263,10 @@ func init() {
 		srcp[i] = unsafe.Pointer(reflect.ValueOf(&srci[i]).Elem().InterfaceData()[1])
 		retp[i] = unsafe.Pointer(reflect.ValueOf(&reti[i]).Elem().InterfaceData()[1])
 	}
+	e.AppendTo(buf)
 }
 
 func TestEncodeDecode(t *testing.T) {
-	e.AppendTo(buf)
 	l := gotiny.Decodes(gotiny.Encodes(srci...), reti...)
 	fmt.Printf("encoded length: %d \n", l)
 	for i, r := range reti {
@@ -275,7 +275,6 @@ func TestEncodeDecode(t *testing.T) {
 }
 
 func TestInterface(t *testing.T) {
-	e.AppendTo(buf)
 	d.Decode(e.Encode(srci...), reti...)
 	for i, r := range reti {
 		Assert(t, srci[i], r)
@@ -283,7 +282,6 @@ func TestInterface(t *testing.T) {
 }
 
 func TestPtr(t *testing.T) {
-	e.AppendTo(buf)
 	d.DecodePtr(e.EncodePtr(srcp...), retp...)
 	for i, r := range reti {
 		Assert(t, srci[i], r)
@@ -291,7 +289,6 @@ func TestPtr(t *testing.T) {
 }
 
 func TestValue(t *testing.T) {
-	e.AppendTo(buf)
 	d.DecodeValue(e.EncodeValue(srcv...), retv...)
 	for i, r := range reti {
 		Assert(t, srci[i], r)
@@ -299,56 +296,53 @@ func TestValue(t *testing.T) {
 
 }
 
-func BenchmarkEncodes(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		buf = gotiny.Encodes(srci...)
-	}
-}
-
-func BenchmarkDecodes(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		gotiny.Decodes(buf, reti...)
-	}
-}
-
-func BenchmarkEncodesValue(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		e.AppendTo(buf[:0])
-		e.EncodeValue(srcv...)
-	}
-}
-
-func BenchmarkDecodesValue(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		d.DecodeValue(buf, retv...)
-	}
-}
-
-func BenchmarkEncodesPtr(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		e.AppendTo(buf[:0])
-		e.EncodePtr(srcp...)
-	}
-}
-
-func BenchmarkDecodesPtr(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		d.DecodePtr(buf, retp...)
-	}
-}
-
-func BenchmarkEncodesInterface(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		e.AppendTo(buf[:0])
-		e.Encode(srci...)
-	}
-}
-
-func BenchmarkDecodesInterface(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		d.Decode(buf, reti...)
-	}
-}
+//func BenchmarkEncodes(b *testing.B) {
+//	for i := 0; i < b.N; i++ {
+//		buf = gotiny.Encodes(srci...)
+//	}
+//}
+//
+//func BenchmarkDecodes(b *testing.B) {
+//	for i := 0; i < b.N; i++ {
+//		gotiny.Decodes(buf, reti...)
+//	}
+//}
+//
+//func BenchmarkEncodesValue(b *testing.B) {
+//	for i := 0; i < b.N; i++ {
+//		e.EncodeValue(srcv...)
+//	}
+//}
+//
+//func BenchmarkDecodesValue(b *testing.B) {
+//	for i := 0; i < b.N; i++ {
+//		d.DecodeValue(buf, retv...)
+//	}
+//}
+//
+//func BenchmarkEncodesPtr(b *testing.B) {
+//	for i := 0; i < b.N; i++ {
+//		e.EncodePtr(srcp...)
+//	}
+//}
+//
+//func BenchmarkDecodesPtr(b *testing.B) {
+//	for i := 0; i < b.N; i++ {
+//		d.DecodePtr(buf, retp...)
+//	}
+//}
+//
+//func BenchmarkEncodesInterface(b *testing.B) {
+//	for i := 0; i < b.N; i++ {
+//		e.Encode(srci...)
+//	}
+//}
+//
+//func BenchmarkDecodesInterface(b *testing.B) {
+//	for i := 0; i < b.N; i++ {
+//		d.Decode(buf, reti...)
+//	}
+//}
 
 func Assert(t *testing.T, x, y interface{}) {
 	if !c.DeepEqual(x, y) {

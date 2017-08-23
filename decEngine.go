@@ -34,7 +34,7 @@ var (
 		reflect.TypeOf((*complex128)(nil)).Elem():     &decComplex128,
 		reflect.TypeOf((*[]byte)(nil)).Elem():         &decBytes,
 		reflect.TypeOf((*string)(nil)).Elem():         &decString,
-		reflect.TypeOf((*struct{})(nil)):              &decignore,
+		reflect.TypeOf((*struct{})(nil)).Elem():       &decignore,
 		reflect.TypeOf(nil):                           &decignore,
 	}
 
@@ -171,7 +171,7 @@ func buildDecEngine(rt reflect.Type) decEngPtr {
 			}
 		}
 	case reflect.Chan, reflect.Func, reflect.Interface:
-		panic("not suport " + rt.String() + " type")
+		panic("not support " + rt.String() + " type")
 	}
 	return engine
 }

@@ -7,8 +7,9 @@ import (
 
 type Encoder struct {
 	buf     []byte //编码目的数组
-	boolPos int    //下一次要设置的bool在buf中的下标,即buf[boolPos]
-	boolBit byte   //下一次要设置的bool的buf[boolPos]中的bit位
+	off     int
+	boolPos int  //下一次要设置的bool在buf中的下标,即buf[boolPos]
+	boolBit byte //下一次要设置的bool的buf[boolPos]中的bit位
 
 	encEngs []encEng
 	length  int
@@ -89,19 +90,25 @@ func (e *Encoder) EncodePtr(ps ...unsafe.Pointer) []byte {
 func (e *Encoder) EncodeValue(vs ...reflect.Value) []byte {
 	engs := e.encEngs
 	for i := 0; i < e.length; i++ {
-		engs[i](e, getPtr(vs[i]))
+		v := (*refVal)(unsafe.Pointer(&vs[i]))
+		if v.flag&flagIndir == 0 {
+			engs[i](e, unsafe.Pointer(&v.ptr))
+		} else {
+			engs[i](e, v.ptr)
+		}
 	}
 	return e.reset()
 }
 
 // 编码产生的数据将append到buf上
 func (e *Encoder) AppendTo(buf []byte) {
+	e.off = len(buf)
 	e.buf = buf
 }
 
 func (e *Encoder) reset() []byte {
 	buf := e.buf
-	e.buf = nil
+	e.buf = buf[:e.off]
 	e.boolBit = 0
 	e.boolPos = 0
 	return buf
