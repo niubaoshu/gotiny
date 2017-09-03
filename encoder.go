@@ -70,8 +70,8 @@ func NewEncoderWithType(ts ...reflect.Type) *Encoder {
 
 // 入参是要编码值的指针
 func (e *Encoder) Encode(is ...interface{}) []byte {
-	engs := e.encEngs
-	for i := 0; i < e.length; i++ {
+	engs, length := e.encEngs, e.length
+	for i := 0; i < length; i++ {
 		engs[i](e, (*[2]unsafe.Pointer)(unsafe.Pointer(&is[i]))[1])
 	}
 	return e.reset()
@@ -79,8 +79,8 @@ func (e *Encoder) Encode(is ...interface{}) []byte {
 
 // 入参是要编码的值得unsafe.Pointer 指针
 func (e *Encoder) EncodePtr(ps ...unsafe.Pointer) []byte {
-	engs := e.encEngs
-	for i := 0; i < e.length; i++ {
+	engs, length := e.encEngs, e.length
+	for i := 0; i < length; i++ {
 		engs[i](e, ps[i])
 	}
 	return e.reset()
@@ -88,14 +88,14 @@ func (e *Encoder) EncodePtr(ps ...unsafe.Pointer) []byte {
 
 // vs 是持有要编码的值
 func (e *Encoder) EncodeValue(vs ...reflect.Value) []byte {
-	engs := e.encEngs
-	for i := 0; i < e.length; i++ {
+	engs, length := e.encEngs, e.length
+	for i := 0; i < length; i++ {
 		v := (*refVal)(unsafe.Pointer(&vs[i]))
+		p := v.ptr
 		if v.flag&flagIndir == 0 {
-			engs[i](e, unsafe.Pointer(&v.ptr))
-		} else {
-			engs[i](e, v.ptr)
+			p = unsafe.Pointer(&v.ptr)
 		}
+		engs[i](e, p)
 	}
 	return e.reset()
 }

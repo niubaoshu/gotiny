@@ -79,8 +79,8 @@ func (d *Decoder) reset() int {
 // is is pointer of variable
 func (d *Decoder) Decode(buf []byte, is ...interface{}) int {
 	d.buf = buf
-	engs := d.decEngs
-	for i := 0; i < d.length; i++ {
+	engs, length := d.decEngs, d.length
+	for i := 0; i < length; i++ {
 		engs[i](d, (*[2]unsafe.Pointer)(unsafe.Pointer(&is[i]))[1])
 	}
 	return d.reset()
@@ -89,8 +89,8 @@ func (d *Decoder) Decode(buf []byte, is ...interface{}) int {
 // ps is a unsafe.Pointer of the variable
 func (d *Decoder) DecodePtr(buf []byte, ps ...unsafe.Pointer) int {
 	d.buf = buf
-	engs := d.decEngs
-	for i := 0; i < d.length; i++ {
+	engs, length := d.decEngs, d.length
+	for i := 0; i < length; i++ {
 		engs[i](d, ps[i])
 	}
 	return d.reset()
@@ -98,8 +98,8 @@ func (d *Decoder) DecodePtr(buf []byte, ps ...unsafe.Pointer) int {
 
 func (d *Decoder) DecodeValue(buf []byte, vs ...reflect.Value) int {
 	d.buf = buf
-	engs := d.decEngs
-	for i := 0; i < d.length; i++ {
+	engs, length := d.decEngs, d.length
+	for i := 0; i < length; i++ {
 		engs[i](d, unsafe.Pointer(vs[i].UnsafeAddr()))
 	}
 	return d.reset()

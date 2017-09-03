@@ -37,8 +37,32 @@ var (
 		reflect.TypeOf((*struct{})(nil)).Elem():       &encignore,
 		reflect.TypeOf(nil):                           &encignore,
 	}
+	eengs = [...]encEng{
+		reflect.Invalid:       encignore,
+		reflect.Bool:          encBool,
+		reflect.Int:           encInt,
+		reflect.Int8:          encInt8,
+		reflect.Int16:         encInt16,
+		reflect.Int32:         encInt32,
+		reflect.Int64:         encInt64,
+		reflect.Uint:          encUint,
+		reflect.Uint8:         encUint8,
+		reflect.Uint16:        encUint16,
+		reflect.Uint32:        encUint32,
+		reflect.Uint64:        encUint64,
+		reflect.Uintptr:       encUintptr,
+		reflect.UnsafePointer: encPointer,
+		reflect.Float32:       encFloat32,
+		reflect.Float64:       encFloat64,
+		reflect.Complex64:     encComplex64,
+		reflect.Complex128:    encComplex128,
+		reflect.String:        encString,
+	}
 
 	encLock sync.RWMutex
+
+	interRT    []reflect.Type
+	interRTMap map[reflect.Type]int = map[reflect.Type]int{}
 )
 
 func getEncEngine(rt reflect.Type) encEng {
@@ -94,7 +118,8 @@ func buildEncEngine(rt reflect.Type) encEngPtr {
 		return engine
 	}
 
-	switch rt.Kind() {
+	kind := rt.Kind()
+	switch kind {
 	case reflect.Ptr:
 		eEng := buildEncEngine(rt.Elem())
 		*engine = func(e *Encoder, p unsafe.Pointer) {
@@ -139,18 +164,16 @@ func buildEncEngine(rt reflect.Type) encEngPtr {
 				// TODO flag&flagIndir 在编译时确定
 				for _, key := range v.MapKeys() {
 					val := v.MapIndex(key)
-					kv := (*refVal)(unsafe.Pointer(&key))
-					vv := (*refVal)(unsafe.Pointer(&val))
+					kv, vv := (*refVal)(unsafe.Pointer(&key)), (*refVal)(unsafe.Pointer(&val))
+					kp, vp := kv.ptr, vv.ptr
 					if kv.flag&flagIndir == 0 {
-						(*eKey)(e, unsafe.Pointer(&kv.ptr))
-					} else {
-						(*eKey)(e, kv.ptr)
+						kp = unsafe.Pointer(&kv.ptr)
 					}
 					if vv.flag&flagIndir == 0 {
-						(*eEng)(e, unsafe.Pointer(&vv.ptr))
-					} else {
-						(*eEng)(e, vv.ptr)
+						vp = unsafe.Pointer(&vv.ptr)
 					}
+					(*eKey)(e, kp)
+					(*eEng)(e, vp)
 				}
 			}
 		}
@@ -167,8 +190,59 @@ func buildEncEngine(rt reflect.Type) encEngPtr {
 				(*engs[i])(e, unsafe.Pointer(uintptr(p)+offs[i]))
 			}
 		}
-	case reflect.Chan, reflect.Func, reflect.Interface:
+	case reflect.Interface:
+		if rt.NumMethod() > 0 {
+			*engine = func(e *Encoder, p unsafe.Pointer) {
+				isNotNil := !isNil(p)
+				e.encBool(isNotNil)
+				if isNotNil {
+					v := reflect.ValueOf(*(*interface {
+						M()
+					})(p))
+					et := v.Type()
+					e.encLength(getRTID(et))
+					eEng := buildEncEngine(et)
+					vv := (*refVal)(unsafe.Pointer(&v))
+					vp := vv.ptr
+					if vv.flag&flagIndir == 0 {
+						vp = unsafe.Pointer(&vv.ptr)
+					}
+					(*eEng)(e, vp)
+				}
+			}
+		} else {
+			*engine = func(e *Encoder, p unsafe.Pointer) {
+				isNotNil := !isNil(p)
+				e.encBool(isNotNil)
+				if isNotNil {
+					v := reflect.ValueOf(*(*interface{})(p))
+					et := v.Type()
+					e.encLength(getRTID(et))
+					eEng := buildEncEngine(et)
+					vv := (*refVal)(unsafe.Pointer(&v))
+					vp := vv.ptr
+					if vv.flag&flagIndir == 0 {
+						vp = unsafe.Pointer(&vv.ptr)
+					}
+					(*eEng)(e, vp)
+				}
+			}
+		}
+	case reflect.Chan, reflect.Func:
 		panic("not support " + rt.String() + " type")
+	default:
+		*engine = eengs[kind]
 	}
 	return engine
+}
+
+func getRTID(rt reflect.Type) int {
+	if id, has := interRTMap[rt]; has {
+		return id
+	} else {
+		id = len(interRT)
+		interRT = append(interRT, rt)
+		interRTMap[rt] = id
+		return id
+	}
 }

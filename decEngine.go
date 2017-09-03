@@ -38,6 +38,27 @@ var (
 		reflect.TypeOf(nil):                           &decignore,
 	}
 
+	dengs = []decEng{
+		reflect.Invalid:       decignore,
+		reflect.Bool:          decBool,
+		reflect.Int:           decInt,
+		reflect.Int8:          decInt8,
+		reflect.Int16:         decInt16,
+		reflect.Int32:         decInt32,
+		reflect.Int64:         decInt64,
+		reflect.Uint:          decUint,
+		reflect.Uint8:         decUint8,
+		reflect.Uint16:        decUint16,
+		reflect.Uint32:        decUint32,
+		reflect.Uint64:        decUint64,
+		reflect.Uintptr:       decUintptr,
+		reflect.UnsafePointer: decPointer,
+		reflect.Float32:       decFloat32,
+		reflect.Float64:       decFloat64,
+		reflect.Complex64:     decComplex64,
+		reflect.Complex128:    decComplex128,
+		reflect.String:        decString,
+	}
 	declock sync.RWMutex
 )
 
@@ -92,7 +113,8 @@ func buildDecEngine(rt reflect.Type) decEngPtr {
 		return engine
 	}
 
-	switch rt.Kind() {
+	kind := rt.Kind()
+	switch kind {
 	case reflect.Ptr:
 		et := rt.Elem()
 		eEng := buildDecEngine(et) // TODO 可以考虑在生成编码机的时候解引用掉子编码机，下同
@@ -167,8 +189,33 @@ func buildDecEngine(rt reflect.Type) decEngPtr {
 				(*engs[i])(d, unsafe.Pointer(uintptr(p)+offs[i]))
 			}
 		}
-	case reflect.Chan, reflect.Func, reflect.Interface:
+	case reflect.Interface:
+		*engine = func(d *Decoder, p unsafe.Pointer) {
+			if d.decBool() {
+				et := interRT[d.decLength()]
+				v := reflect.NewAt(rt, p).Elem()
+				var ev reflect.Value
+				if v.IsNil() || v.Elem().Type() != et {
+					ev = reflect.New(et).Elem()
+				} else {
+					ev = v.Elem()
+				}
+				dEng := buildDecEngine(et)
+				vv := (*refVal)(unsafe.Pointer(&ev))
+				vp := vv.ptr
+				if vv.flag&flagIndir == 0 {
+					vp = unsafe.Pointer(&vv.ptr)
+				}
+				(*dEng)(d, vp)
+				v.Set(ev)
+			} else if !isNil(p) {
+				*(*unsafe.Pointer)(p) = nil
+			}
+		}
+	case reflect.Chan, reflect.Func:
 		panic("not support " + rt.String() + " type")
+	default:
+		*engine = dengs[kind]
 	}
 	return engine
 }

@@ -2,7 +2,9 @@ package gotiny_test
 
 import (
 	"fmt"
+	"io"
 	"math/rand"
+	"os"
 	"reflect"
 	"testing"
 	"time"
@@ -32,6 +34,7 @@ type (
 		fcomplex128 complex128
 		fstring     string
 		array       [3]uint32
+		inter       interface{}
 	}
 
 	A struct {
@@ -50,8 +53,14 @@ type (
 	}
 	cirmap map[int]cirmap
 
+	tint int
+
 	gotinytest string
 )
+
+func (tint) Read([]byte) (int, error)  { return 0, nil }
+func (tint) Write([]byte) (int, error) { return 0, nil }
+func (tint) Close() error              { return nil }
 
 func (v *gotinytest) GotinyEncode(buf []byte) []byte {
 	return append(buf, gotiny.Encodes((*string)(v))...)
@@ -79,6 +88,7 @@ func genBase() baseTyp {
 		fcomplex128: complex(rand.Float64(), rand.Float64()),
 		fstring:     GetRandomString(20 + rand.Intn(256)),
 		array:       [3]uint32{rand.Uint32(), rand.Uint32()},
+		inter:       interface{}(int(1)),
 	}
 }
 
@@ -105,6 +115,7 @@ var (
 	vint        = int(123456)
 	vint1       = int(123456)
 	vint2       = int(1234567)
+	vint3       = tint(1234567)
 	vuint       = uint(123)
 	vuint8      = uint8(123)
 	vuint16     = uint16(12345)
@@ -154,7 +165,6 @@ var (
 		genBase(),
 		genBase(),
 	}
-	vinterface interface{} = varr
 
 	unsafePointer = unsafe.Pointer(&vtime)
 
@@ -171,6 +181,18 @@ var (
 	vGotinyTest  = gotinytest("aaaaaaaaaaaaaaaaaaaaa")
 	v2GotinyTest = &vGotinyTest
 
+	v0interface interface{}
+	vinterface  interface{}        = varray
+	v1interface io.ReadWriteCloser = tint(2)
+	v2interface io.ReadWriteCloser = os.Stdin
+	v3interface interface{}        = &vinterface
+	v4interface interface{}        = &v1interface
+	v5interface interface{}        = &v2interface
+	v6interface interface{}        = &v3interface
+	v7interface interface{}        = &v0interface
+	v8interface interface{}        = &vnilptr
+	v9interface interface{}        = &v8interface
+
 	vs = []interface{}{
 		vbool,
 		vfbool,
@@ -183,6 +205,7 @@ var (
 		vint,
 		vint1,
 		vint2,
+		vint3,
 		vuint,
 		vuint8,
 		vuint16,
@@ -219,7 +242,14 @@ var (
 		vslicebase,
 		vslicestring,
 		varray,
-		//vinterface,
+		vinterface,
+		v1interface,
+		v2interface,
+		v3interface,
+		v4interface,
+		v5interface,
+		v6interface,
+		v7interface,
 		unsafePointer,
 		vcir,
 		v2cir,
@@ -252,6 +282,7 @@ func init() {
 	for i := 0; i < length; i++ {
 		typ := reflect.TypeOf(vs[i])
 		srcv[i] = reflect.ValueOf(vs[i])
+
 		tempi := reflect.New(typ)
 		tempi.Elem().Set(srcv[i])
 		srci[i] = tempi.Interface()
