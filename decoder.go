@@ -104,5 +104,3 @@ func (d *Decoder) DecodeValue(buf []byte, vs ...reflect.Value) int {
 	}
 	return d.reset()
 }
-
-

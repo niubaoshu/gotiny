@@ -83,7 +83,7 @@ func buildDecEngine(rt reflect.Type) decEngPtr {
 
 	engine = new(func(*Decoder, unsafe.Pointer))
 	rt2decEng[rt] = engine
-	if implementsInterface(rt, gobType) {
+	if reflect.PtrTo(rt).Implements(gobType) {
 		*engine = func(d *Decoder, p unsafe.Pointer) {
 			length := d.decLength()
 			start := d.index
@@ -94,7 +94,7 @@ func buildDecEngine(rt reflect.Type) decEngPtr {
 		}
 		return engine
 	}
-	if implementsInterface(rt, binType) {
+	if reflect.PtrTo(rt).Implements(binType) {
 		*engine = func(d *Decoder, p unsafe.Pointer) {
 			length := d.decLength()
 			start := d.index

@@ -13,20 +13,6 @@ func (d *Decoder) decBool() (b bool) {
 	return
 }
 
-func (d *Decoder) decUintslow() (u uint64) {
-	buf, i := d.buf[d.index:], 0
-	s := uint(0)
-	for buf[i] > 0x7f {
-		u |= (uint64(buf[i]&0x7f) << s)
-		s += 7
-		i++
-	}
-	u |= uint64(buf[i]) << s
-	i++
-	d.index += i
-	return u
-}
-
 func (d *Decoder) decUint() uint64 {
 	buf, i := d.buf, d.index
 	if buf[i] < 0x80 {

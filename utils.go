@@ -62,15 +62,21 @@ func uintToInt(u uint64) int64 {
 	return (-(v & 1)) ^ (v>>1)&0x7FFFFFFFFFFFFFFF
 }
 
+type gobInter interface {
+	gob.GobEncoder
+	gob.GobDecoder
+}
+
+type binInter interface {
+	encoding.BinaryMarshaler
+	encoding.BinaryUnmarshaler
+}
+
 var (
-	gobType  = [2]reflect.Type{reflect.TypeOf((*gob.GobEncoder)(nil)).Elem(), reflect.TypeOf((*gob.GobDecoder)(nil)).Elem()}
-	binType  = [2]reflect.Type{reflect.TypeOf((*encoding.BinaryMarshaler)(nil)).Elem(), reflect.TypeOf((*encoding.BinaryUnmarshaler)(nil)).Elem()}
+	gobType  = reflect.TypeOf((*gobInter)(nil)).Elem()
+	binType  = reflect.TypeOf((*binInter)(nil)).Elem()
 	tinyType = reflect.TypeOf((*GoTinySerializer)(nil)).Elem()
 )
-
-func implementsInterface(rt reflect.Type, typ [2]reflect.Type) bool {
-	return rt.Implements(typ[0]) && reflect.PtrTo(rt).Implements(typ[1])
-}
 
 func isNil(p unsafe.Pointer) bool {
 	return *(*unsafe.Pointer)(p) == nil

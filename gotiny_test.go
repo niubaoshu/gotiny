@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"math/rand"
+	"net/url"
 	"os"
 	"reflect"
 	"testing"
@@ -149,7 +150,8 @@ var (
 	vnilptrptr  = &vnilptr
 	varrptr     = &varr
 	vtime       = time.Now()
-	vslicebase  = []baseTyp{
+
+	vslicebase = []baseTyp{
 		genBase(),
 		genBase(),
 		genBase(),
@@ -180,6 +182,9 @@ var (
 
 	vGotinyTest  = gotinytest("aaaaaaaaaaaaaaaaaaaaa")
 	v2GotinyTest = &vGotinyTest
+
+	vbinTest, _ = url.Parse("http://www.baidu.com/s?wd=234234")
+	v2binTest   = &vbinTest
 
 	v0interface interface{}
 	vinterface  interface{}        = varray
@@ -260,6 +265,8 @@ var (
 		vAstruct,
 		vGotinyTest,
 		v2GotinyTest,
+		vbinTest,
+		v2binTest,
 		struct{}{},
 	}
 
@@ -275,25 +282,28 @@ var (
 	retv = make([]reflect.Value, length)
 	srcp = make([]unsafe.Pointer, length)
 	retp = make([]unsafe.Pointer, length)
+	typs = make([]reflect.Type, length)
 )
 
 func init() {
 	fmt.Printf("total %d value. buf length: %d\n", length, cap(buf))
 	for i := 0; i < length; i++ {
-		typ := reflect.TypeOf(vs[i])
+		typs[i] = reflect.TypeOf(vs[i])
 		srcv[i] = reflect.ValueOf(vs[i])
 
-		tempi := reflect.New(typ)
+		tempi := reflect.New(typs[i])
 		tempi.Elem().Set(srcv[i])
 		srci[i] = tempi.Interface()
 
-		tempv := reflect.New(typ)
+		tempv := reflect.New(typs[i])
 		retv[i] = tempv.Elem()
 		reti[i] = tempv.Interface()
 
 		srcp[i] = unsafe.Pointer(reflect.ValueOf(&srci[i]).Elem().InterfaceData()[1])
 		retp[i] = unsafe.Pointer(reflect.ValueOf(&reti[i]).Elem().InterfaceData()[1])
 	}
+	e = gotiny.NewEncoderWithType(typs...)
+	d = gotiny.NewDecoderWithType(typs...)
 	e.AppendTo(buf)
 }
 

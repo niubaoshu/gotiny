@@ -87,9 +87,9 @@ func buildEncEngine(rt reflect.Type) encEngPtr {
 	engine = new(func(*Encoder, unsafe.Pointer))
 	rt2encEng[rt] = engine
 
-	if implementsInterface(rt, gobType) {
+	if reflect.PtrTo(rt).Implements(gobType) {
 		*engine = func(e *Encoder, p unsafe.Pointer) {
-			buf, err := reflect.NewAt(rt, p).Elem().Interface().(gob.GobEncoder).GobEncode()
+			buf, err := reflect.NewAt(rt, p).Interface().(gob.GobEncoder).GobEncode()
 			if err != nil {
 				panic(err)
 			}
@@ -99,9 +99,9 @@ func buildEncEngine(rt reflect.Type) encEngPtr {
 		return engine
 	}
 
-	if implementsInterface(rt, binType) {
+	if reflect.PtrTo(rt).Implements(binType) {
 		*engine = func(e *Encoder, p unsafe.Pointer) {
-			buf, err := reflect.NewAt(rt, p).Elem().Interface().(encoding.BinaryMarshaler).MarshalBinary()
+			buf, err := reflect.NewAt(rt, p).Interface().(encoding.BinaryMarshaler).MarshalBinary()
 			if err != nil {
 				panic(err)
 			}
