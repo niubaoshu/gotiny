@@ -21,9 +21,6 @@ func Decodes(buf []byte, is ...interface{}) int {
 
 func NewDecoderWithPtr(is ...interface{}) *Decoder {
 	l := len(is)
-	if l < 1 {
-		panic("must have argument!")
-	}
 	des := make([]decEng, l)
 	for i := 0; i < l; i++ {
 		rt := reflect.TypeOf(is[i])
@@ -40,9 +37,6 @@ func NewDecoderWithPtr(is ...interface{}) *Decoder {
 
 func NewDecoder(is ...interface{}) *Decoder {
 	l := len(is)
-	if l < 1 {
-		panic("must have argument!")
-	}
 	des := make([]decEng, l)
 	for i := 0; i < l; i++ {
 		des[i] = getDecEngine(reflect.TypeOf(is[i]))
@@ -55,9 +49,6 @@ func NewDecoder(is ...interface{}) *Decoder {
 
 func NewDecoderWithType(ts ...reflect.Type) *Decoder {
 	l := len(ts)
-	if l < 1 {
-		panic("must have argument!")
-	}
 	des := make([]decEng, l)
 	for i := 0; i < l; i++ {
 		des[i] = getDecEngine(ts[i])

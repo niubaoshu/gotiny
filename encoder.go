@@ -21,9 +21,6 @@ func Encodes(is ...interface{}) []byte {
 
 func NewEncoderWithPtr(ps ...interface{}) *Encoder {
 	l := len(ps)
-	if l < 1 {
-		panic("must have argument!")
-	}
 	engs := make([]encEng, l)
 	for i := 0; i < l; i++ {
 		rt := reflect.TypeOf(ps[i])
@@ -40,9 +37,6 @@ func NewEncoderWithPtr(ps ...interface{}) *Encoder {
 
 func NewEncoder(is ...interface{}) *Encoder {
 	l := len(is)
-	if l < 1 {
-		panic("must have argument!")
-	}
 	engs := make([]encEng, l)
 	for i := 0; i < l; i++ {
 		rt := reflect.TypeOf(is[i])
@@ -55,9 +49,6 @@ func NewEncoder(is ...interface{}) *Encoder {
 }
 func NewEncoderWithType(ts ...reflect.Type) *Encoder {
 	l := len(ts)
-	if l < 1 {
-		panic("must have argument!")
-	}
 	engs := make([]encEng, l)
 	for i := 0; i < l; i++ {
 		engs[i] = getEncEngine(ts[i])
