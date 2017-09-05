@@ -137,31 +137,29 @@ var (
 
 	decString = func(d *Decoder, p unsafe.Pointer) {
 		l := d.decLength()
-		strheader := (*stringHeader)(p)
-		var bytes []byte
-		sliheader := (*sliceHeader)(unsafe.Pointer(&bytes))
-		if strheader.len < l {
-			bytes = make([]byte, l)
-			strheader.data = sliheader.data
-		} else {
-			*sliheader = sliceHeader{strheader.data, l, l}
+		strHeader := (*stringHeader)(p)
+		bytes := (*[]byte)(unsafe.Pointer(&sliceHeader{strHeader.data, l, l}))
+		if strHeader.len < l {
+			*bytes = make([]byte, l)
+			strHeader.data = *(*unsafe.Pointer)(unsafe.Pointer(bytes))
 		}
-		d.index += copy(bytes, d.buf[d.index:])
-		strheader.len = l
+		strHeader.len = l
+		d.index += copy(*bytes, d.buf[d.index:])
 	}
 
 	decBytes = func(d *Decoder, p unsafe.Pointer) {
-		vptr := (*[]byte)(p)
+		bytes := (*[]byte)(p)
 		if d.decBool() {
 			l := d.decLength()
 			header := (*sliceHeader)(p)
 			if header.cap < l { // cap(bytes) < l
-				*vptr = make([]byte, l)
+				*bytes = make([]byte, l)
+			} else {
+				header.len = l
 			}
-			header.len = l
-			d.index += copy(*vptr, d.buf[d.index:])
+			d.index += copy(*bytes, d.buf[d.index:])
 		} else if !isNil(p) {
-			*vptr = nil
+			*bytes = nil
 		}
 	}
 )
