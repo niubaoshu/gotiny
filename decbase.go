@@ -141,7 +141,7 @@ var (
 		bytes := (*[]byte)(unsafe.Pointer(&sliceHeader{header.data, l, l}))
 		if header.len < l {
 			*bytes = make([]byte, l)
-			header.data = *(*unsafe.Pointer)(unsafe.Pointer(bytes))
+			header.data = (*sliceHeader)(unsafe.Pointer(bytes)).data
 		}
 		header.len = l
 		d.index += copy(*bytes, d.buf[d.index:])
