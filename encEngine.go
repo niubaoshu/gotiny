@@ -87,9 +87,9 @@ func buildEncEngine(rt reflect.Type) encEngPtr {
 	engine = new(func(*Encoder, unsafe.Pointer))
 	rt2encEng[rt] = engine
 
-	if fn, _, yes := implementsGob(rt); yes {
+	if implementsInterface(rt, gobType) {
 		*engine = func(e *Encoder, p unsafe.Pointer) {
-			buf, err := fn(reflect.NewAt(rt, p).Elem().Interface().(gob.GobEncoder))
+			buf, err := reflect.NewAt(rt, p).Elem().Interface().(gob.GobEncoder).GobEncode()
 			if err != nil {
 				panic(err)
 			}
@@ -99,9 +99,9 @@ func buildEncEngine(rt reflect.Type) encEngPtr {
 		return engine
 	}
 
-	if fn, _, yes := implementsBin(rt); yes {
+	if implementsInterface(rt, binType) {
 		*engine = func(e *Encoder, p unsafe.Pointer) {
-			buf, err := fn(reflect.NewAt(rt, p).Elem().Interface().(encoding.BinaryMarshaler))
+			buf, err := reflect.NewAt(rt, p).Elem().Interface().(encoding.BinaryMarshaler).MarshalBinary()
 			if err != nil {
 				panic(err)
 			}
@@ -111,9 +111,9 @@ func buildEncEngine(rt reflect.Type) encEngPtr {
 		return engine
 	}
 
-	if fn, _, yes := implementsGotiny(reflect.PtrTo(rt)); yes {
+	if reflect.PtrTo(rt).Implements(tinyType) {
 		*engine = func(e *Encoder, p unsafe.Pointer) {
-			e.buf = fn(reflect.NewAt(rt, p).Interface().(GoTinySerializer), e.buf)
+			e.buf = reflect.NewAt(rt, p).Interface().(GoTinySerializer).GotinyEncode(e.buf)
 		}
 		return engine
 	}

@@ -62,21 +62,14 @@ func uintToInt(u uint64) int64 {
 	return (-(v & 1)) ^ (v>>1)&0x7FFFFFFFFFFFFFFF
 }
 
-func implementsGob(rt reflect.Type) (func(gob.GobEncoder) ([]byte, error), func(gob.GobDecoder, []byte) error, bool) {
-	_, has := rt.MethodByName("GobEncode")
-	_, has2 := reflect.PtrTo(rt).MethodByName("GobDecode")
-	return gob.GobEncoder.GobEncode, gob.GobDecoder.GobDecode, has && has2
-}
-func implementsBin(rt reflect.Type) (func(encoding.BinaryMarshaler) ([]byte, error), func(encoding.BinaryUnmarshaler, []byte) error, bool) {
-	_, has := rt.MethodByName("MarshalBinary")
-	_, has2 := reflect.PtrTo(rt).MethodByName("UnmarshalBinary")
-	return encoding.BinaryMarshaler.MarshalBinary, encoding.BinaryUnmarshaler.UnmarshalBinary, has && has2
-}
+var (
+	gobType  = [2]reflect.Type{reflect.TypeOf((*gob.GobEncoder)(nil)).Elem(), reflect.TypeOf((*gob.GobDecoder)(nil)).Elem()}
+	binType  = [2]reflect.Type{reflect.TypeOf((*encoding.BinaryMarshaler)(nil)).Elem(), reflect.TypeOf((*encoding.BinaryUnmarshaler)(nil)).Elem()}
+	tinyType = reflect.TypeOf((*GoTinySerializer)(nil)).Elem()
+)
 
-func implementsGotiny(rt reflect.Type) (func(GoTinySerializer, []byte) []byte, func(GoTinySerializer, []byte) int, bool) {
-	_, has := rt.MethodByName("GotinyEncode")
-	_, has2 := rt.MethodByName("GotinyDecode")
-	return GoTinySerializer.GotinyEncode, GoTinySerializer.GotinyDecode, has && has2
+func implementsInterface(rt reflect.Type, typ [2]reflect.Type) bool {
+	return rt.Implements(typ[0]) && reflect.PtrTo(rt).Implements(typ[1])
 }
 
 func isNil(p unsafe.Pointer) bool {

@@ -83,32 +83,32 @@ func buildDecEngine(rt reflect.Type) decEngPtr {
 
 	engine = new(func(*Decoder, unsafe.Pointer))
 	rt2decEng[rt] = engine
-	if _, fn, yes := implementsGob(rt); yes {
+	if implementsInterface(rt, gobType) {
 		*engine = func(d *Decoder, p unsafe.Pointer) {
 			length := d.decLength()
 			start := d.index
 			d.index += length
-			if err := fn(reflect.NewAt(rt, p).Interface().(gob.GobDecoder), d.buf[start:d.index]); err != nil {
+			if err := reflect.NewAt(rt, p).Interface().(gob.GobDecoder).GobDecode(d.buf[start:d.index]); err != nil {
 				panic(err)
 			}
 		}
 		return engine
 	}
-	if _, fn, yes := implementsBin(rt); yes {
+	if implementsInterface(rt, binType) {
 		*engine = func(d *Decoder, p unsafe.Pointer) {
 			length := d.decLength()
 			start := d.index
 			d.index += length
-			if err := fn(reflect.NewAt(rt, p).Interface().(encoding.BinaryUnmarshaler), d.buf[start:d.index]); err != nil {
+			if err := reflect.NewAt(rt, p).Interface().(encoding.BinaryUnmarshaler).UnmarshalBinary(d.buf[start:d.index]); err != nil {
 				panic(err)
 			}
 		}
 		return engine
 	}
 
-	if _, fn, yes := implementsGotiny(reflect.PtrTo(rt)); yes {
+	if reflect.PtrTo(rt).Implements(tinyType) {
 		*engine = func(d *Decoder, p unsafe.Pointer) {
-			d.index += fn(reflect.NewAt(rt, p).Interface().(GoTinySerializer), d.buf[d.index:])
+			d.index += reflect.NewAt(rt, p).Interface().(GoTinySerializer).GotinyDecode(d.buf[d.index:])
 		}
 		return engine
 	}
