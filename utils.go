@@ -20,14 +20,12 @@ type flag uintptr
 //go:linkname flagIndir reflect.flagIndir
 const flagIndir flag = 1 << 7
 
-// sliceHeader is a safe version of SliceHeader used within this package.
 type sliceHeader struct {
 	data unsafe.Pointer
 	len  int
 	cap  int
 }
 
-// stringHeader is a safe version of StringHeader used within this package.
 type stringHeader struct {
 	data unsafe.Pointer
 	len  int

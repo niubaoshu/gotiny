@@ -122,8 +122,7 @@ var (
 	}
 
 	decString = func(d *Decoder, p unsafe.Pointer) {
-		l := d.decLength()
-		header := (*stringHeader)(p)
+		l, header := d.decLength(), (*stringHeader)(p)
 		bytes := (*[]byte)(unsafe.Pointer(&sliceHeader{header.data, l, l}))
 		if header.len < l {
 			*bytes = make([]byte, l)
@@ -138,7 +137,7 @@ var (
 		if d.decBool() {
 			l := d.decLength()
 			header := (*sliceHeader)(p)
-			if header.cap < l { // cap(bytes) < l
+			if header.cap < l {
 				*bytes = make([]byte, l)
 			} else {
 				header.len = l

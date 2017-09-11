@@ -192,7 +192,7 @@ func buildDecEngine(rt reflect.Type) decEngPtr {
 	case reflect.Interface:
 		*engine = func(d *Decoder, p unsafe.Pointer) {
 			if d.decBool() {
-				et := interRT[d.decLength()]
+				et := interTypes[d.decLength()]
 				v := reflect.NewAt(rt, p).Elem()
 				var ev reflect.Value
 				if v.IsNil() || v.Elem().Type() != et {

@@ -61,8 +61,9 @@ var (
 
 	encLock sync.RWMutex
 
-	interRT    []reflect.Type
+	interTypes []reflect.Type
 	interRTMap map[reflect.Type]int = map[reflect.Type]int{}
+	interNames []string             = []string{}
 )
 
 func getEncEngine(rt reflect.Type) encEng {
@@ -240,9 +241,55 @@ func getRTID(rt reflect.Type) int {
 	if id, has := interRTMap[rt]; has {
 		return id
 	} else {
-		id = len(interRT)
-		interRT = append(interRT, rt)
+		id = len(interTypes)
+		interTypes = append(interTypes, rt)
 		interRTMap[rt] = id
 		return id
 	}
+}
+
+func Register(i interface{}) {
+	register(reflect.TypeOf(i))
+}
+
+func register(rt reflect.Type) int {
+	name := getName(rt)
+	i := len(interNames)
+	interNames = append(interNames, "")
+	for i > 0 {
+		if interNames[i-1] > name {
+			interTypes[i] = interTypes[i-1]
+			interNames[i] = interNames[i-1]
+		}
+		i--
+	}
+	interNames[i] = name
+	interTypes[i] = rt
+	interRTMap[rt] = i
+	return i
+}
+
+func getName(rt reflect.Type) string {
+
+	name := rt.String()
+
+	// But for named types (or pointers to them), qualify with import path (but see inner comment).
+	// Dereference one pointer looking for a named type.
+	star := ""
+	if rt.Name() == "" {
+		if rt.Kind() == reflect.Ptr {
+			star = "*"
+			rt = rt.Elem()
+		} else {
+			panic("not support no named type " + name)
+		}
+	}
+	if rt.Name() != "" {
+		if rt.PkgPath() == "" {
+			name = star + rt.Name()
+		} else {
+			name = star + rt.PkgPath() + "." + rt.Name()
+		}
+	}
+	return name
 }
