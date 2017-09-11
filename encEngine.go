@@ -253,20 +253,26 @@ func Register(i interface{}) {
 }
 
 func register(rt reflect.Type) int {
-	name := getName(rt)
-	i := len(interNames)
-	interNames = append(interNames, "")
-	for i > 0 {
-		if interNames[i-1] > name {
-			interTypes[i] = interTypes[i-1]
-			interNames[i] = interNames[i-1]
+	if id, has := interRTMap[rt]; has {
+		return id
+	} else {
+		name := getName(rt)
+		i := len(interNames)
+		interNames = append(interNames, "")
+		interTypes = append(interTypes, reflect.Type{})
+		for i > 0 {
+			if interNames[i-1] > name {
+				interTypes[i] = interTypes[i-1]
+				interNames[i] = interNames[i-1]
+				interRTMap[interTypes[i]] = i
+			}
+			i--
 		}
-		i--
+		interNames[i] = name
+		interTypes[i] = rt
+		interRTMap[rt] = i
+		return i
 	}
-	interNames[i] = name
-	interTypes[i] = rt
-	interRTMap[rt] = i
-	return i
 }
 
 func getName(rt reflect.Type) string {
