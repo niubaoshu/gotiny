@@ -259,7 +259,7 @@ func register(rt reflect.Type) int {
 		name := getName(rt)
 		i := len(interNames)
 		interNames = append(interNames, "")
-		interTypes = append(interTypes, reflect.Type{})
+		interTypes = append(interTypes, nil)
 		for i > 0 {
 			if interNames[i-1] > name {
 				interTypes[i] = interTypes[i-1]
