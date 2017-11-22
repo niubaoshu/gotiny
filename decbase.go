@@ -99,7 +99,7 @@ done:
 func (d *Decoder) decLength() int { return int(d.decUint()) }
 
 var (
-	decignore     = func(d *Decoder, p unsafe.Pointer) {}
+	decIgnore     = func(d *Decoder, p unsafe.Pointer) {}
 	decBool       = func(d *Decoder, p unsafe.Pointer) { *(*bool)(p) = d.decBool() }
 	decInt        = func(d *Decoder, p unsafe.Pointer) { *(*int)(p) = int(uintToInt(d.decUint())) }
 	decInt8       = func(d *Decoder, p unsafe.Pointer) { *(*int8)(p) = int8(d.buf[d.index]); d.index++ }

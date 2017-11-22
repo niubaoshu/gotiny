@@ -34,11 +34,11 @@ var (
 		reflect.TypeOf((*complex128)(nil)).Elem():     &encComplex128,
 		reflect.TypeOf((*[]byte)(nil)).Elem():         &encBytes,
 		reflect.TypeOf((*string)(nil)).Elem():         &encString,
-		reflect.TypeOf((*struct{})(nil)).Elem():       &encignore,
-		reflect.TypeOf(nil):                           &encignore,
+		reflect.TypeOf((*struct{})(nil)).Elem():       &encIgnore,
+		reflect.TypeOf(nil):                           &encIgnore,
 	}
-	eengs = [...]encEng{
-		reflect.Invalid:       encignore,
+	encEngs = [...]encEng{
+		reflect.Invalid:       encIgnore,
 		reflect.Bool:          encBool,
 		reflect.Int:           encInt,
 		reflect.Int8:          encInt8,
@@ -61,9 +61,8 @@ var (
 
 	encLock sync.RWMutex
 
-	interTypes []reflect.Type
-	interRTMap map[reflect.Type]int = map[reflect.Type]int{}
-	interNames []string             = []string{}
+	type2name = map[reflect.Type]string{}
+	name2type = map[string]reflect.Type{}
 )
 
 func getEncEngine(rt reflect.Type) encEng {
@@ -135,8 +134,9 @@ func buildEncEngine(rt reflect.Type) encEngPtr {
 		eEng := buildEncEngine(et)
 		size := et.Size()
 		*engine = func(e *Encoder, p unsafe.Pointer) {
+			eng := *eEng
 			for i := 0; i < l; i++ {
-				(*eEng)(e, unsafe.Pointer(uintptr(p)+uintptr(i)*size))
+				eng(e, unsafe.Pointer(uintptr(p)+uintptr(i)*size))
 			}
 		}
 	case reflect.Slice:
@@ -149,13 +149,14 @@ func buildEncEngine(rt reflect.Type) encEngPtr {
 				header := (*sliceHeader)(p)
 				l := header.len
 				e.encLength(l)
+				eng := *eEng
 				for i := uintptr(0); i < uintptr(l); i++ {
-					(*eEng)(e, unsafe.Pointer(uintptr(header.data)+i*size))
+					eng(e, unsafe.Pointer(uintptr(header.data)+i*size))
 				}
 			}
 		}
 	case reflect.Map:
-		eKey, eEng := buildEncEngine(rt.Key()), buildEncEngine(rt.Elem())
+		kEng, vEng := buildEncEngine(rt.Key()), buildEncEngine(rt.Elem())
 		*engine = func(e *Encoder, p unsafe.Pointer) {
 			isNotNil := !isNil(p)
 			e.encBool(isNotNil)
@@ -163,6 +164,7 @@ func buildEncEngine(rt reflect.Type) encEngPtr {
 				e.encLength(*(*int)(*(*unsafe.Pointer)(p)))
 				v := reflect.NewAt(rt, p).Elem()
 				// TODO flag&flagIndir 在编译时确定
+				engKey, engVal := *kEng, *vEng
 				for _, key := range v.MapKeys() {
 					val := v.MapIndex(key)
 					kv, vv := (*refVal)(unsafe.Pointer(&key)), (*refVal)(unsafe.Pointer(&val))
@@ -173,8 +175,8 @@ func buildEncEngine(rt reflect.Type) encEngPtr {
 					if vv.flag&flagIndir == 0 {
 						vp = unsafe.Pointer(&vv.ptr)
 					}
-					(*eKey)(e, kp)
-					(*eEng)(e, vp)
+					engKey(e, kp)
+					engVal(e, vp)
 				}
 			}
 		}
@@ -201,7 +203,7 @@ func buildEncEngine(rt reflect.Type) encEngPtr {
 						M()
 					})(p))
 					et := v.Type()
-					e.encLength(getRTID(et))
+					e.encString(getNameOfType(et))
 					eEng := buildEncEngine(et)
 					vv := (*refVal)(unsafe.Pointer(&v))
 					vp := vv.ptr
@@ -218,7 +220,7 @@ func buildEncEngine(rt reflect.Type) encEngPtr {
 				if isNotNil {
 					v := reflect.ValueOf(*(*interface{})(p))
 					et := v.Type()
-					e.encLength(getRTID(et))
+					e.encString(getNameOfType(et))
 					eEng := buildEncEngine(et)
 					vv := (*refVal)(unsafe.Pointer(&v))
 					vp := vv.ptr
@@ -232,70 +234,7 @@ func buildEncEngine(rt reflect.Type) encEngPtr {
 	case reflect.Chan, reflect.Func:
 		panic("not support " + rt.String() + " type")
 	default:
-		*engine = eengs[kind]
+		*engine = encEngs[kind]
 	}
 	return engine
-}
-
-func getRTID(rt reflect.Type) int {
-	if id, has := interRTMap[rt]; has {
-		return id
-	} else {
-		id = len(interTypes)
-		interTypes = append(interTypes, rt)
-		interRTMap[rt] = id
-		return id
-	}
-}
-
-func Register(i interface{}) {
-	register(reflect.TypeOf(i))
-}
-
-func register(rt reflect.Type) int {
-	if id, has := interRTMap[rt]; has {
-		return id
-	} else {
-		name := getName(rt)
-		i := len(interNames)
-		interNames = append(interNames, "")
-		interTypes = append(interTypes, nil)
-		for i > 0 {
-			if interNames[i-1] > name {
-				interTypes[i] = interTypes[i-1]
-				interNames[i] = interNames[i-1]
-				interRTMap[interTypes[i]] = i
-			}
-			i--
-		}
-		interNames[i] = name
-		interTypes[i] = rt
-		interRTMap[rt] = i
-		return i
-	}
-}
-
-func getName(rt reflect.Type) string {
-
-	name := rt.String()
-
-	// But for named types (or pointers to them), qualify with import path (but see inner comment).
-	// Dereference one pointer looking for a named type.
-	star := ""
-	if rt.Name() == "" {
-		if rt.Kind() == reflect.Ptr {
-			star = "*"
-			rt = rt.Elem()
-		} else {
-			panic("not support no named type " + name)
-		}
-	}
-	if rt.Name() != "" {
-		if rt.PkgPath() == "" {
-			name = star + rt.Name()
-		} else {
-			name = star + rt.PkgPath() + "." + rt.Name()
-		}
-	}
-	return name
 }

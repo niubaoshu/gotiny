@@ -34,12 +34,12 @@ var (
 		reflect.TypeOf((*complex128)(nil)).Elem():     &decComplex128,
 		reflect.TypeOf((*[]byte)(nil)).Elem():         &decBytes,
 		reflect.TypeOf((*string)(nil)).Elem():         &decString,
-		reflect.TypeOf((*struct{})(nil)).Elem():       &decignore,
-		reflect.TypeOf(nil):                           &decignore,
+		reflect.TypeOf((*struct{})(nil)).Elem():       &decIgnore,
+		reflect.TypeOf(nil):                           &decIgnore,
 	}
 
-	dengs = []decEng{
-		reflect.Invalid:       decignore,
+	decEngs = []decEng{
+		reflect.Invalid:       decIgnore,
 		reflect.Bool:          decBool,
 		reflect.Int:           decInt,
 		reflect.Int8:          decInt8,
@@ -132,8 +132,9 @@ func buildDecEngine(rt reflect.Type) decEngPtr {
 		l, et := rt.Len(), rt.Elem()
 		eEng, size := buildDecEngine(et), et.Size()
 		*engine = func(d *Decoder, p unsafe.Pointer) {
+			eng := *eEng
 			for i := 0; i < l; i++ {
-				(*eEng)(d, unsafe.Pointer(uintptr(p)+uintptr(i)*size))
+				eng(d, unsafe.Pointer(uintptr(p)+uintptr(i)*size))
 			}
 		}
 	case reflect.Slice:
@@ -148,8 +149,9 @@ func buildDecEngine(rt reflect.Type) decEngPtr {
 				} else {
 					header.len = l
 				}
+				eng := *eEng
 				for i := uintptr(0); i < uintptr(l); i++ {
-					(*eEng)(d, unsafe.Pointer(uintptr(header.data)+i*size))
+					eng(d, unsafe.Pointer(uintptr(header.data)+i*size))
 				}
 			} else if !isNil(p) {
 				*header = sliceHeader{}
@@ -166,10 +168,11 @@ func buildDecEngine(rt reflect.Type) decEngPtr {
 				}
 				v := reflect.NewAt(rt, p).Elem()
 				// TODO 考虑重用v中的key和value，可以重用v.Len()个
+				engKey, engVal := *kEng, *vEng
 				for i := 0; i < l; i++ {
 					key, val := reflect.New(kt).Elem(), reflect.New(vt).Elem()
-					(*kEng)(d, unsafe.Pointer(key.UnsafeAddr()))
-					(*vEng)(d, unsafe.Pointer(val.UnsafeAddr()))
+					engKey(d, unsafe.Pointer(key.UnsafeAddr()))
+					engVal(d, unsafe.Pointer(val.UnsafeAddr()))
 					v.SetMapIndex(key, val)
 				}
 			} else if !isNil(p) {
@@ -192,7 +195,9 @@ func buildDecEngine(rt reflect.Type) decEngPtr {
 	case reflect.Interface:
 		*engine = func(d *Decoder, p unsafe.Pointer) {
 			if d.decBool() {
-				et := interTypes[d.decLength()]
+				name := ""
+				decString(d, unsafe.Pointer(&name))
+				et := name2type[name]
 				v := reflect.NewAt(rt, p).Elem()
 				var ev reflect.Value
 				if v.IsNil() || v.Elem().Type() != et {
@@ -215,7 +220,7 @@ func buildDecEngine(rt reflect.Type) decEngPtr {
 	case reflect.Chan, reflect.Func:
 		panic("not support " + rt.String() + " type")
 	default:
-		*engine = dengs[kind]
+		*engine = decEngs[kind]
 	}
 	return engine
 }

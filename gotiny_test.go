@@ -1,7 +1,6 @@
 package gotiny_test
 
 import (
-	"fmt"
 	"io"
 	"math/rand"
 	"net/url"
@@ -10,6 +9,8 @@ import (
 	"testing"
 	"time"
 	"unsafe"
+
+	"fmt"
 
 	"github.com/niubaoshu/gotiny"
 	"github.com/niubaoshu/goutils"
@@ -36,6 +37,7 @@ type (
 		fstring     string
 		array       [3]uint32
 		inter       interface{}
+		A
 	}
 
 	A struct {
@@ -90,6 +92,7 @@ func genBase() baseTyp {
 		fstring:     GetRandomString(20 + rand.Intn(256)),
 		array:       [3]uint32{rand.Uint32(), rand.Uint32()},
 		inter:       interface{}(int(1)),
+		A:           genA(),
 	}
 }
 
@@ -259,6 +262,8 @@ var (
 		v5interface,
 		v6interface,
 		v7interface,
+		v8interface,
+		v9interface,
 		unsafePointer,
 		vcir,
 		v2cir,
@@ -290,7 +295,8 @@ var (
 )
 
 func init() {
-	fmt.Printf("total %d value. buf length: %d\n", length, cap(buf))
+	e.AppendTo(buf)
+
 	for i := 0; i < length; i++ {
 		typs[i] = reflect.TypeOf(vs[i])
 		srcv[i] = reflect.ValueOf(vs[i])
@@ -306,14 +312,11 @@ func init() {
 		srcp[i] = unsafe.Pointer(reflect.ValueOf(&srci[i]).Elem().InterfaceData()[1])
 		retp[i] = unsafe.Pointer(reflect.ValueOf(&reti[i]).Elem().InterfaceData()[1])
 	}
-	e = gotiny.NewEncoderWithType(typs...)
-	d = gotiny.NewDecoderWithType(typs...)
-	e.AppendTo(buf)
+	fmt.Printf("total %d value. buf length: %d, encode length: %d \n", length, cap(buf), len(gotiny.Encodes(srci...)))
 }
 
 func TestEncodeDecode(t *testing.T) {
-	l := gotiny.Decodes(gotiny.Encodes(srci...), reti...)
-	fmt.Printf("encoded length: %d \n", l)
+	gotiny.Decodes(gotiny.Encodes(srci...), reti...)
 	for i, r := range reti {
 		Assert(t, srci[i], r)
 	}
@@ -338,7 +341,6 @@ func TestValue(t *testing.T) {
 	for i, r := range reti {
 		Assert(t, srci[i], r)
 	}
-
 }
 
 //func BenchmarkEncodes(b *testing.B) {
@@ -404,4 +406,43 @@ func GetRandomString(l int) string {
 		result = append(result, bytes[r.Intn(len(bytes))])
 	}
 	return string(result)
+}
+
+func TestGetName(t *testing.T) {
+	stdin := (interface {
+		Read([]byte) (int, error)
+		Write([]byte) (int, error)
+	})(os.Stdin)
+	items := []struct {
+		ret string
+		val interface{}
+	}{
+		{"int", int(1)},
+		{"*int", (*int)(nil)},
+		{"**int", (**int)(nil)},
+		{"[]int", []int{}},
+		{"[]time.Time", []time.Time{}},
+		{"[]github.com/niubaoshu/gotiny.GoTinySerializer", []gotiny.GoTinySerializer{}},
+		{"*interface {}", (*interface{})(nil)},
+		{"map[int]string", map[int]string{}},
+		{"struct { a struct { int; b int; dec []github.com/niubaoshu/gotiny.Decoder; abb interface {}; c io.ReadWriteCloser } }",
+			struct {
+				a struct {
+					int
+					b   int
+					dec []gotiny.Decoder
+					abb interface{}
+					c   io.ReadWriteCloser
+				}
+			}{}},
+		{"struct {}", struct{}{}},
+		{"*interface { Read([]uint8) (int, error); Write([]uint8) (int, error) }", &stdin},
+	}
+	for _, item := range items {
+		r := reflect.TypeOf(item.val)
+		if string(gotiny.GetName(item.val)) != item.ret {
+			t.Logf("real: %s , exp: %s", gotiny.GetName(item.val), item.ret)
+			t.Fatalf("string:%s,name:%s,pkgpath:%s,fmt %T", r.String(), r.Name(), r.PkgPath(), item.val)
+		}
+	}
 }
