@@ -197,7 +197,10 @@ func buildDecEngine(rt reflect.Type) decEngPtr {
 			if d.decBool() {
 				name := ""
 				decString(d, unsafe.Pointer(&name))
-				et := name2type[name]
+				et, has := name2type[name]
+				if !has {
+					panic("unknow typ:" + name)
+				}
 				v := reflect.NewAt(rt, p).Elem()
 				var ev reflect.Value
 				if v.IsNil() || v.Elem().Type() != et {
