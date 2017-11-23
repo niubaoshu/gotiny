@@ -63,7 +63,7 @@ func NewEncoderWithType(ts ...reflect.Type) *Encoder {
 func (e *Encoder) Encode(is ...interface{}) []byte {
 	engs, length := e.encEngs, e.length
 	for i := 0; i < length; i++ {
-		engs[i](e, (*[2]unsafe.Pointer)(unsafe.Pointer(&is[i]))[1])
+		engs[i](e, (*eface)(unsafe.Pointer(&is[i])).data)
 	}
 	return e.reset()
 }

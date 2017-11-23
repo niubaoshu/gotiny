@@ -27,6 +27,11 @@ type sliceHeader struct {
 	cap  int
 }
 
+type eface struct {
+	typ  unsafe.Pointer
+	data unsafe.Pointer
+}
+
 type stringHeader struct {
 	data unsafe.Pointer
 	len  int
