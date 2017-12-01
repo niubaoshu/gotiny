@@ -41,10 +41,10 @@ var (
 	encUint       = func(e *Encoder, p unsafe.Pointer) { e.encUint(uint64(*(*uint)(p))) }
 	encUintptr    = func(e *Encoder, p unsafe.Pointer) { e.encUint(uint64(*(*uintptr)(p))) }
 	encPointer    = func(e *Encoder, p unsafe.Pointer) { e.encUint(uint64(*(*uintptr)(p))) }
-	encFloat32    = func(e *Encoder, p unsafe.Pointer) { e.encUint(floatToUint(float64(*(*float32)(p)))) }
-	encFloat64    = func(e *Encoder, p unsafe.Pointer) { e.encUint(floatToUint(float64(*(*float64)(p)))) }
-	encComplex64  = func(e *Encoder, p unsafe.Pointer) { e.encUint(*(*uint64)(p)) }
+	encFloat32    = func(e *Encoder, p unsafe.Pointer) { e.encUint(uint64(float32ToUint32(p))) }
+	encFloat64    = func(e *Encoder, p unsafe.Pointer) { e.encUint(float64ToUint(p)) }
 	encString     = func(e *Encoder, p unsafe.Pointer) { e.encString(*(*string)(p)) }
+	encComplex64  = func(e *Encoder, p unsafe.Pointer) { e.encUint(*(*uint64)(p)) }
 	encComplex128 = func(e *Encoder, p unsafe.Pointer) {
 		e.encUint(*(*uint64)(p))
 		e.encUint(*(*uint64)(unsafe.Pointer(uintptr(p) + ptr1Size)))

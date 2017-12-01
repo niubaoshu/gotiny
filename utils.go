@@ -37,19 +37,34 @@ type stringHeader struct {
 	len  int
 }
 
-func floatToUint(v float64) uint64 {
-	return reverseByte(*(*uint64)(unsafe.Pointer(&v)))
+func float64ToUint(v unsafe.Pointer) uint64 {
+	return reverse64Byte(*(*uint64)(v))
 }
 
-func uintToFloat(u uint64) float64 {
-	u = reverseByte(u)
+func uintToFloat64(u uint64) float64 {
+	u = reverse64Byte(u)
 	return *((*float64)(unsafe.Pointer(&u)))
 }
 
-func reverseByte(u uint64) uint64 {
+func reverse64Byte(u uint64) uint64 {
 	u = (u << 32) | (u >> 32)
 	u = ((u << 16) & 0xFFFF0000FFFF0000) | ((u >> 16) & 0xFFFF0000FFFF)
 	u = ((u << 8) & 0xFF00FF00FF00FF00) | ((u >> 8) & 0xFF00FF00FF00FF)
+	return u
+}
+
+func float32ToUint32(v unsafe.Pointer) uint32 {
+	return reverse32Byte(*(*uint32)(v))
+}
+
+func uint32ToFloat32(u uint32) float32 {
+	u = reverse32Byte(u)
+	return *((*float32)(unsafe.Pointer(&u)))
+}
+
+func reverse32Byte(u uint32) uint32 {
+	u = (u << 16) | (u >> 16)
+	u = ((u << 8) & 0xFF00FF00) | ((u >> 8) & 0xFF00FF)
 	return u
 }
 

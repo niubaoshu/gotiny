@@ -208,13 +208,12 @@ func buildDecEngine(rt reflect.Type) decEngPtr {
 				} else {
 					ev = v.Elem()
 				}
-				eng := getDecEngine(et)
 				vv := (*refVal)(unsafe.Pointer(&ev))
 				vp := vv.ptr
 				if vv.flag&flagIndir == 0 {
 					vp = unsafe.Pointer(&vv.ptr)
 				}
-				eng(d, vp)
+				getDecEngine(et)(d, vp)
 				v.Set(ev)
 			} else if !isNil(p) {
 				*(*unsafe.Pointer)(p) = nil
