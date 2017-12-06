@@ -204,13 +204,12 @@ func buildEncEngine(rt reflect.Type) encEngPtr {
 					})(p))
 					et := v.Type()
 					e.encString(getNameOfType(et))
-					eng := getEncEngine(et)
 					vv := (*refVal)(unsafe.Pointer(&v))
 					vp := vv.ptr
 					if vv.flag&flagIndir == 0 {
 						vp = unsafe.Pointer(&vv.ptr)
 					}
-					eng(e, vp)
+					getEncEngine(et)(e, vp)
 				}
 			}
 		} else {
@@ -221,13 +220,12 @@ func buildEncEngine(rt reflect.Type) encEngPtr {
 					v := reflect.ValueOf(*(*interface{})(p))
 					et := v.Type()
 					e.encString(getNameOfType(et))
-					eng := getEncEngine(et)
 					vv := (*refVal)(unsafe.Pointer(&v))
 					vp := vv.ptr
 					if vv.flag&flagIndir == 0 {
 						vp = unsafe.Pointer(&vv.ptr)
 					}
-					eng(e, vp)
+					getEncEngine(et)(e, vp)
 				}
 			}
 		}

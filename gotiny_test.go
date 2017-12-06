@@ -398,12 +398,11 @@ func Assert(t *testing.T, x, y interface{}) {
 }
 
 func GetRandomString(l int) string {
-	str := "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	bytes := []byte(str)
-	result := []byte{}
+	bytes := []byte("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+	result := make([]byte, l)
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	for i := 0; i < l; i++ {
-		result = append(result, bytes[r.Intn(len(bytes))])
+		result[i] = bytes[r.Intn(62)]
 	}
 	return string(result)
 }

@@ -113,8 +113,8 @@ var (
 	decUint64     = func(d *Decoder, p unsafe.Pointer) { *(*uint64)(p) = d.decUint() }
 	decUintptr    = func(d *Decoder, p unsafe.Pointer) { *(*uintptr)(p) = uintptr(d.decUint()) }
 	decPointer    = func(d *Decoder, p unsafe.Pointer) { *(*uintptr)(p) = uintptr(d.decUint()) }
-	decFloat32    = func(d *Decoder, p unsafe.Pointer) { *(*float32)(p) = float32(uintToFloat(d.decUint())) }
-	decFloat64    = func(d *Decoder, p unsafe.Pointer) { *(*float64)(p) = uintToFloat(d.decUint()) }
+	decFloat32    = func(d *Decoder, p unsafe.Pointer) { *(*float32)(p) = float32(uint32ToFloat32(uint32(d.decUint()))) }
+	decFloat64    = func(d *Decoder, p unsafe.Pointer) { *(*float64)(p) = uintToFloat64(d.decUint()) }
 	decComplex64  = func(d *Decoder, p unsafe.Pointer) { *(*uint64)(p) = d.decUint() }
 	decComplex128 = func(d *Decoder, p unsafe.Pointer) {
 		*(*uint64)(p) = d.decUint()
