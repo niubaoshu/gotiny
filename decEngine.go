@@ -83,7 +83,8 @@ func buildDecEngine(rt reflect.Type) decEngPtr {
 
 	engine = new(func(*Decoder, unsafe.Pointer))
 	rt2decEng[rt] = engine
-	if reflect.PtrTo(rt).Implements(gobType) {
+	rtPtr := reflect.PtrTo(rt)
+	if rtPtr.Implements(gobType) {
 		*engine = func(d *Decoder, p unsafe.Pointer) {
 			length := d.decLength()
 			start := d.index
@@ -94,7 +95,7 @@ func buildDecEngine(rt reflect.Type) decEngPtr {
 		}
 		return engine
 	}
-	if reflect.PtrTo(rt).Implements(binType) {
+	if rtPtr.Implements(binType) {
 		*engine = func(d *Decoder, p unsafe.Pointer) {
 			length := d.decLength()
 			start := d.index
@@ -106,7 +107,7 @@ func buildDecEngine(rt reflect.Type) decEngPtr {
 		return engine
 	}
 
-	if reflect.PtrTo(rt).Implements(tinyType) {
+	if rtPtr.Implements(tinyType) {
 		*engine = func(d *Decoder, p unsafe.Pointer) {
 			d.index += reflect.NewAt(rt, p).Interface().(GoTinySerializer).GotinyDecode(d.buf[d.index:])
 		}
@@ -199,7 +200,7 @@ func buildDecEngine(rt reflect.Type) decEngPtr {
 				decString(d, unsafe.Pointer(&name))
 				et, has := name2type[name]
 				if !has {
-					panic("unknow typ:" + name)
+					panic("unknown typ:" + name)
 				}
 				v := reflect.NewAt(rt, p).Elem()
 				var ev reflect.Value
@@ -213,7 +214,7 @@ func buildDecEngine(rt reflect.Type) decEngPtr {
 				if vv.flag&flagIndir == 0 {
 					vp = unsafe.Pointer(&vv.ptr)
 				}
-				getDecEngine(et)(d, vp)
+				(*buildDecEngine(et))(d, vp)
 				v.Set(ev)
 			} else if !isNil(p) {
 				*(*unsafe.Pointer)(p) = nil

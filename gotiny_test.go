@@ -412,11 +412,13 @@ func TestGetName(t *testing.T) {
 		Read([]byte) (int, error)
 		Write([]byte) (int, error)
 	})(os.Stdin)
+	nt := newType()
 	items := []struct {
 		ret string
 		val interface{}
 	}{
 		{"int", int(1)},
+		{"github.com/niubaoshu/gotiny.Encoder", gotiny.Encoder{}},
 		{"*int", (*int)(nil)},
 		{"**int", (**int)(nil)},
 		{"[]int", []int{}},
@@ -436,6 +438,11 @@ func TestGetName(t *testing.T) {
 			}{}},
 		{"struct {}", struct{}{}},
 		{"*interface { Read([]uint8) (int, error); Write([]uint8) (int, error) }", &stdin},
+		{"func(int) (int, error)", func(i int) (int, error) { return 0, nil }},
+		{"func(int)", func(i int) {}},
+		{"func(int) error", func(i int) error { return nil }},
+		{"struct { A int }", nt},
+		{"<nil>", nil},
 	}
 	for _, item := range items {
 		r := reflect.TypeOf(item.val)
@@ -444,4 +451,10 @@ func TestGetName(t *testing.T) {
 			t.Fatalf("string:%s,name:%s,pkgpath:%s,fmt %T", r.String(), r.Name(), r.PkgPath(), item.val)
 		}
 	}
+}
+
+func newType() struct {
+	A int
+} {
+	return struct{ A int }{A: 1}
 }

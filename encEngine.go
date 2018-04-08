@@ -87,7 +87,8 @@ func buildEncEngine(rt reflect.Type) encEngPtr {
 	engine = new(func(*Encoder, unsafe.Pointer))
 	rt2encEng[rt] = engine
 
-	if reflect.PtrTo(rt).Implements(gobType) {
+	rtPtr := reflect.PtrTo(rt)
+	if rtPtr.Implements(gobType) {
 		*engine = func(e *Encoder, p unsafe.Pointer) {
 			buf, err := reflect.NewAt(rt, p).Interface().(gob.GobEncoder).GobEncode()
 			if err != nil {
@@ -99,7 +100,7 @@ func buildEncEngine(rt reflect.Type) encEngPtr {
 		return engine
 	}
 
-	if reflect.PtrTo(rt).Implements(binType) {
+	if rtPtr.Implements(binType) {
 		*engine = func(e *Encoder, p unsafe.Pointer) {
 			buf, err := reflect.NewAt(rt, p).Interface().(encoding.BinaryMarshaler).MarshalBinary()
 			if err != nil {
@@ -111,7 +112,7 @@ func buildEncEngine(rt reflect.Type) encEngPtr {
 		return engine
 	}
 
-	if reflect.PtrTo(rt).Implements(tinyType) {
+	if rtPtr.Implements(tinyType) {
 		*engine = func(e *Encoder, p unsafe.Pointer) {
 			e.buf = reflect.NewAt(rt, p).Interface().(GoTinySerializer).GotinyEncode(e.buf)
 		}
@@ -209,7 +210,7 @@ func buildEncEngine(rt reflect.Type) encEngPtr {
 					if vv.flag&flagIndir == 0 {
 						vp = unsafe.Pointer(&vv.ptr)
 					}
-					getEncEngine(et)(e, vp)
+					(*buildEncEngine(et))(e, vp)
 				}
 			}
 		} else {
@@ -225,7 +226,7 @@ func buildEncEngine(rt reflect.Type) encEngPtr {
 					if vv.flag&flagIndir == 0 {
 						vp = unsafe.Pointer(&vv.ptr)
 					}
-					getEncEngine(et)(e, vp)
+					(*buildEncEngine(et))(e, vp)
 				}
 			}
 		}

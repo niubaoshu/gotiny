@@ -110,15 +110,15 @@ type GoTinySerializer interface {
 }
 
 func GetName(obj interface{}) string {
-	return getNameByType(reflect.TypeOf(obj))
+	return GetNameByType(reflect.TypeOf(obj))
 }
-func getNameByType(rt reflect.Type) string {
+func GetNameByType(rt reflect.Type) string {
 	return string(getName([]byte(nil), rt))
 }
 
 func getName(prefix []byte, rt reflect.Type) []byte {
 	if rt == nil || rt.Kind() == reflect.Invalid {
-		return []byte("<nil>")
+		return append(prefix, []byte("<nil>")...)
 	}
 	if rt.Name() == "" { //未命名的，组合类型
 		switch rt.Kind() {
@@ -139,8 +139,7 @@ func getName(prefix []byte, rt reflect.Type) []byte {
 				if field.Anonymous {
 					prefix = getName(prefix, field.Type)
 				} else {
-					prefix = append(prefix, field.Name+" "...)
-					prefix = getName(prefix, field.Type)
+					prefix = getName(append(prefix, field.Name+" "...), field.Type)
 				}
 				if i != nf-1 {
 					prefix = append(prefix, ';', ' ')
@@ -150,9 +149,7 @@ func getName(prefix []byte, rt reflect.Type) []byte {
 			}
 			return append(prefix, '}')
 		case reflect.Map:
-			prefix = append(prefix, "map["...)
-			prefix = append(getName(prefix, rt.Key()), ']')
-			return getName(prefix, rt.Elem())
+			return getName(append(getName(append(prefix, "map["...), rt.Key()), ']'), rt.Elem())
 		case reflect.Interface:
 			prefix = append(prefix, "interface {"...)
 			nm := rt.NumMethod()
@@ -169,7 +166,7 @@ func getName(prefix []byte, rt reflect.Type) []byte {
 					prefix = append(prefix, ' ')
 				}
 			}
-			prefix = append(prefix, '}')
+			return append(prefix, '}')
 		case reflect.Func:
 			prefix = append(prefix, "func("...)
 			for i := 0; i < rt.NumIn(); i++ {
@@ -180,8 +177,11 @@ func getName(prefix []byte, rt reflect.Type) []byte {
 			}
 			prefix = append(prefix, ')')
 			no := rt.NumOut()
+			if no > 0 {
+				prefix = append(prefix, ' ')
+			}
 			if no > 1 {
-				prefix = append(prefix, ' ', '(')
+				prefix = append(prefix, '(')
 			}
 			for i := 0; i < no; i++ {
 				prefix = getName(prefix, rt.Out(i))
@@ -192,8 +192,10 @@ func getName(prefix []byte, rt reflect.Type) []byte {
 			if no > 1 {
 				prefix = append(prefix, ')')
 			}
+			return prefix
 		}
 	}
+
 	if rt.PkgPath() == "" {
 		prefix = append(prefix, rt.Name()...)
 	} else {
@@ -215,7 +217,7 @@ func Register(i interface{}) string {
 }
 
 func registerType(rt reflect.Type) string {
-	name := getNameByType(rt)
+	name := GetNameByType(rt)
 	RegisterName(name, rt)
 	return name
 }
@@ -225,8 +227,12 @@ func RegisterName(name string, rt reflect.Type) {
 		panic("attempt to register empty name")
 	}
 
+	if rt == nil || rt.Kind() == reflect.Invalid {
+		panic("attempt to register nil type or invalid type")
+	}
+
 	if _, has := type2name[rt]; has {
-		panic("gotiny: registering duplicate types for " + getNameByType(rt))
+		panic("gotiny: registering duplicate types for " + GetNameByType(rt))
 	}
 
 	if _, has := name2type[name]; has {
