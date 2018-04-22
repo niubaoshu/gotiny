@@ -18,23 +18,23 @@ import (
 
 type (
 	baseTyp struct {
-		fbool       bool
-		fint8       int8
-		fint16      int16
-		fint32      int32
-		fint64      int64
-		fint        int
-		fuint8      uint8
-		fuint16     uint16
-		fuint32     uint32
-		fuint64     uint64
-		fuint       uint
-		fuintptr    uintptr
-		ffloat32    float32
-		ffloat64    float64
-		fcomplex64  complex64
-		fcomplex128 complex128
-		fstring     string
+		fBool       bool
+		fInt8       int8
+		fInt16      int16
+		fInt32      int32
+		fInt64      int64
+		fInt        int
+		fUint8      uint8
+		fUint16     uint16
+		fUint32     uint32
+		fUint64     uint64
+		fUint       uint
+		fUintptr    uintptr
+		fFloat32    float32
+		fFloat64    float64
+		fComplex64  complex64
+		fComplex128 complex128
+		fString     string
 		array       [3]uint32
 		inter       interface{}
 		A
@@ -54,42 +54,42 @@ type (
 		a int
 		*cirStruct
 	}
-	cirmap map[int]cirmap
+	cirMap map[int]cirMap
 
 	tint int
 
-	gotinytest string
+	gotinyTest string
 )
 
 func (tint) Read([]byte) (int, error)  { return 0, nil }
 func (tint) Write([]byte) (int, error) { return 0, nil }
 func (tint) Close() error              { return nil }
 
-func (v *gotinytest) GotinyEncode(buf []byte) []byte {
+func (v *gotinyTest) GotinyEncode(buf []byte) []byte {
 	return append(buf, gotiny.Encodes((*string)(v))...)
 }
 
-func (v *gotinytest) GotinyDecode(buf []byte) int {
+func (v *gotinyTest) GotinyDecode(buf []byte) int {
 	return gotiny.Decodes(buf, (*string)(v))
 }
 
 func genBase() baseTyp {
 	return baseTyp{
-		fbool:       rand.Int()%2 == 0,
-		fint8:       int8(rand.Int()),
-		fint16:      int16(rand.Int()),
-		fint32:      int32(rand.Int()),
-		fint64:      int64(rand.Int()),
-		fint:        int(rand.Int()),
-		fuint8:      uint8(rand.Int()),
-		fuint16:     uint16(rand.Int()),
-		fuint64:     uint64(rand.Int()),
-		fuintptr:    uintptr(rand.Int()),
-		ffloat32:    rand.Float32(),
-		ffloat64:    rand.Float64(),
-		fcomplex64:  complex(rand.Float32(), rand.Float32()),
-		fcomplex128: complex(rand.Float64(), rand.Float64()),
-		fstring:     GetRandomString(20 + rand.Intn(256)),
+		fBool:       rand.Int()%2 == 0,
+		fInt8:       int8(rand.Int()),
+		fInt16:      int16(rand.Int()),
+		fInt32:      int32(rand.Int()),
+		fInt64:      int64(rand.Int()),
+		fInt:        int(rand.Int()),
+		fUint8:      uint8(rand.Int()),
+		fUint16:     uint16(rand.Int()),
+		fUint64:     uint64(rand.Int()),
+		fUintptr:    uintptr(rand.Int()),
+		fFloat32:    rand.Float32(),
+		fFloat64:    rand.Float64(),
+		fComplex64:  complex(rand.Float32(), rand.Float32()),
+		fComplex128: complex(rand.Float64(), rand.Float64()),
+		fString:     GetRandomString(20 + rand.Intn(256)),
 		array:       [3]uint32{rand.Uint32(), rand.Uint32()},
 		inter:       interface{}(int(1)),
 		A:           genA(),
@@ -180,12 +180,12 @@ var (
 	vcirStruct         = cirStruct{a: 1}
 	v2cirStruct        = cirStruct{a: 1, cirStruct: &vcirStruct}
 
-	vcirmap  = cirmap{1: nil}
-	v2cirmap = cirmap{2: vcirmap}
+	vcirmap  = cirMap{1: nil}
+	v2cirmap = cirMap{2: vcirmap}
 
 	vAstruct = genA()
 
-	vGotinyTest  = gotinytest("aaaaaaaaaaaaaaaaaaaaa")
+	vGotinyTest  = gotinyTest("aaaaaaaaaaaaaaaaaaaaa")
 	v2GotinyTest = &vGotinyTest
 
 	vbinTest, _ = url.Parse("http://www.baidu.com/s?wd=234234")
@@ -342,54 +342,6 @@ func TestValue(t *testing.T) {
 		Assert(t, srci[i], r)
 	}
 }
-
-//func BenchmarkEncodes(b *testing.B) {
-//	for i := 0; i < b.N; i++ {
-//		buf = gotiny.Encodes(srci...)
-//	}
-//}
-//
-//func BenchmarkDecodes(b *testing.B) {
-//	for i := 0; i < b.N; i++ {
-//		gotiny.Decodes(buf, reti...)
-//	}
-//}
-//
-//func BenchmarkEncodesValue(b *testing.B) {
-//	for i := 0; i < b.N; i++ {
-//		e.EncodeValue(srcv...)
-//	}
-//}
-//
-//func BenchmarkDecodesValue(b *testing.B) {
-//	for i := 0; i < b.N; i++ {
-//		d.DecodeValue(buf, retv...)
-//	}
-//}
-//
-//func BenchmarkEncodesPtr(b *testing.B) {
-//	for i := 0; i < b.N; i++ {
-//		e.EncodePtr(srcp...)
-//	}
-//}
-//
-//func BenchmarkDecodesPtr(b *testing.B) {
-//	for i := 0; i < b.N; i++ {
-//		d.DecodePtr(buf, retp...)
-//	}
-//}
-//
-//func BenchmarkEncodesInterface(b *testing.B) {
-//	for i := 0; i < b.N; i++ {
-//		e.Encode(srci...)
-//	}
-//}
-//
-//func BenchmarkDecodesInterface(b *testing.B) {
-//	for i := 0; i < b.N; i++ {
-//		d.Decode(buf, reti...)
-//	}
-//}
 
 func Assert(t *testing.T, x, y interface{}) {
 	if !c.DeepEqual(x, y) {

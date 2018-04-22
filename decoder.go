@@ -11,8 +11,8 @@ type Decoder struct {
 	boolPos byte   //下一次要读取的bool在buf中的下标,即buf[boolPos]
 	boolBit byte   //下一次要读取的bool的buf[boolPos]中的bit位
 
-	decEngs []decEng //解码器集合
-	length  int      //解码器数量
+	decEngines []decEng //解码器集合
+	length     int      //解码器数量
 }
 
 func Decodes(buf []byte, is ...interface{}) int {
@@ -21,29 +21,29 @@ func Decodes(buf []byte, is ...interface{}) int {
 
 func NewDecoderWithPtr(is ...interface{}) *Decoder {
 	l := len(is)
-	des := make([]decEng, l)
+	decEngines := make([]decEng, l)
 	for i := 0; i < l; i++ {
 		rt := reflect.TypeOf(is[i])
 		if rt.Kind() != reflect.Ptr {
 			panic("must a pointer type!")
 		}
-		des[i] = getDecEngine(rt.Elem())
+		decEngines[i] = getDecEngine(rt.Elem())
 	}
 	return &Decoder{
-		length:  l,
-		decEngs: des,
+		length:     l,
+		decEngines: decEngines,
 	}
 }
 
 func NewDecoder(is ...interface{}) *Decoder {
 	l := len(is)
-	des := make([]decEng, l)
+	decEngines := make([]decEng, l)
 	for i := 0; i < l; i++ {
-		des[i] = getDecEngine(reflect.TypeOf(is[i]))
+		decEngines[i] = getDecEngine(reflect.TypeOf(is[i]))
 	}
 	return &Decoder{
-		length:  l,
-		decEngs: des,
+		length:     l,
+		decEngines: decEngines,
 	}
 }
 
@@ -54,8 +54,8 @@ func NewDecoderWithType(ts ...reflect.Type) *Decoder {
 		des[i] = getDecEngine(ts[i])
 	}
 	return &Decoder{
-		length:  l,
-		decEngs: des,
+		length:     l,
+		decEngines: des,
 	}
 }
 
@@ -70,9 +70,9 @@ func (d *Decoder) reset() int {
 // is is pointer of variable
 func (d *Decoder) Decode(buf []byte, is ...interface{}) int {
 	d.buf = buf
-	engs, length := d.decEngs, d.length
+	engines, length := d.decEngines, d.length
 	for i := 0; i < length; i++ {
-		engs[i](d, (*[2]unsafe.Pointer)(unsafe.Pointer(&is[i]))[1])
+		engines[i](d, (*[2]unsafe.Pointer)(unsafe.Pointer(&is[i]))[1])
 	}
 	return d.reset()
 }
@@ -80,18 +80,18 @@ func (d *Decoder) Decode(buf []byte, is ...interface{}) int {
 // ps is a unsafe.Pointer of the variable
 func (d *Decoder) DecodePtr(buf []byte, ps ...unsafe.Pointer) int {
 	d.buf = buf
-	engs, length := d.decEngs, d.length
+	engines, length := d.decEngines, d.length
 	for i := 0; i < length; i++ {
-		engs[i](d, ps[i])
+		engines[i](d, ps[i])
 	}
 	return d.reset()
 }
 
 func (d *Decoder) DecodeValue(buf []byte, vs ...reflect.Value) int {
 	d.buf = buf
-	engs, length := d.decEngs, d.length
+	engines, length := d.decEngines, d.length
 	for i := 0; i < length; i++ {
-		engs[i](d, unsafe.Pointer(vs[i].UnsafeAddr()))
+		engines[i](d, unsafe.Pointer(vs[i].UnsafeAddr()))
 	}
 	return d.reset()
 }

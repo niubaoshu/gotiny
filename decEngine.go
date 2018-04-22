@@ -38,7 +38,7 @@ var (
 		reflect.TypeOf(nil):                           &decIgnore,
 	}
 
-	decEngs = []decEng{
+	baseDecEngines = []decEng{
 		reflect.Invalid:       decIgnore,
 		reflect.Bool:          decBool,
 		reflect.Int:           decInt,
@@ -59,33 +59,36 @@ var (
 		reflect.Complex128:    decComplex128,
 		reflect.String:        decString,
 	}
-	declock sync.RWMutex
+	decLock sync.RWMutex
 )
 
 func getDecEngine(rt reflect.Type) decEng {
-	declock.RLock()
-	engine := rt2decEng[rt]
-	declock.RUnlock()
-	if engine != nil && *engine != nil {
-		return *engine
+	decLock.RLock()
+	engPtr := rt2decEng[rt]
+	decLock.RUnlock()
+	if engPtr != nil {
+		eng := *engPtr
+		if eng != nil {
+			return eng
+		}
 	}
-	declock.Lock()
-	engine = buildDecEngine(rt)
-	declock.Unlock()
-	return *engine
+	decLock.Lock()
+	engPtr = buildDecEngine(rt)
+	decLock.Unlock()
+	return *engPtr
 }
 
 func buildDecEngine(rt reflect.Type) decEngPtr {
-	engine, has := rt2decEng[rt]
+	engPtr, has := rt2decEng[rt]
 	if has {
-		return engine
+		return engPtr
 	}
+	engPtr = new(func(*Decoder, unsafe.Pointer))
+	rt2decEng[rt] = engPtr
 
-	engine = new(func(*Decoder, unsafe.Pointer))
-	rt2decEng[rt] = engine
 	rtPtr := reflect.PtrTo(rt)
 	if rtPtr.Implements(gobType) {
-		*engine = func(d *Decoder, p unsafe.Pointer) {
+		*engPtr = func(d *Decoder, p unsafe.Pointer) {
 			length := d.decLength()
 			start := d.index
 			d.index += length
@@ -93,10 +96,10 @@ func buildDecEngine(rt reflect.Type) decEngPtr {
 				panic(err)
 			}
 		}
-		return engine
+		return engPtr
 	}
 	if rtPtr.Implements(binType) {
-		*engine = func(d *Decoder, p unsafe.Pointer) {
+		*engPtr = func(d *Decoder, p unsafe.Pointer) {
 			length := d.decLength()
 			start := d.index
 			d.index += length
@@ -104,14 +107,14 @@ func buildDecEngine(rt reflect.Type) decEngPtr {
 				panic(err)
 			}
 		}
-		return engine
+		return engPtr
 	}
 
 	if rtPtr.Implements(tinyType) {
-		*engine = func(d *Decoder, p unsafe.Pointer) {
+		*engPtr = func(d *Decoder, p unsafe.Pointer) {
 			d.index += reflect.NewAt(rt, p).Interface().(GoTinySerializer).GotinyDecode(d.buf[d.index:])
 		}
-		return engine
+		return engPtr
 	}
 
 	kind := rt.Kind()
@@ -119,7 +122,7 @@ func buildDecEngine(rt reflect.Type) decEngPtr {
 	case reflect.Ptr:
 		et := rt.Elem()
 		eEng := buildDecEngine(et) // TODO 可以考虑在生成编码机的时候解引用掉子编码机，下同
-		*engine = func(d *Decoder, p unsafe.Pointer) {
+		*engPtr = func(d *Decoder, p unsafe.Pointer) {
 			if d.decBool() {
 				if isNil(p) {
 					*(*unsafe.Pointer)(p) = unsafe.Pointer(reflect.New(et).Elem().UnsafeAddr())
@@ -132,7 +135,7 @@ func buildDecEngine(rt reflect.Type) decEngPtr {
 	case reflect.Array:
 		l, et := rt.Len(), rt.Elem()
 		eEng, size := buildDecEngine(et), et.Size()
-		*engine = func(d *Decoder, p unsafe.Pointer) {
+		*engPtr = func(d *Decoder, p unsafe.Pointer) {
 			eng := *eEng
 			for i := 0; i < l; i++ {
 				eng(d, unsafe.Pointer(uintptr(p)+uintptr(i)*size))
@@ -141,7 +144,7 @@ func buildDecEngine(rt reflect.Type) decEngPtr {
 	case reflect.Slice:
 		et := rt.Elem()
 		eEng, size := buildDecEngine(et), et.Size()
-		*engine = func(d *Decoder, p unsafe.Pointer) {
+		*engPtr = func(d *Decoder, p unsafe.Pointer) {
 			header := (*sliceHeader)(p)
 			if d.decBool() {
 				l := d.decLength()
@@ -161,7 +164,7 @@ func buildDecEngine(rt reflect.Type) decEngPtr {
 	case reflect.Map:
 		kt, vt := rt.Key(), rt.Elem()
 		kEng, vEng := buildDecEngine(kt), buildDecEngine(vt)
-		*engine = func(d *Decoder, p unsafe.Pointer) {
+		*engPtr = func(d *Decoder, p unsafe.Pointer) {
 			if d.decBool() {
 				l := d.decLength()
 				if isNil(p) {
@@ -188,13 +191,13 @@ func buildDecEngine(rt reflect.Type) decEngPtr {
 			engs[i] = buildDecEngine(field.Type)
 			offs[i] = field.Offset
 		}
-		*engine = func(d *Decoder, p unsafe.Pointer) {
+		*engPtr = func(d *Decoder, p unsafe.Pointer) {
 			for i := 0; i < nf; i++ {
 				(*engs[i])(d, unsafe.Pointer(uintptr(p)+offs[i]))
 			}
 		}
 	case reflect.Interface:
-		*engine = func(d *Decoder, p unsafe.Pointer) {
+		*engPtr = func(d *Decoder, p unsafe.Pointer) {
 			if d.decBool() {
 				name := ""
 				decString(d, unsafe.Pointer(&name))
@@ -223,7 +226,7 @@ func buildDecEngine(rt reflect.Type) decEngPtr {
 	case reflect.Chan, reflect.Func:
 		panic("not support " + rt.String() + " type")
 	default:
-		*engine = decEngs[kind]
+		*engPtr = baseDecEngines[kind]
 	}
-	return engine
+	return engPtr
 }

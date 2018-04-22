@@ -37,25 +37,24 @@ func NewEncoderWithPtr(ps ...interface{}) *Encoder {
 
 func NewEncoder(is ...interface{}) *Encoder {
 	l := len(is)
-	engs := make([]encEng, l)
+	engines := make([]encEng, l)
 	for i := 0; i < l; i++ {
-		rt := reflect.TypeOf(is[i])
-		engs[i] = getEncEngine(rt)
+		engines[i] = getEncEngine(reflect.TypeOf(is[i]))
 	}
 	return &Encoder{
 		length:  l,
-		encEngs: engs,
+		encEngs: engines,
 	}
 }
 func NewEncoderWithType(ts ...reflect.Type) *Encoder {
 	l := len(ts)
-	engs := make([]encEng, l)
+	engines := make([]encEng, l)
 	for i := 0; i < l; i++ {
-		engs[i] = getEncEngine(ts[i])
+		engines[i] = getEncEngine(ts[i])
 	}
 	return &Encoder{
 		length:  l,
-		encEngs: engs,
+		encEngs: engines,
 	}
 }
 
