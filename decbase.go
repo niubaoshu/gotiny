@@ -98,53 +98,53 @@ done:
 
 func (d *Decoder) decLength() int { return int(d.decUint()) }
 
-var (
-	decIgnore     = func(d *Decoder, p unsafe.Pointer) {}
-	decBool       = func(d *Decoder, p unsafe.Pointer) { *(*bool)(p) = d.decBool() }
-	decInt        = func(d *Decoder, p unsafe.Pointer) { *(*int)(p) = int(uintToInt(d.decUint())) }
-	decInt8       = func(d *Decoder, p unsafe.Pointer) { *(*int8)(p) = int8(d.buf[d.index]); d.index++ }
-	decInt16      = func(d *Decoder, p unsafe.Pointer) { *(*int16)(p) = int16(uintToInt(d.decUint())) }
-	decInt32      = func(d *Decoder, p unsafe.Pointer) { *(*int32)(p) = int32(uintToInt(d.decUint())) }
-	decInt64      = func(d *Decoder, p unsafe.Pointer) { *(*int64)(p) = int64(uintToInt(d.decUint())) }
-	decUint       = func(d *Decoder, p unsafe.Pointer) { *(*uint)(p) = uint(d.decUint()) }
-	decUint8      = func(d *Decoder, p unsafe.Pointer) { *(*uint8)(p) = d.buf[d.index]; d.index++ }
-	decUint16     = func(d *Decoder, p unsafe.Pointer) { *(*uint16)(p) = uint16(d.decUint()) }
-	decUint32     = func(d *Decoder, p unsafe.Pointer) { *(*uint32)(p) = uint32(d.decUint()) }
-	decUint64     = func(d *Decoder, p unsafe.Pointer) { *(*uint64)(p) = d.decUint() }
-	decUintptr    = func(d *Decoder, p unsafe.Pointer) { *(*uintptr)(p) = uintptr(d.decUint()) }
-	decPointer    = func(d *Decoder, p unsafe.Pointer) { *(*uintptr)(p) = uintptr(d.decUint()) }
-	decFloat32    = func(d *Decoder, p unsafe.Pointer) { *(*float32)(p) = float32(uint32ToFloat32(uint32(d.decUint()))) }
-	decFloat64    = func(d *Decoder, p unsafe.Pointer) { *(*float64)(p) = uintToFloat64(d.decUint()) }
-	decComplex64  = func(d *Decoder, p unsafe.Pointer) { *(*uint64)(p) = d.decUint() }
-	decComplex128 = func(d *Decoder, p unsafe.Pointer) {
-		*(*uint64)(p) = d.decUint()
-		*(*uint64)(unsafe.Pointer(uintptr(p) + ptr1Size)) = d.decUint()
-	}
+func decIgnore(d *Decoder, p unsafe.Pointer)  {}
+func decBool(d *Decoder, p unsafe.Pointer)    { *(*bool)(p) = d.decBool() }
+func decInt(d *Decoder, p unsafe.Pointer)     { *(*int)(p) = int(uintToInt(d.decUint())) }
+func decInt8(d *Decoder, p unsafe.Pointer)    { *(*int8)(p) = int8(d.buf[d.index]); d.index++ }
+func decInt16(d *Decoder, p unsafe.Pointer)   { *(*int16)(p) = int16(uintToInt(d.decUint())) }
+func decInt32(d *Decoder, p unsafe.Pointer)   { *(*int32)(p) = int32(uintToInt(d.decUint())) }
+func decInt64(d *Decoder, p unsafe.Pointer)   { *(*int64)(p) = int64(uintToInt(d.decUint())) }
+func decUint(d *Decoder, p unsafe.Pointer)    { *(*uint)(p) = uint(d.decUint()) }
+func decUint8(d *Decoder, p unsafe.Pointer)   { *(*uint8)(p) = d.buf[d.index]; d.index++ }
+func decUint16(d *Decoder, p unsafe.Pointer)  { *(*uint16)(p) = uint16(d.decUint()) }
+func decUint32(d *Decoder, p unsafe.Pointer)  { *(*uint32)(p) = uint32(d.decUint()) }
+func decUint64(d *Decoder, p unsafe.Pointer)  { *(*uint64)(p) = d.decUint() }
+func decUintptr(d *Decoder, p unsafe.Pointer) { *(*uintptr)(p) = uintptr(d.decUint()) }
+func decPointer(d *Decoder, p unsafe.Pointer) { *(*uintptr)(p) = uintptr(d.decUint()) }
+func decFloat32(d *Decoder, p unsafe.Pointer) {
+	*(*float32)(p) = float32(uint32ToFloat32(uint32(d.decUint())))
+}
+func decFloat64(d *Decoder, p unsafe.Pointer)   { *(*float64)(p) = uintToFloat64(d.decUint()) }
+func decComplex64(d *Decoder, p unsafe.Pointer) { *(*uint64)(p) = d.decUint() }
+func decComplex128(d *Decoder, p unsafe.Pointer) {
+	*(*uint64)(p) = d.decUint()
+	*(*uint64)(unsafe.Pointer(uintptr(p) + ptr1Size)) = d.decUint()
+}
 
-	decString = func(d *Decoder, p unsafe.Pointer) {
-		l, header := d.decLength(), (*stringHeader)(p)
-		bytes := (*[]byte)(unsafe.Pointer(&sliceHeader{header.data, l, l}))
-		if header.len < l {
+func decString(d *Decoder, p unsafe.Pointer) {
+	l, header := d.decLength(), (*stringHeader)(p)
+	bytes := (*[]byte)(unsafe.Pointer(&sliceHeader{header.data, l, l}))
+	if header.len < l {
+		*bytes = make([]byte, l)
+		header.data = (*sliceHeader)(unsafe.Pointer(bytes)).data
+	}
+	header.len = l
+	d.index += copy(*bytes, d.buf[d.index:])
+}
+
+func decBytes(d *Decoder, p unsafe.Pointer) {
+	bytes := (*[]byte)(p)
+	if d.decBool() {
+		l := d.decLength()
+		header := (*sliceHeader)(p)
+		if header.cap < l {
 			*bytes = make([]byte, l)
-			header.data = (*sliceHeader)(unsafe.Pointer(bytes)).data
+		} else {
+			header.len = l
 		}
-		header.len = l
 		d.index += copy(*bytes, d.buf[d.index:])
+	} else if !isNil(p) {
+		*bytes = nil
 	}
-
-	decBytes = func(d *Decoder, p unsafe.Pointer) {
-		bytes := (*[]byte)(p)
-		if d.decBool() {
-			l := d.decLength()
-			header := (*sliceHeader)(p)
-			if header.cap < l {
-				*bytes = make([]byte, l)
-			} else {
-				header.len = l
-			}
-			d.index += copy(*bytes, d.buf[d.index:])
-		} else if !isNil(p) {
-			*bytes = nil
-		}
-	}
-)
+}

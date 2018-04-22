@@ -9,34 +9,34 @@ import (
 )
 
 type (
-	encEng    func(*Encoder, unsafe.Pointer)  //编码器
-	encEngPtr *func(*Encoder, unsafe.Pointer) //编码器指针
+	encEng func(*Encoder, unsafe.Pointer) //编码器
 )
 
 var (
-	rt2encEng = map[reflect.Type]encEngPtr{
-		reflect.TypeOf((*bool)(nil)).Elem():           &encBool,
-		reflect.TypeOf((*int)(nil)).Elem():            &encInt,
-		reflect.TypeOf((*int8)(nil)).Elem():           &encInt8,
-		reflect.TypeOf((*int16)(nil)).Elem():          &encInt16,
-		reflect.TypeOf((*int32)(nil)).Elem():          &encInt32,
-		reflect.TypeOf((*int64)(nil)).Elem():          &encInt64,
-		reflect.TypeOf((*uint)(nil)).Elem():           &encUint,
-		reflect.TypeOf((*uint8)(nil)).Elem():          &encUint8,
-		reflect.TypeOf((*uint16)(nil)).Elem():         &encUint16,
-		reflect.TypeOf((*uint32)(nil)).Elem():         &encUint32,
-		reflect.TypeOf((*uint64)(nil)).Elem():         &encUint64,
-		reflect.TypeOf((*uintptr)(nil)).Elem():        &encUintptr,
-		reflect.TypeOf((*unsafe.Pointer)(nil)).Elem(): &encPointer,
-		reflect.TypeOf((*float32)(nil)).Elem():        &encFloat32,
-		reflect.TypeOf((*float64)(nil)).Elem():        &encFloat64,
-		reflect.TypeOf((*complex64)(nil)).Elem():      &encComplex64,
-		reflect.TypeOf((*complex128)(nil)).Elem():     &encComplex128,
-		reflect.TypeOf((*[]byte)(nil)).Elem():         &encBytes,
-		reflect.TypeOf((*string)(nil)).Elem():         &encString,
-		reflect.TypeOf((*struct{})(nil)).Elem():       &encIgnore,
-		reflect.TypeOf(nil):                           &encIgnore,
+	rt2encEng = map[reflect.Type]encEng{
+		reflect.TypeOf((*bool)(nil)).Elem():           encBool,
+		reflect.TypeOf((*int)(nil)).Elem():            encInt,
+		reflect.TypeOf((*int8)(nil)).Elem():           encInt8,
+		reflect.TypeOf((*int16)(nil)).Elem():          encInt16,
+		reflect.TypeOf((*int32)(nil)).Elem():          encInt32,
+		reflect.TypeOf((*int64)(nil)).Elem():          encInt64,
+		reflect.TypeOf((*uint)(nil)).Elem():           encUint,
+		reflect.TypeOf((*uint8)(nil)).Elem():          encUint8,
+		reflect.TypeOf((*uint16)(nil)).Elem():         encUint16,
+		reflect.TypeOf((*uint32)(nil)).Elem():         encUint32,
+		reflect.TypeOf((*uint64)(nil)).Elem():         encUint64,
+		reflect.TypeOf((*uintptr)(nil)).Elem():        encUintptr,
+		reflect.TypeOf((*unsafe.Pointer)(nil)).Elem(): encPointer,
+		reflect.TypeOf((*float32)(nil)).Elem():        encFloat32,
+		reflect.TypeOf((*float64)(nil)).Elem():        encFloat64,
+		reflect.TypeOf((*complex64)(nil)).Elem():      encComplex64,
+		reflect.TypeOf((*complex128)(nil)).Elem():     encComplex128,
+		reflect.TypeOf((*[]byte)(nil)).Elem():         encBytes,
+		reflect.TypeOf((*string)(nil)).Elem():         encString,
+		reflect.TypeOf((*struct{})(nil)).Elem():       encIgnore,
+		reflect.TypeOf(nil):                           encIgnore,
 	}
+
 	encEngines = [...]encEng{
 		reflect.Invalid:       encIgnore,
 		reflect.Bool:          encBool,
@@ -67,31 +67,27 @@ var (
 
 func getEncEngine(rt reflect.Type) encEng {
 	encLock.RLock()
-	engPtr := rt2encEng[rt]
+	engine := rt2encEng[rt]
 	encLock.RUnlock()
-	if engPtr != nil {
-		eng := *engPtr
-		if eng != nil {
-			return eng
-		}
+	if engine != nil {
+		return engine
 	}
 	encLock.Lock()
-	engPtr = buildEncEngine(rt)
+	buildEncEngine(rt, &engine)
 	encLock.Unlock()
-	return *engPtr
+	return engine
 }
 
-func buildEncEngine(rt reflect.Type) encEngPtr {
-	engPtr, has := rt2encEng[rt]
+func buildEncEngine(rt reflect.Type, engPtr *encEng) {
+	engine, has := rt2encEng[rt]
 	if has {
-		return engPtr
+		*engPtr = engine
+		return
 	}
-	engPtr = new(func(*Encoder, unsafe.Pointer))
-	rt2encEng[rt] = engPtr
 
 	rtPtr := reflect.PtrTo(rt)
 	if rtPtr.Implements(gobType) {
-		*engPtr = func(e *Encoder, p unsafe.Pointer) {
+		engine = func(e *Encoder, p unsafe.Pointer) {
 			buf, err := reflect.NewAt(rt, p).Interface().(gob.GobEncoder).GobEncode()
 			if err != nil {
 				panic(err)
@@ -99,11 +95,9 @@ func buildEncEngine(rt reflect.Type) encEngPtr {
 			e.encLength(len(buf))
 			e.buf = append(e.buf, buf...)
 		}
-		return engPtr
 	}
-
 	if rtPtr.Implements(binType) {
-		*engPtr = func(e *Encoder, p unsafe.Pointer) {
+		engine = func(e *Encoder, p unsafe.Pointer) {
 			buf, err := reflect.NewAt(rt, p).Interface().(encoding.BinaryMarshaler).MarshalBinary()
 			if err != nil {
 				panic(err)
@@ -111,63 +105,68 @@ func buildEncEngine(rt reflect.Type) encEngPtr {
 			e.encLength(len(buf))
 			e.buf = append(e.buf, buf...)
 		}
-		return engPtr
 	}
-
 	if rtPtr.Implements(tinyType) {
-		*engPtr = func(e *Encoder, p unsafe.Pointer) {
+		engine = func(e *Encoder, p unsafe.Pointer) {
 			e.buf = reflect.NewAt(rt, p).Interface().(GoTinySerializer).GotinyEncode(e.buf)
 		}
-		return engPtr
+	}
+	if engine != nil {
+		rt2encEng[rt] = engine
+		*engPtr = engine
+		return
 	}
 
 	kind := rt.Kind()
 	switch kind {
 	case reflect.Ptr:
-		eEng := buildEncEngine(rt.Elem())
-		*engPtr = func(e *Encoder, p unsafe.Pointer) {
+		var eEng encEng
+		defer buildEncEngine(rt.Elem(), &eEng)
+		engine = func(e *Encoder, p unsafe.Pointer) {
 			isNotNil := !isNil(p)
 			e.encBool(isNotNil)
 			if isNotNil {
-				(*eEng)(e, *(*unsafe.Pointer)(p))
+				eEng(e, *(*unsafe.Pointer)(p))
 			}
 		}
 	case reflect.Array:
 		et, l := rt.Elem(), rt.Len()
-		eEng := buildEncEngine(et)
+		var eEng encEng
+		defer buildEncEngine(et, &eEng)
 		size := et.Size()
-		*engPtr = func(e *Encoder, p unsafe.Pointer) {
-			eng := *eEng
+		engine = func(e *Encoder, p unsafe.Pointer) {
 			for i := 0; i < l; i++ {
-				eng(e, unsafe.Pointer(uintptr(p)+uintptr(i)*size))
+				eEng(e, unsafe.Pointer(uintptr(p)+uintptr(i)*size))
 			}
 		}
 	case reflect.Slice:
 		et := rt.Elem()
-		eEng, size := buildEncEngine(et), et.Size()
-		*engPtr = func(e *Encoder, p unsafe.Pointer) {
+		size := et.Size()
+		var eEng encEng
+		defer buildEncEngine(et, &eEng)
+		engine = func(e *Encoder, p unsafe.Pointer) {
 			isNotNil := !isNil(p)
 			e.encBool(isNotNil)
 			if isNotNil {
 				header := (*sliceHeader)(p)
 				l := header.len
 				e.encLength(l)
-				eng := *eEng
 				for i := uintptr(0); i < uintptr(l); i++ {
-					eng(e, unsafe.Pointer(uintptr(header.data)+i*size))
+					eEng(e, unsafe.Pointer(uintptr(header.data)+i*size))
 				}
 			}
 		}
 	case reflect.Map:
-		kEng, vEng := buildEncEngine(rt.Key()), buildEncEngine(rt.Elem())
-		*engPtr = func(e *Encoder, p unsafe.Pointer) {
+		var kEng, vEng encEng
+		defer buildEncEngine(rt.Key(), &kEng)
+		defer buildEncEngine(rt.Elem(), &vEng)
+		engine = func(e *Encoder, p unsafe.Pointer) {
 			isNotNil := !isNil(p)
 			e.encBool(isNotNil)
 			if isNotNil {
 				e.encLength(*(*int)(*(*unsafe.Pointer)(p)))
 				v := reflect.NewAt(rt, p).Elem()
 				// TODO flag&flagIndir 在编译时确定
-				engKey, engVal := *kEng, *vEng
 				keys := v.MapKeys()
 				for i := 0; i < len(keys); i++ {
 					val := v.MapIndex(keys[i])
@@ -179,27 +178,27 @@ func buildEncEngine(rt reflect.Type) encEngPtr {
 					if vv.flag&flagIndir == 0 {
 						vp = unsafe.Pointer(&vv.ptr)
 					}
-					engKey(e, kp)
-					engVal(e, vp)
+					kEng(e, kp)
+					vEng(e, vp)
 				}
 			}
 		}
 	case reflect.Struct:
 		nf := rt.NumField()
-		engs, offs := make([]encEng, nf), make([]uintptr, nf)
+		fEngines, offs := make([]encEng, nf), make([]uintptr, nf)
 		for i := 0; i < nf; i++ {
 			field := rt.Field(i)
-			engs[i] = *buildEncEngine(field.Type)
+			defer buildEncEngine(field.Type, &fEngines[i])
 			offs[i] = field.Offset
 		}
-		*engPtr = func(e *Encoder, p unsafe.Pointer) {
+		engine = func(e *Encoder, p unsafe.Pointer) {
 			for i := 0; i < nf; i++ {
-				engs[i](e, unsafe.Pointer(uintptr(p)+offs[i]))
+				fEngines[i](e, unsafe.Pointer(uintptr(p)+offs[i]))
 			}
 		}
 	case reflect.Interface:
 		if rt.NumMethod() > 0 {
-			*engPtr = func(e *Encoder, p unsafe.Pointer) {
+			engine = func(e *Encoder, p unsafe.Pointer) {
 				isNotNil := !isNil(p)
 				e.encBool(isNotNil)
 				if isNotNil {
@@ -213,11 +212,11 @@ func buildEncEngine(rt reflect.Type) encEngPtr {
 					if vv.flag&flagIndir == 0 {
 						vp = unsafe.Pointer(&vv.ptr)
 					}
-					(*buildEncEngine(et))(e, vp)
+					getEncEngine(et)(e, vp)
 				}
 			}
 		} else {
-			*engPtr = func(e *Encoder, p unsafe.Pointer) {
+			engine = func(e *Encoder, p unsafe.Pointer) {
 				isNotNil := !isNil(p)
 				e.encBool(isNotNil)
 				if isNotNil {
@@ -229,14 +228,16 @@ func buildEncEngine(rt reflect.Type) encEngPtr {
 					if vv.flag&flagIndir == 0 {
 						vp = unsafe.Pointer(&vv.ptr)
 					}
-					(*buildEncEngine(et))(e, vp)
+					getEncEngine(et)(e, vp)
 				}
 			}
 		}
 	case reflect.Chan, reflect.Func:
 		panic("not support " + rt.String() + " type")
 	default:
-		*engPtr = encEngines[kind]
+		engine = encEngines[kind]
 	}
-	return engPtr
+	rt2encEng[rt] = engine
+	*engPtr = engine
+	return
 }
