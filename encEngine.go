@@ -168,9 +168,10 @@ func buildEncEngine(rt reflect.Type) encEngPtr {
 				v := reflect.NewAt(rt, p).Elem()
 				// TODO flag&flagIndir 在编译时确定
 				engKey, engVal := *kEng, *vEng
-				for _, key := range v.MapKeys() {
-					val := v.MapIndex(key)
-					kv, vv := (*refVal)(unsafe.Pointer(&key)), (*refVal)(unsafe.Pointer(&val))
+				keys := v.MapKeys()
+				for i := 0; i < len(keys); i++ {
+					val := v.MapIndex(keys[i])
+					kv, vv := (*refVal)(unsafe.Pointer(&keys[i])), (*refVal)(unsafe.Pointer(&val))
 					kp, vp := kv.ptr, vv.ptr
 					if kv.flag&flagIndir == 0 {
 						kp = unsafe.Pointer(&kv.ptr)
@@ -185,15 +186,15 @@ func buildEncEngine(rt reflect.Type) encEngPtr {
 		}
 	case reflect.Struct:
 		nf := rt.NumField()
-		engs, offs := make([]encEngPtr, nf), make([]uintptr, nf)
+		engs, offs := make([]encEng, nf), make([]uintptr, nf)
 		for i := 0; i < nf; i++ {
 			field := rt.Field(i)
-			engs[i] = buildEncEngine(field.Type)
+			engs[i] = *buildEncEngine(field.Type)
 			offs[i] = field.Offset
 		}
 		*engPtr = func(e *Encoder, p unsafe.Pointer) {
 			for i := 0; i < nf; i++ {
-				(*engs[i])(e, unsafe.Pointer(uintptr(p)+offs[i]))
+				engs[i](e, unsafe.Pointer(uintptr(p)+offs[i]))
 			}
 		}
 	case reflect.Interface:
