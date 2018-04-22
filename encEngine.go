@@ -118,9 +118,9 @@ func buildEncEngine(rt reflect.Type, engPtr *encEng) {
 	}
 
 	kind := rt.Kind()
+	var eEng encEng
 	switch kind {
 	case reflect.Ptr:
-		var eEng encEng
 		defer buildEncEngine(rt.Elem(), &eEng)
 		engine = func(e *Encoder, p unsafe.Pointer) {
 			isNotNil := !isNil(p)
@@ -131,7 +131,6 @@ func buildEncEngine(rt reflect.Type, engPtr *encEng) {
 		}
 	case reflect.Array:
 		et, l := rt.Elem(), rt.Len()
-		var eEng encEng
 		defer buildEncEngine(et, &eEng)
 		size := et.Size()
 		engine = func(e *Encoder, p unsafe.Pointer) {
@@ -142,7 +141,6 @@ func buildEncEngine(rt reflect.Type, engPtr *encEng) {
 	case reflect.Slice:
 		et := rt.Elem()
 		size := et.Size()
-		var eEng encEng
 		defer buildEncEngine(et, &eEng)
 		engine = func(e *Encoder, p unsafe.Pointer) {
 			isNotNil := !isNil(p)

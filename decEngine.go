@@ -115,10 +115,10 @@ func buildDecEngine(rt reflect.Type, engPtr *decEng) {
 	}
 
 	kind := rt.Kind()
+	var eEng decEng
 	switch kind {
 	case reflect.Ptr:
 		et := rt.Elem()
-		var eEng decEng
 		defer buildDecEngine(et, &eEng)
 		engine = func(d *Decoder, p unsafe.Pointer) {
 			if d.decBool() {
@@ -133,7 +133,6 @@ func buildDecEngine(rt reflect.Type, engPtr *decEng) {
 	case reflect.Array:
 		l, et := rt.Len(), rt.Elem()
 		size := et.Size()
-		var eEng decEng
 		defer buildDecEngine(et, &eEng)
 		engine = func(d *Decoder, p unsafe.Pointer) {
 			for i := 0; i < l; i++ {
@@ -143,7 +142,6 @@ func buildDecEngine(rt reflect.Type, engPtr *decEng) {
 	case reflect.Slice:
 		et := rt.Elem()
 		size := et.Size()
-		var eEng decEng
 		defer buildDecEngine(et, &eEng)
 		engine = func(d *Decoder, p unsafe.Pointer) {
 			header := (*sliceHeader)(p)
