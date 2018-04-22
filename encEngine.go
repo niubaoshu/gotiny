@@ -1,8 +1,6 @@
 package gotiny
 
 import (
-	"encoding"
-	"encoding/gob"
 	"reflect"
 	"sync"
 	"unsafe"
@@ -85,33 +83,7 @@ func buildEncEngine(rt reflect.Type, engPtr *encEng) {
 		return
 	}
 
-	rtPtr := reflect.PtrTo(rt)
-	if rtPtr.Implements(gobType) {
-		engine = func(e *Encoder, p unsafe.Pointer) {
-			buf, err := reflect.NewAt(rt, p).Interface().(gob.GobEncoder).GobEncode()
-			if err != nil {
-				panic(err)
-			}
-			e.encLength(len(buf))
-			e.buf = append(e.buf, buf...)
-		}
-	}
-	if rtPtr.Implements(binType) {
-		engine = func(e *Encoder, p unsafe.Pointer) {
-			buf, err := reflect.NewAt(rt, p).Interface().(encoding.BinaryMarshaler).MarshalBinary()
-			if err != nil {
-				panic(err)
-			}
-			e.encLength(len(buf))
-			e.buf = append(e.buf, buf...)
-		}
-	}
-	if rtPtr.Implements(tinyType) {
-		engine = func(e *Encoder, p unsafe.Pointer) {
-			e.buf = reflect.NewAt(rt, p).Interface().(GoTinySerializer).GotinyEncode(e.buf)
-		}
-	}
-	if engine != nil {
+	if engine, _ = implementOtherSerializer(rt); engine != nil {
 		rt2encEng[rt] = engine
 		*engPtr = engine
 		return
@@ -146,11 +118,11 @@ func buildEncEngine(rt reflect.Type, engPtr *encEng) {
 			isNotNil := !isNil(p)
 			e.encBool(isNotNil)
 			if isNotNil {
-				header := (*sliceHeader)(p)
-				l := header.len
+				header := (*reflect.SliceHeader)(p)
+				l := header.Len
 				e.encLength(l)
-				for i := uintptr(0); i < uintptr(l); i++ {
-					eEng(e, unsafe.Pointer(uintptr(header.data)+i*size))
+				for i := 0; i < l; i++ {
+					eEng(e, unsafe.Pointer(header.Data+uintptr(i)*size))
 				}
 			}
 		}
@@ -182,12 +154,11 @@ func buildEncEngine(rt reflect.Type, engPtr *encEng) {
 			}
 		}
 	case reflect.Struct:
-		nf := rt.NumField()
-		fEngines, offs := make([]encEng, nf), make([]uintptr, nf)
+		fields, offs := getFieldType(rt, 0)
+		nf := len(fields)
+		fEngines := make([]encEng, nf)
 		for i := 0; i < nf; i++ {
-			field := rt.Field(i)
-			defer buildEncEngine(field.Type, &fEngines[i])
-			offs[i] = field.Offset
+			defer buildEncEngine(fields[i], &fEngines[i])
 		}
 		engine = func(e *Encoder, p unsafe.Pointer) {
 			for i := 0; i < nf; i++ {

@@ -21,20 +21,9 @@ type flag uintptr
 //go:linkname flagIndir reflect.flagIndir
 const flagIndir flag = 1 << 7
 
-type sliceHeader struct {
-	data unsafe.Pointer
-	len  int
-	cap  int
-}
-
 type eface struct {
 	typ  unsafe.Pointer
 	data unsafe.Pointer
-}
-
-type stringHeader struct {
-	data unsafe.Pointer
-	len  int
 }
 
 func float64ToUint(v unsafe.Pointer) uint64 {
@@ -240,4 +229,72 @@ func RegisterName(name string, rt reflect.Type) {
 	}
 	name2type[name] = rt
 	type2name[rt] = name
+}
+
+func implementOtherSerializer(rt reflect.Type) (encEng encEng, decEng decEng) {
+	rtPtr := reflect.PtrTo(rt)
+	if rtPtr.Implements(gobType) {
+		encEng = func(e *Encoder, p unsafe.Pointer) {
+			buf, err := reflect.NewAt(rt, p).Interface().(gob.GobEncoder).GobEncode()
+			if err != nil {
+				panic(err)
+			}
+			e.encLength(len(buf))
+			e.buf = append(e.buf, buf...)
+		}
+		decEng = func(d *Decoder, p unsafe.Pointer) {
+			length := d.decLength()
+			start := d.index
+			d.index += length
+			if err := reflect.NewAt(rt, p).Interface().(gob.GobDecoder).GobDecode(d.buf[start:d.index]); err != nil {
+				panic(err)
+			}
+		}
+	}
+	if rtPtr.Implements(binType) {
+		encEng = func(e *Encoder, p unsafe.Pointer) {
+			buf, err := reflect.NewAt(rt, p).Interface().(encoding.BinaryMarshaler).MarshalBinary()
+			if err != nil {
+				panic(err)
+			}
+			e.encLength(len(buf))
+			e.buf = append(e.buf, buf...)
+		}
+
+		decEng = func(d *Decoder, p unsafe.Pointer) {
+			length := d.decLength()
+			start := d.index
+			d.index += length
+			if err := reflect.NewAt(rt, p).Interface().(encoding.BinaryUnmarshaler).UnmarshalBinary(d.buf[start:d.index]); err != nil {
+				panic(err)
+			}
+		}
+	}
+	if rtPtr.Implements(tinyType) {
+		encEng = func(e *Encoder, p unsafe.Pointer) {
+			e.buf = reflect.NewAt(rt, p).Interface().(GoTinySerializer).GotinyEncode(e.buf)
+		}
+		decEng = func(d *Decoder, p unsafe.Pointer) {
+			d.index += reflect.NewAt(rt, p).Interface().(GoTinySerializer).GotinyDecode(d.buf[d.index:])
+		}
+	}
+	return
+}
+
+// rt.kind is reflect.struct
+func getFieldType(rt reflect.Type, baseOff uintptr) (fields []reflect.Type, offs []uintptr) {
+	for i := 0; i < rt.NumField(); i++ {
+		field := rt.Field(i)
+		ft := field.Type
+		_, engine := implementOtherSerializer(ft)
+		if ft.Kind() == reflect.Struct && engine == nil {
+			fFields, fOffs := getFieldType(ft, field.Offset+baseOff)
+			fields = append(fields, fFields...)
+			offs = append(offs, fOffs...)
+		} else {
+			fields = append(fields, ft)
+			offs = append(offs, field.Offset+baseOff)
+		}
+	}
+	return
 }

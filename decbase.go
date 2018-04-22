@@ -1,6 +1,9 @@
 package gotiny
 
-import "unsafe"
+import (
+	"reflect"
+	"unsafe"
+)
 
 func (d *Decoder) decBool() (b bool) {
 	if d.boolBit == 0 {
@@ -98,7 +101,7 @@ done:
 
 func (d *Decoder) decLength() int { return int(d.decUint()) }
 
-func decIgnore(d *Decoder, p unsafe.Pointer)  {}
+func decIgnore(*Decoder, unsafe.Pointer)      {}
 func decBool(d *Decoder, p unsafe.Pointer)    { *(*bool)(p) = d.decBool() }
 func decInt(d *Decoder, p unsafe.Pointer)     { *(*int)(p) = int(uintToInt(d.decUint())) }
 func decInt8(d *Decoder, p unsafe.Pointer)    { *(*int8)(p) = int8(d.buf[d.index]); d.index++ }
@@ -123,13 +126,13 @@ func decComplex128(d *Decoder, p unsafe.Pointer) {
 }
 
 func decString(d *Decoder, p unsafe.Pointer) {
-	l, header := d.decLength(), (*stringHeader)(p)
-	bytes := (*[]byte)(unsafe.Pointer(&sliceHeader{header.data, l, l}))
-	if header.len < l {
+	l, header := d.decLength(), (*reflect.StringHeader)(p)
+	bytes := (*[]byte)(unsafe.Pointer(&reflect.SliceHeader{Data: header.Data, Len: l, Cap: l}))
+	if header.Len < l {
 		*bytes = make([]byte, l)
-		header.data = (*sliceHeader)(unsafe.Pointer(bytes)).data
+		header.Data = (*reflect.SliceHeader)(unsafe.Pointer(bytes)).Data
 	}
-	header.len = l
+	header.Len = l
 	d.index += copy(*bytes, d.buf[d.index:])
 }
 
@@ -137,11 +140,11 @@ func decBytes(d *Decoder, p unsafe.Pointer) {
 	bytes := (*[]byte)(p)
 	if d.decBool() {
 		l := d.decLength()
-		header := (*sliceHeader)(p)
-		if header.cap < l {
+		header := (*reflect.SliceHeader)(p)
+		if header.Cap < l {
 			*bytes = make([]byte, l)
 		} else {
-			header.len = l
+			header.Len = l
 		}
 		d.index += copy(*bytes, d.buf[d.index:])
 	} else if !isNil(p) {

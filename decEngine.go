@@ -1,8 +1,6 @@
 package gotiny
 
 import (
-	"encoding"
-	"encoding/gob"
 	"reflect"
 	"sync"
 	"unsafe"
@@ -81,33 +79,12 @@ func buildDecEngine(rt reflect.Type, engPtr *decEng) {
 		return
 	}
 
-	rtPtr := reflect.PtrTo(rt)
-	if rtPtr.Implements(gobType) {
-		engine = func(d *Decoder, p unsafe.Pointer) {
-			length := d.decLength()
-			start := d.index
-			d.index += length
-			if err := reflect.NewAt(rt, p).Interface().(gob.GobDecoder).GobDecode(d.buf[start:d.index]); err != nil {
-				panic(err)
-			}
-		}
-	}
-	if rtPtr.Implements(binType) {
-		engine = func(d *Decoder, p unsafe.Pointer) {
-			length := d.decLength()
-			start := d.index
-			d.index += length
-			if err := reflect.NewAt(rt, p).Interface().(encoding.BinaryUnmarshaler).UnmarshalBinary(d.buf[start:d.index]); err != nil {
-				panic(err)
-			}
-		}
+	if _, engine = implementOtherSerializer(rt); engine != nil {
+		rt2decEng[rt] = engine
+		*engPtr = engine
+		return
 	}
 
-	if rtPtr.Implements(tinyType) {
-		engine = func(d *Decoder, p unsafe.Pointer) {
-			d.index += reflect.NewAt(rt, p).Interface().(GoTinySerializer).GotinyDecode(d.buf[d.index:])
-		}
-	}
 	if engine != nil {
 		*engPtr = engine
 		rt2decEng[rt] = engine
@@ -144,19 +121,19 @@ func buildDecEngine(rt reflect.Type, engPtr *decEng) {
 		size := et.Size()
 		defer buildDecEngine(et, &eEng)
 		engine = func(d *Decoder, p unsafe.Pointer) {
-			header := (*sliceHeader)(p)
+			header := (*reflect.SliceHeader)(p)
 			if d.decBool() {
 				l := d.decLength()
-				if isNil(p) || header.cap < l {
-					*header = sliceHeader{unsafe.Pointer(reflect.MakeSlice(rt, l, l).Pointer()), l, l}
+				if isNil(p) || header.Cap < l {
+					*header = reflect.SliceHeader{Data: reflect.MakeSlice(rt, l, l).Pointer(), Len: l, Cap: l}
 				} else {
-					header.len = l
+					header.Len = l
 				}
 				for i := uintptr(0); i < uintptr(l); i++ {
-					eEng(d, unsafe.Pointer(uintptr(header.data)+i*size))
+					eEng(d, unsafe.Pointer(uintptr(header.Data)+i*size))
 				}
 			} else if !isNil(p) {
-				*header = sliceHeader{}
+				*header = reflect.SliceHeader{}
 			}
 		}
 	case reflect.Map:
@@ -183,12 +160,11 @@ func buildDecEngine(rt reflect.Type, engPtr *decEng) {
 			}
 		}
 	case reflect.Struct:
-		nf := rt.NumField()
-		fEngines, offs := make([]decEng, nf), make([]uintptr, nf)
+		fields, offs := getFieldType(rt, 0)
+		nf := len(fields)
+		fEngines := make([]decEng, nf)
 		for i := 0; i < nf; i++ {
-			field := rt.Field(i)
-			defer buildDecEngine(field.Type, &fEngines[i])
-			offs[i] = field.Offset
+			defer buildDecEngine(fields[i], &fEngines[i])
 		}
 		engine = func(d *Decoder, p unsafe.Pointer) {
 			for i := 0; i < nf; i++ {
