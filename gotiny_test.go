@@ -343,6 +343,18 @@ func TestValue(t *testing.T) {
 	}
 }
 
+func TestMap(t *testing.T) {
+	var sm = map[string]int{
+		"a": 1,
+	}
+	var rm = map[string]int{
+	//"b": 2,
+	}
+	buf := gotiny.Encodes(&sm)
+	gotiny.Decodes(buf, &rm)
+	Assert(t, sm, rm)
+}
+
 func Assert(t *testing.T, x, y interface{}) {
 	if !c.DeepEqual(x, y) {
 		t.Errorf("\n exp type = %T; value = %+v;\n got type = %T; value = %+v \n", x, x, y, y)

@@ -98,7 +98,7 @@ func buildDecEngine(rt reflect.Type, engPtr *decEng) {
 		et := rt.Elem()
 		defer buildDecEngine(et, &eEng)
 		engine = func(d *Decoder, p unsafe.Pointer) {
-			if d.decBool() {
+			if d.decIsNotNil() {
 				if isNil(p) {
 					*(*unsafe.Pointer)(p) = unsafe.Pointer(reflect.New(et).Elem().UnsafeAddr())
 				}
@@ -122,15 +122,15 @@ func buildDecEngine(rt reflect.Type, engPtr *decEng) {
 		defer buildDecEngine(et, &eEng)
 		engine = func(d *Decoder, p unsafe.Pointer) {
 			header := (*reflect.SliceHeader)(p)
-			if d.decBool() {
+			if d.decIsNotNil() {
 				l := d.decLength()
 				if isNil(p) || header.Cap < l {
 					*header = reflect.SliceHeader{Data: reflect.MakeSlice(rt, l, l).Pointer(), Len: l, Cap: l}
 				} else {
 					header.Len = l
 				}
-				for i := uintptr(0); i < uintptr(l); i++ {
-					eEng(d, unsafe.Pointer(uintptr(header.Data)+i*size))
+				for i := 0; i < l; i++ {
+					eEng(d, unsafe.Pointer(header.Data+uintptr(i)*size))
 				}
 			} else if !isNil(p) {
 				*header = reflect.SliceHeader{}
@@ -138,23 +138,28 @@ func buildDecEngine(rt reflect.Type, engPtr *decEng) {
 		}
 	case reflect.Map:
 		kt, vt := rt.Key(), rt.Elem()
+		skt, svt := reflect.SliceOf(kt), reflect.SliceOf(vt)
 		var kEng, vEng decEng
 		defer buildDecEngine(kt, &kEng)
 		defer buildDecEngine(vt, &vEng)
 		engine = func(d *Decoder, p unsafe.Pointer) {
-			if d.decBool() {
+			if d.decIsNotNil() {
 				l := d.decLength()
+				var v reflect.Value
 				if isNil(p) {
-					*(*unsafe.Pointer)(p) = unsafe.Pointer(reflect.MakeMap(rt).Pointer())
+					v = reflect.MakeMap(rt)
+					*(*unsafe.Pointer)(p) = unsafe.Pointer(v.Pointer())
+				} else {
+					v = reflect.NewAt(rt, p).Elem()
 				}
-				v := reflect.NewAt(rt, p).Elem()
-				// TODO 考虑重用v中的key和value，可以重用v.Len()个
+				keys, vals := reflect.MakeSlice(skt, l, l), reflect.MakeSlice(svt, l, l)
 				for i := 0; i < l; i++ {
-					key, val := reflect.New(kt).Elem(), reflect.New(vt).Elem()
+					key, val := keys.Index(i), vals.Index(i)
 					kEng(d, unsafe.Pointer(key.UnsafeAddr()))
 					vEng(d, unsafe.Pointer(val.UnsafeAddr()))
 					v.SetMapIndex(key, val)
 				}
+
 			} else if !isNil(p) {
 				*(*unsafe.Pointer)(p) = nil
 			}
@@ -173,7 +178,7 @@ func buildDecEngine(rt reflect.Type, engPtr *decEng) {
 		}
 	case reflect.Interface:
 		engine = func(d *Decoder, p unsafe.Pointer) {
-			if d.decBool() {
+			if d.decIsNotNil() {
 				name := ""
 				decString(d, unsafe.Pointer(&name))
 				et, has := name2type[name]

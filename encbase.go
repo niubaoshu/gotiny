@@ -25,6 +25,7 @@ func (e *Encoder) encUint(v uint64) {
 
 func (e *Encoder) encLength(v int)    { e.encUint(uint64(v)) }
 func (e *Encoder) encString(s string) { e.encLength(len(s)); e.buf = append(e.buf, s...) }
+func (e *Encoder) encIsNotNil(v bool) { e.encBool(v) }
 
 func encIgnore(*Encoder, unsafe.Pointer)        {}
 func encBool(e *Encoder, p unsafe.Pointer)      { e.encBool(*(*bool)(p)) }
@@ -51,7 +52,7 @@ func encComplex128(e *Encoder, p unsafe.Pointer) {
 
 func encBytes(e *Encoder, p unsafe.Pointer) {
 	isNotNil := !isNil(p)
-	e.encBool(isNotNil)
+	e.encIsNotNil(isNotNil)
 	if isNotNil {
 		buf := *(*[]byte)(p)
 		e.encLength(len(buf))

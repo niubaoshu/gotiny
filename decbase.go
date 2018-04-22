@@ -99,7 +99,8 @@ done:
 	return x
 }
 
-func (d *Decoder) decLength() int { return int(d.decUint()) }
+func (d *Decoder) decLength() int    { return int(d.decUint()) }
+func (d *Decoder) decIsNotNil() bool { return d.decBool() }
 
 func decIgnore(*Decoder, unsafe.Pointer)      {}
 func decBool(d *Decoder, p unsafe.Pointer)    { *(*bool)(p) = d.decBool() }
@@ -138,7 +139,7 @@ func decString(d *Decoder, p unsafe.Pointer) {
 
 func decBytes(d *Decoder, p unsafe.Pointer) {
 	bytes := (*[]byte)(p)
-	if d.decBool() {
+	if d.decIsNotNil() {
 		l := d.decLength()
 		header := (*reflect.SliceHeader)(p)
 		if header.Cap < l {

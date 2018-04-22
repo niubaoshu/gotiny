@@ -96,7 +96,7 @@ func buildEncEngine(rt reflect.Type, engPtr *encEng) {
 		defer buildEncEngine(rt.Elem(), &eEng)
 		engine = func(e *Encoder, p unsafe.Pointer) {
 			isNotNil := !isNil(p)
-			e.encBool(isNotNil)
+			e.encIsNotNil(isNotNil)
 			if isNotNil {
 				eEng(e, *(*unsafe.Pointer)(p))
 			}
@@ -116,7 +116,7 @@ func buildEncEngine(rt reflect.Type, engPtr *encEng) {
 		defer buildEncEngine(et, &eEng)
 		engine = func(e *Encoder, p unsafe.Pointer) {
 			isNotNil := !isNil(p)
-			e.encBool(isNotNil)
+			e.encIsNotNil(isNotNil)
 			if isNotNil {
 				header := (*reflect.SliceHeader)(p)
 				l := header.Len
@@ -132,16 +132,16 @@ func buildEncEngine(rt reflect.Type, engPtr *encEng) {
 		defer buildEncEngine(rt.Elem(), &vEng)
 		engine = func(e *Encoder, p unsafe.Pointer) {
 			isNotNil := !isNil(p)
-			e.encBool(isNotNil)
+			e.encIsNotNil(isNotNil)
 			if isNotNil {
-				e.encLength(*(*int)(*(*unsafe.Pointer)(p)))
 				v := reflect.NewAt(rt, p).Elem()
-				// TODO flag&flagIndir 在编译时确定
+				e.encLength(v.Len())
 				keys := v.MapKeys()
 				for i := 0; i < len(keys); i++ {
 					val := v.MapIndex(keys[i])
 					kv, vv := (*refVal)(unsafe.Pointer(&keys[i])), (*refVal)(unsafe.Pointer(&val))
 					kp, vp := kv.ptr, vv.ptr
+					//TODO flag&flagIndir 在编译时确定
 					if kv.flag&flagIndir == 0 {
 						kp = unsafe.Pointer(&kv.ptr)
 					}
@@ -169,7 +169,7 @@ func buildEncEngine(rt reflect.Type, engPtr *encEng) {
 		if rt.NumMethod() > 0 {
 			engine = func(e *Encoder, p unsafe.Pointer) {
 				isNotNil := !isNil(p)
-				e.encBool(isNotNil)
+				e.encIsNotNil(isNotNil)
 				if isNotNil {
 					v := reflect.ValueOf(*(*interface {
 						M()
@@ -187,7 +187,7 @@ func buildEncEngine(rt reflect.Type, engPtr *encEng) {
 		} else {
 			engine = func(e *Encoder, p unsafe.Pointer) {
 				isNotNil := !isNil(p)
-				e.encBool(isNotNil)
+				e.encIsNotNil(isNotNil)
 				if isNotNil {
 					v := reflect.ValueOf(*(*interface{})(p))
 					et := v.Type()
