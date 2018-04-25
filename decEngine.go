@@ -168,9 +168,11 @@ func buildDecEngine(rt reflect.Type, engPtr *decEng) {
 		fields, offs := getFieldType(rt, 0)
 		nf := len(fields)
 		fEngines := make([]decEng, nf)
-		for i := 0; i < nf; i++ {
-			defer buildDecEngine(fields[i], &fEngines[i])
-		}
+		defer func() {
+			for i := 0; i < nf; i++ {
+				buildDecEngine(fields[i], &fEngines[i])
+			}
+		}()
 		engine = func(d *Decoder, p unsafe.Pointer) {
 			for i := 0; i < nf; i++ {
 				fEngines[i](d, unsafe.Pointer(uintptr(p)+offs[i]))

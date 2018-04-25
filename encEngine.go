@@ -157,9 +157,11 @@ func buildEncEngine(rt reflect.Type, engPtr *encEng) {
 		fields, offs := getFieldType(rt, 0)
 		nf := len(fields)
 		fEngines := make([]encEng, nf)
-		for i := 0; i < nf; i++ {
-			defer buildEncEngine(fields[i], &fEngines[i])
-		}
+		defer func() {
+			for i := 0; i < nf; i++ {
+				buildEncEngine(fields[i], &fEngines[i])
+			}
+		}()
 		engine = func(e *Encoder, p unsafe.Pointer) {
 			for i := 0; i < nf; i++ {
 				fEngines[i](e, unsafe.Pointer(uintptr(p)+offs[i]))
