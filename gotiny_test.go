@@ -54,7 +54,8 @@ type (
 		a int
 		*cirStruct
 	}
-	cirMap map[int]cirMap
+	cirMap   map[int]cirMap
+	cirSlice []cirSlice
 
 	tint int
 
@@ -66,11 +67,11 @@ func (tint) Write([]byte) (int, error) { return 0, nil }
 func (tint) Close() error              { return nil }
 
 func (v *gotinyTest) GotinyEncode(buf []byte) []byte {
-	return append(buf, gotiny.Encodes((*string)(v))...)
+	return append(buf, gotiny.Marshal((*string)(v))...)
 }
 
 func (v *gotinyTest) GotinyDecode(buf []byte) int {
-	return gotiny.Decodes(buf, (*string)(v))
+	return gotiny.Unmarshal(buf, (*string)(v))
 }
 
 func genBase() baseTyp {
@@ -177,8 +178,11 @@ var (
 
 	vcir        cirTyp
 	v2cir       cirTyp = &vcir
-	vcirStruct         = cirStruct{a: 1}
-	v2cirStruct        = cirStruct{a: 1, cirStruct: &vcirStruct}
+	v3cir       cirTyp = &v2cir
+	v1cirSlice  cirSlice
+	v2cirSlice  = append(v1cirSlice, v1cirSlice)
+	vcirStruct  = cirStruct{a: 1}
+	v2cirStruct = cirStruct{a: 1, cirStruct: &vcirStruct}
 
 	vcirmap  = cirMap{1: nil}
 	v2cirmap = cirMap{2: vcirmap}
@@ -267,10 +271,13 @@ var (
 		unsafePointer,
 		vcir,
 		v2cir,
+		v3cir,
 		vcirStruct,
 		v2cirStruct,
 		vcirmap,
 		v2cirmap,
+		v1cirSlice,
+		v2cirSlice,
 		vAstruct,
 		vGotinyTest,
 		v2GotinyTest,
@@ -312,11 +319,11 @@ func init() {
 		srcp[i] = unsafe.Pointer(reflect.ValueOf(&srci[i]).Elem().InterfaceData()[1])
 		retp[i] = unsafe.Pointer(reflect.ValueOf(&reti[i]).Elem().InterfaceData()[1])
 	}
-	fmt.Printf("total %d value. buf length: %d, encode length: %d \n", length, cap(buf), len(gotiny.Encodes(srci...)))
+	fmt.Printf("total %d value. buf length: %d, encode length: %d \n", length, cap(buf), len(gotiny.Marshal(srci...)))
 }
 
 func TestEncodeDecode(t *testing.T) {
-	gotiny.Decodes(gotiny.Encodes(srci...), reti...)
+	gotiny.Unmarshal(gotiny.Marshal(srci...), reti...)
 	for i, r := range reti {
 		Assert(t, srci[i], r)
 	}
@@ -350,8 +357,8 @@ func TestMap(t *testing.T) {
 	var rm = map[string]int{
 	//"b": 2,
 	}
-	buf := gotiny.Encodes(&sm)
-	gotiny.Decodes(buf, &rm)
+	buf := gotiny.Marshal(&sm)
+	gotiny.Unmarshal(buf, &rm)
 	Assert(t, sm, rm)
 }
 

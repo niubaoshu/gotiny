@@ -6,9 +6,7 @@ import (
 	"unsafe"
 )
 
-type (
-	decEng func(*Decoder, unsafe.Pointer) // 解码器
-)
+type decEng func(*Decoder, unsafe.Pointer) // 解码器
 
 var (
 	rt2decEng = map[reflect.Type]decEng{

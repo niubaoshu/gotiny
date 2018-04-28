@@ -15,7 +15,7 @@ type Decoder struct {
 	length  int      //解码器数量
 }
 
-func Decodes(buf []byte, is ...interface{}) int {
+func Unmarshal(buf []byte, is ...interface{}) int {
 	return NewDecoderWithPtr(is...).Decode(buf, is...)
 }
 

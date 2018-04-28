@@ -15,7 +15,7 @@ type Encoder struct {
 	length  int
 }
 
-func Encodes(is ...interface{}) []byte {
+func Marshal(is ...interface{}) []byte {
 	return NewEncoderWithPtr(is...).Encode(is...)
 }
 

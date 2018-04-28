@@ -28,13 +28,13 @@ func init() {
 
 func BenchmarkEncode(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		gotiny.Encodes(value)
+		gotiny.Marshal(value)
 	}
 }
 
 func BenchmarkDecode(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		gotiny.Decodes(buf, value)
+		gotiny.Unmarshal(buf, value)
 	}
 }
 
