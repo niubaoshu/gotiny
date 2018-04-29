@@ -1,6 +1,7 @@
 package gotiny_test
 
 import (
+	"bytes"
 	"io"
 	"math/rand"
 	"net/url"
@@ -362,6 +363,16 @@ func TestMap(t *testing.T) {
 	buf := gotiny.Marshal(&sm)
 	gotiny.Unmarshal(buf, &rm)
 	Assert(t, sm, rm)
+}
+
+func TestHelloWorld(t *testing.T) {
+	hello, world := []byte("hello, "), "world"
+	hello2, world2 := []byte("1"), ""
+
+	gotiny.Unmarshal(gotiny.Marshal(&hello, &world), &hello2, &world2)
+	if bytes.Equal(hello2, hello) && world2 != world {
+		t.Error(hello2, world2)
+	}
 }
 
 func Assert(t *testing.T, x, y interface{}) {
