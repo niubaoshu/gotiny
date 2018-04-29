@@ -179,13 +179,14 @@ var (
 	vcir        cirTyp
 	v2cir       cirTyp = &vcir
 	v3cir       cirTyp = &v2cir
-	v1cirSlice  cirSlice
-	v2cirSlice  = append(v1cirSlice, v1cirSlice)
-	vcirStruct  = cirStruct{a: 1}
-	v2cirStruct = cirStruct{a: 1, cirStruct: &vcirStruct}
-
-	vcirmap  = cirMap{1: nil}
-	v2cirmap = cirMap{2: vcirmap}
+	vcirStruct         = cirStruct{a: 1}
+	v2cirStruct        = cirStruct{a: 1, cirStruct: &vcirStruct}
+	vcirmap            = cirMap{1: nil}
+	v2cirmap           = cirMap{2: vcirmap}
+	v1cirSlice         = make([]cirSlice, 10)
+	v2cirSlice         = append(v1cirSlice, v1cirSlice)
+	v3cirSlice         = append(v2cirSlice, v1cirSlice)
+	v4cirSlice         = append(v1cirSlice, v1cirSlice, v2cirSlice, v3cirSlice)
 
 	vAstruct = genA()
 
@@ -278,6 +279,8 @@ var (
 		v2cirmap,
 		v1cirSlice,
 		v2cirSlice,
+		v3cirSlice,
+		v4cirSlice,
 		vAstruct,
 		vGotinyTest,
 		v2GotinyTest,
@@ -303,7 +306,6 @@ var (
 
 func init() {
 	e.AppendTo(buf)
-
 	for i := 0; i < length; i++ {
 		typs[i] = reflect.TypeOf(vs[i])
 		srcv[i] = reflect.ValueOf(vs[i])
