@@ -19,6 +19,7 @@ func Marshal(is ...interface{}) []byte {
 	return NewEncoderWithPtr(is...).Encode(is...)
 }
 
+// 创建一个编码ps 指向类型的编码器
 func NewEncoderWithPtr(ps ...interface{}) *Encoder {
 	l := len(ps)
 	engines := make([]encEng, l)
@@ -35,6 +36,7 @@ func NewEncoderWithPtr(ps ...interface{}) *Encoder {
 	}
 }
 
+// 创建一个编码is 类型的编码器
 func NewEncoder(is ...interface{}) *Encoder {
 	l := len(is)
 	engines := make([]encEng, l)
@@ -46,6 +48,7 @@ func NewEncoder(is ...interface{}) *Encoder {
 		engines: engines,
 	}
 }
+
 func NewEncoderWithType(ts ...reflect.Type) *Encoder {
 	l := len(ts)
 	engines := make([]encEng, l)
