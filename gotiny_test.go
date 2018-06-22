@@ -2,6 +2,7 @@ package gotiny_test
 
 import (
 	"bytes"
+	"encoding"
 	"io"
 	"math/rand"
 	"net/url"
@@ -44,7 +45,7 @@ type (
 	A struct {
 		Name     string
 		BirthDay time.Time
-		Phone    string
+		Phone    string `gotiny:"-"`
 		Siblings int
 		Spouse   bool
 		Money    float64
@@ -102,7 +103,7 @@ func genA() A {
 	return A{
 		Name:     GetRandomString(16),
 		BirthDay: time.Now(),
-		Phone:    GetRandomString(10),
+		//Phone:    GetRandomString(10),
 		Siblings: rand.Intn(5),
 		Spouse:   rand.Intn(2) == 1,
 		Money:    rand.Float64(),
@@ -195,7 +196,10 @@ var (
 	v2GotinyTest = &vGotinyTest
 
 	vbinTest, _ = url.Parse("http://www.baidu.com/s?wd=234234")
-	v2binTest   = &vbinTest
+	v2binTest   interface {
+		encoding.BinaryMarshaler
+		encoding.BinaryUnmarshaler
+	} = vbinTest
 
 	v0interface interface{}
 	vinterface  interface{}        = varray

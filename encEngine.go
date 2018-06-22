@@ -56,9 +56,6 @@ var (
 	}
 
 	encLock sync.RWMutex
-
-	type2name = map[reflect.Type]string{}
-	name2type = map[string]reflect.Type{}
 )
 
 func getEncEngine(rt reflect.Type) encEng {
