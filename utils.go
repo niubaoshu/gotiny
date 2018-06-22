@@ -3,7 +3,6 @@ package gotiny
 import (
 	"encoding"
 	"encoding/gob"
-	"fmt"
 	"reflect"
 	"strings"
 	"unsafe"
@@ -154,7 +153,6 @@ func getFieldType(rt reflect.Type, baseOff uintptr) (fields []reflect.Type, offs
 	for i := 0; i < rt.NumField(); i++ {
 		field := rt.Field(i)
 		if ignoreField(field) {
-			fmt.Println(field.Name, field.PkgPath, field.Type, "aaaaaaaaaaa")
 			continue
 		}
 		ft := field.Type
