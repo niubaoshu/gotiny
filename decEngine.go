@@ -83,12 +83,6 @@ func buildDecEngine(rt reflect.Type, engPtr *decEng) {
 		return
 	}
 
-	if engine != nil {
-		*engPtr = engine
-		rt2decEng[rt] = engine
-		return
-	}
-
 	kind := rt.Kind()
 	var eEng decEng
 	switch kind {

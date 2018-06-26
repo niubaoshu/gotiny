@@ -100,24 +100,16 @@ type GoTinySerializer interface {
 
 func implementOtherSerializer(rt reflect.Type) (encEng encEng, decEng decEng) {
 	rtPtr := reflect.PtrTo(rt)
-	if rtPtr.Implements(gobType) {
+	if rtPtr.Implements(tinyType) {
 		encEng = func(e *Encoder, p unsafe.Pointer) {
-			buf, err := reflect.NewAt(rt, p).Interface().(gob.GobEncoder).GobEncode()
-			if err != nil {
-				panic(err)
-			}
-			e.encLength(len(buf))
-			e.buf = append(e.buf, buf...)
+			e.buf = reflect.NewAt(rt, p).Interface().(GoTinySerializer).GotinyEncode(e.buf)
 		}
 		decEng = func(d *Decoder, p unsafe.Pointer) {
-			length := d.decLength()
-			start := d.index
-			d.index += length
-			if err := reflect.NewAt(rt, p).Interface().(gob.GobDecoder).GobDecode(d.buf[start:d.index]); err != nil {
-				panic(err)
-			}
+			d.index += reflect.NewAt(rt, p).Interface().(GoTinySerializer).GotinyDecode(d.buf[d.index:])
 		}
+		return
 	}
+
 	if rtPtr.Implements(binType) {
 		encEng = func(e *Encoder, p unsafe.Pointer) {
 			buf, err := reflect.NewAt(rt, p).Interface().(encoding.BinaryMarshaler).MarshalBinary()
@@ -136,13 +128,25 @@ func implementOtherSerializer(rt reflect.Type) (encEng encEng, decEng decEng) {
 				panic(err)
 			}
 		}
+		return
 	}
-	if rtPtr.Implements(tinyType) {
+
+	if rtPtr.Implements(gobType) {
 		encEng = func(e *Encoder, p unsafe.Pointer) {
-			e.buf = reflect.NewAt(rt, p).Interface().(GoTinySerializer).GotinyEncode(e.buf)
+			buf, err := reflect.NewAt(rt, p).Interface().(gob.GobEncoder).GobEncode()
+			if err != nil {
+				panic(err)
+			}
+			e.encLength(len(buf))
+			e.buf = append(e.buf, buf...)
 		}
 		decEng = func(d *Decoder, p unsafe.Pointer) {
-			d.index += reflect.NewAt(rt, p).Interface().(GoTinySerializer).GotinyDecode(d.buf[d.index:])
+			length := d.decLength()
+			start := d.index
+			d.index += length
+			if err := reflect.NewAt(rt, p).Interface().(gob.GobDecoder).GobDecode(d.buf[start:d.index]); err != nil {
+				panic(err)
+			}
 		}
 	}
 	return
