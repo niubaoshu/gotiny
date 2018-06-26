@@ -12,16 +12,16 @@ gotiny是一个注重效率的go语言序列化库。gotiny通过预先生成编
     func main() {
    	    src1, src2 := "hello", []byte(" world!")
    	    ret1, ret2 := "", []byte{}
-   	    gotiny.Decodes(gotiny.Encodes(&src1, &src2), &ret1, &ret2)
+   	    gotiny.Unmarshal(gotiny.Marshal(&src1, &src2), &ret1, &ret2)
    	    fmt.Println(ret1 + string(ret2)) // print "hello world!"
     }
 
 ## 特性
 - 效率非常的高，是golang自带序列化库gob的3倍以上,和一般的生成代码序列化框架处于同一水平，甚至高于它们。
 - 除map类型外0内存申请。
-- 支持编码所有的除func,interface,chan类型外的所有golang内置类型和自定义类型。
-- struct 类型会编码非导出字段。
-- 严格的类型转换。和gob中不同的是，gotiny中只有类型完全相同的才会正确编码和解码。
+- 支持编码所有的除func,chan类型外的所有golang内置类型和自定义类型。
+- struct 类型会编码非导出字段,可通过golang tag 的方式设置不编码。
+- 严格的类型转换。gotiny中只有类型完全相同的才会正确编码和解码。
 - 编码带类型的nil值。
 - 可以处理循环类型，不能编码循环值，会栈溢出。
 - 所有可以编码的类型都会完全的解码，不论原值是什么和目标值是什么。
@@ -29,7 +29,7 @@ gotiny是一个注重效率的go语言序列化库。gotiny通过预先生成编
 ## 无法处理循环值 不支持循环引用  TODO 
 	type a *a
 	var b a
-	b = b
+	b = &b
 
 ## install
 ```bash
