@@ -205,5 +205,4 @@ func buildEncEngine(rt reflect.Type, engPtr *encEng) {
 	}
 	rt2encEng[rt] = engine
 	*engPtr = engine
-	return
 }

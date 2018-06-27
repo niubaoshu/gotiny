@@ -204,5 +204,4 @@ func buildDecEngine(rt reflect.Type, engPtr *decEng) {
 	}
 	rt2decEng[rt] = engine
 	*engPtr = engine
-	return
 }
