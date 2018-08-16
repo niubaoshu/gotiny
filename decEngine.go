@@ -151,7 +151,6 @@ func buildDecEngine(rt reflect.Type, engPtr *decEng) {
 					vEng(d, unsafe.Pointer(val.UnsafeAddr()))
 					v.SetMapIndex(key, val)
 				}
-
 			} else if !isNil(p) {
 				*(*unsafe.Pointer)(p) = nil
 			}

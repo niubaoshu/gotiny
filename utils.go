@@ -171,8 +171,6 @@ func getFieldType(rt reflect.Type, baseOff uintptr) (fields []reflect.Type, offs
 }
 
 func ignoreField(field reflect.StructField) bool {
-	if tinyTag, ok := field.Tag.Lookup("gotiny"); ok {
-		return strings.TrimSpace(tinyTag) == "-"
-	}
-	return false
+	tinyTag, ok := field.Tag.Lookup("gotiny")
+	return ok && strings.TrimSpace(tinyTag) == "-"
 }
