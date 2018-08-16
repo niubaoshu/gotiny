@@ -15,12 +15,16 @@ func (e *Encoder) encBool(v bool) {
 }
 
 func (e *Encoder) encUint(v uint64) {
-	buf := e.buf
-	for v >= 0x80 {
-		buf = append(buf, uint8(v)|0x80)
+	var buf [maxVarintBytes]byte
+	var n int
+	for v > 0x7F {
+		buf[n] = uint8(v) | 0x80
 		v >>= 7
+		n++
 	}
-	e.buf = append(buf, uint8(v))
+	buf[n] = uint8(v)
+	n++
+	e.buf = append(e.buf, buf[0:n]...)
 }
 
 func (e *Encoder) encLength(v int)    { e.encUint(uint64(v)) }

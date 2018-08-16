@@ -8,7 +8,10 @@ import (
 	"unsafe"
 )
 
-const ptr1Size = 4 << (^uintptr(0) >> 63) // unsafe.Sizeof(uintptr(0)) but an ideal const
+const (
+	ptr1Size       = 4 << (^uintptr(0) >> 63) // unsafe.Sizeof(uintptr(0)) but an ideal const
+	maxVarintBytes = 10                       // maximum length of a varint
+)
 
 type refVal struct {
 	typ  unsafe.Pointer
@@ -70,6 +73,10 @@ func uintToInt(u uint64) int64 {
 	return (-(v & 1)) ^ (v>>1)&0x7FFFFFFFFFFFFFFF
 }
 
+func isNil(p unsafe.Pointer) bool {
+	return *(*unsafe.Pointer)(p) == nil
+}
+
 type gobInter interface {
 	gob.GobEncoder
 	gob.GobDecoder
@@ -78,16 +85,6 @@ type gobInter interface {
 type binInter interface {
 	encoding.BinaryMarshaler
 	encoding.BinaryUnmarshaler
-}
-
-var (
-	gobType  = reflect.TypeOf((*gobInter)(nil)).Elem()
-	binType  = reflect.TypeOf((*binInter)(nil)).Elem()
-	tinyType = reflect.TypeOf((*GoTinySerializer)(nil)).Elem()
-)
-
-func isNil(p unsafe.Pointer) bool {
-	return *(*unsafe.Pointer)(p) == nil
 }
 
 // 只应该由指针来实现该接口
@@ -99,8 +96,8 @@ type GoTinySerializer interface {
 }
 
 func implementOtherSerializer(rt reflect.Type) (encEng encEng, decEng decEng) {
-	rtPtr := reflect.PtrTo(rt)
-	if rtPtr.Implements(tinyType) {
+	rtNil := reflect.Zero(reflect.PtrTo(rt)).Interface()
+	if _, ok := rtNil.(GoTinySerializer); ok {
 		encEng = func(e *Encoder, p unsafe.Pointer) {
 			e.buf = reflect.NewAt(rt, p).Interface().(GoTinySerializer).GotinyEncode(e.buf)
 		}
@@ -110,7 +107,7 @@ func implementOtherSerializer(rt reflect.Type) (encEng encEng, decEng decEng) {
 		return
 	}
 
-	if rtPtr.Implements(binType) {
+	if _, ok := rtNil.(binInter); ok {
 		encEng = func(e *Encoder, p unsafe.Pointer) {
 			buf, err := reflect.NewAt(rt, p).Interface().(encoding.BinaryMarshaler).MarshalBinary()
 			if err != nil {
@@ -131,7 +128,7 @@ func implementOtherSerializer(rt reflect.Type) (encEng encEng, decEng decEng) {
 		return
 	}
 
-	if rtPtr.Implements(gobType) {
+	if _, ok := rtNil.(gobInter); ok {
 		encEng = func(e *Encoder, p unsafe.Pointer) {
 			buf, err := reflect.NewAt(rt, p).Interface().(gob.GobEncoder).GobEncode()
 			if err != nil {
