@@ -28,7 +28,6 @@ func (d *Decoder) decUint() uint64 {
 
 	b := uint64(buf[i])
 	i++
-
 	x += b << 7
 	if b&0x80 == 0 {
 		goto done

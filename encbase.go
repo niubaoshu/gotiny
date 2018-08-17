@@ -15,16 +15,28 @@ func (e *Encoder) encBool(v bool) {
 }
 
 func (e *Encoder) encUint(v uint64) {
-	var buf [maxVarintBytes]byte
-	var n int
-	for v > 0x7F {
-		buf[n] = uint8(v) | 0x80
-		v >>= 7
-		n++
+	switch {
+	case v < 1<<7-1:
+		e.buf = append(e.buf, byte(v))
+	case v < 1<<14-1:
+		e.buf = append(e.buf, byte(v)|0x80, byte(v>>7))
+	case v < 1<<21-1:
+		e.buf = append(e.buf, byte(v)|0x80, byte(v>>7)|0x80, byte(v>>14))
+	case v < 1<<28-1:
+		e.buf = append(e.buf, byte(v)|0x80, byte(v>>7)|0x80, byte(v>>14)|0x80, byte(v>>21))
+	case v < 1<<35-1:
+		e.buf = append(e.buf, byte(v)|0x80, byte(v>>7)|0x80, byte(v>>14)|0x80, byte(v>>21)|0x80, byte(v>>28))
+	case v < 1<<42-1:
+		e.buf = append(e.buf, byte(v)|0x80, byte(v>>7)|0x80, byte(v>>14)|0x80, byte(v>>21)|0x80, byte(v>>28)|0x80, byte(v>>35))
+	case v < 1<<49-1:
+		e.buf = append(e.buf, byte(v)|0x80, byte(v>>7)|0x80, byte(v>>14)|0x80, byte(v>>21)|0x80, byte(v>>28)|0x80, byte(v>>35)|0x80, byte(v>>42))
+	case v < 1<<56-1:
+		e.buf = append(e.buf, byte(v)|0x80, byte(v>>7)|0x80, byte(v>>14)|0x80, byte(v>>21)|0x80, byte(v>>28)|0x80, byte(v>>35)|0x80, byte(v>>42)|0x80, byte(v>>49))
+	case v < 1<<63-1:
+		e.buf = append(e.buf, byte(v)|0x80, byte(v>>7)|0x80, byte(v>>14)|0x80, byte(v>>21)|0x80, byte(v>>28)|0x80, byte(v>>35)|0x80, byte(v>>42)|0x80, byte(v>>49)|0x80, byte(v>>56))
+	default:
+		e.buf = append(e.buf, byte(v)|0x80, byte(v>>7)|0x80, byte(v>>14)|0x80, byte(v>>21)|0x80, byte(v>>28)|0x80, byte(v>>35)|0x80, byte(v>>42)|0x80, byte(v>>49)|0x80, byte(v>>56)|0x80, byte(v>>63))
 	}
-	buf[n] = uint8(v)
-	n++
-	e.buf = append(e.buf, buf[0:n]...)
 }
 
 func (e *Encoder) encLength(v int)    { e.encUint(uint64(v)) }
