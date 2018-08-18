@@ -28,11 +28,24 @@ type eface struct {
 	data unsafe.Pointer
 }
 
-func float64ToUint(v unsafe.Pointer) uint64 {
+// sliceHeader is a safe version of SliceHeader used within this package.
+type sliceHeader struct {
+	Data unsafe.Pointer
+	Len  int
+	Cap  int
+}
+
+// stringHeader is a safe version of StringHeader used within this package.
+type stringHeader struct {
+	Data unsafe.Pointer
+	Len  int
+}
+
+func float64ToUint64(v unsafe.Pointer) uint64 {
 	return reverse64Byte(*(*uint64)(v))
 }
 
-func uintToFloat64(u uint64) float64 {
+func uint64ToFloat64(u uint64) float64 {
 	u = reverse64Byte(u)
 	return *((*float64)(unsafe.Pointer(&u)))
 }
@@ -60,15 +73,41 @@ func reverse32Byte(u uint32) uint32 {
 
 // int -5 -4 -3 -2 -1 0 1 2 3 4 5  6
 // uint 9  7  5  3  1 0 2 4 6 8 10 12
-func intToUint(v int64) uint64 {
+func int64ToUint64(v int64) uint64 {
 	return uint64((v << 1) ^ (v >> 63))
 }
 
 // uint 9  7  5  3  1 0 2 4 6 8 10 12
 // int -5 -4 -3 -2 -1 0 1 2 3 4 5  6
-func uintToInt(u uint64) int64 {
+func uint64ToInt64(u uint64) int64 {
 	v := int64(u)
 	return (-(v & 1)) ^ (v>>1)&0x7FFFFFFFFFFFFFFF
+}
+
+// int -5 -4 -3 -2 -1 0 1 2 3 4 5  6
+// uint 9  7  5  3  1 0 2 4 6 8 10 12
+func int32ToUint32(v int32) uint32 {
+	return uint32((v << 1) ^ (v >> 31))
+}
+
+// uint 9  7  5  3  1 0 2 4 6 8 10 12
+// int -5 -4 -3 -2 -1 0 1 2 3 4 5  6
+func uint32ToInt32(u uint32) int32 {
+	v := int32(u)
+	return (-(v & 1)) ^ (v>>1)&0x7FFFFFFF
+}
+
+// int -5 -4 -3 -2 -1 0 1 2 3 4 5  6
+// uint 9  7  5  3  1 0 2 4 6 8 10 12
+func int16ToUint16(v int16) uint16 {
+	return uint16((v << 1) ^ (v >> 15))
+}
+
+// uint 9  7  5  3  1 0 2 4 6 8 10 12
+// int -5 -4 -3 -2 -1 0 1 2 3 4 5  6
+func uint16ToInt16(u uint16) int16 {
+	v := int16(u)
+	return (-(v & 1)) ^ (v>>1)&0x7FFF
 }
 
 func isNil(p unsafe.Pointer) bool {

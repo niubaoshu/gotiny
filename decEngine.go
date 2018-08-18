@@ -3,6 +3,7 @@ package gotiny
 import (
 	"reflect"
 	"sync"
+	"time"
 	"unsafe"
 )
 
@@ -29,6 +30,7 @@ var (
 		reflect.TypeOf((*complex128)(nil)).Elem():     decComplex128,
 		reflect.TypeOf((*[]byte)(nil)).Elem():         decBytes,
 		reflect.TypeOf((*string)(nil)).Elem():         decString,
+		reflect.TypeOf((*time.Time)(nil)).Elem():      decTime,
 		reflect.TypeOf((*struct{})(nil)).Elem():       decIgnore,
 		reflect.TypeOf(nil):                           decIgnore,
 	}
