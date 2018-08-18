@@ -130,6 +130,7 @@ var (
 	vuint64     = uint64(1234567)
 	v2uint64    = uint64(1<<64 - 1)
 	v3uint64    = uint64(rand.Uint32() * rand.Uint32())
+	v4uint64    = v2uint64 - uint64(rand.Intn(200))
 	vuintptr    = uintptr(12345678)
 	vfloat32    = float32(1.2345)
 	vfloat64    = float64(1.2345678)
@@ -233,6 +234,7 @@ var (
 		vuint64,
 		v2uint64,
 		v3uint64,
+		v4uint64,
 		vuintptr,
 		vfloat32,
 		vfloat64,
@@ -381,7 +383,13 @@ func TestHelloWorld(t *testing.T) {
 
 func Assert(t *testing.T, x, y interface{}) {
 	if !c.DeepEqual(x, y) {
-		t.Errorf("\n exp type = %T; value = %+v;\n got type = %T; value = %+v \n", x, x, y, y)
+		if reflect.TypeOf(x).Kind() == reflect.Ptr {
+			e := reflect.ValueOf(x).Elem().Interface()
+			g := reflect.ValueOf(y).Elem().Interface()
+			t.Errorf("\n exp type = %T; value = %+v;\n got type = %T; value = %+v; \n", e, e, g, g)
+		} else {
+			t.Errorf("\n exp type = %T; value = %+v;\n got type = %T; value = %+v; \n", x, x, y, y)
+		}
 	}
 }
 

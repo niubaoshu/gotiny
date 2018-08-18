@@ -9,8 +9,7 @@ import (
 )
 
 const (
-	ptr1Size       = 4 << (^uintptr(0) >> 63) // unsafe.Sizeof(uintptr(0)) but an ideal const
-	maxVarintBytes = 10                       // maximum length of a varint
+	ptr1Size = 4 << (^uintptr(0) >> 63) // unsafe.Sizeof(uintptr(0)) but an ideal const
 )
 
 type refVal struct {
@@ -56,8 +55,7 @@ func uint32ToFloat32(u uint32) float32 {
 
 func reverse32Byte(u uint32) uint32 {
 	u = (u << 16) | (u >> 16)
-	u = ((u << 8) & 0xFF00FF00) | ((u >> 8) & 0xFF00FF)
-	return u
+	return ((u << 8) & 0xFF00FF00) | ((u >> 8) & 0xFF00FF)
 }
 
 // int -5 -4 -3 -2 -1 0 1 2 3 4 5  6

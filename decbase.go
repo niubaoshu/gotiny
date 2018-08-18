@@ -18,84 +18,39 @@ func (d *Decoder) decBool() (b bool) {
 
 func (d *Decoder) decUint() uint64 {
 	buf, i := d.buf, d.index
-	if buf[i] < 0x80 {
+	switch {
+	case buf[i] < 0x80:
 		d.index++
 		return uint64(buf[i])
+	case buf[i+1] < 0x80:
+		d.index += 2
+		return uint64(buf[i]) + uint64(buf[i+1]-1)<<7
+	case buf[i+2] < 0x80:
+		d.index += 3
+		return uint64(buf[i]) + uint64(buf[i+1])<<7 + uint64(buf[i+2])<<14 - (1<<7 + 1<<14)
+	case buf[i+3] < 0x80:
+		d.index += 4
+		return uint64(buf[i]) + uint64(buf[i+1])<<7 + uint64(buf[i+2])<<14 + uint64(buf[i+3])<<21 - (1<<7 + 1<<14 + 1<<21)
+	case buf[i+4] < 0x80:
+		d.index += 5
+		return uint64(buf[i]) + uint64(buf[i+1])<<7 + uint64(buf[i+2])<<14 + uint64(buf[i+3])<<21 + uint64(buf[i+4])<<28 - (1<<7 + 1<<14 + 1<<21 + 1<<28)
+	case buf[i+5] < 0x80:
+		d.index += 6
+		return uint64(buf[i]) + uint64(buf[i+1])<<7 + uint64(buf[i+2])<<14 + uint64(buf[i+3])<<21 + uint64(buf[i+4])<<28 + uint64(buf[i+5])<<35 -
+			(1<<7 + 1<<14 + 1<<21 + 1<<28 + 1<<35)
+	case buf[i+6] < 0x80:
+		d.index += 7
+		return uint64(buf[i]) + uint64(buf[i+1])<<7 + uint64(buf[i+2])<<14 + uint64(buf[i+3])<<21 + uint64(buf[i+4])<<28 + uint64(buf[i+5])<<35 +
+			uint64(buf[i+6])<<42 - (1<<7 + 1<<14 + 1<<21 + 1<<28 + 1<<35 + 1<<42)
+	case buf[i+7] < 0x80:
+		d.index += 8
+		return uint64(buf[i]) + uint64(buf[i+1])<<7 + uint64(buf[i+2])<<14 + uint64(buf[i+3])<<21 + uint64(buf[i+4])<<28 + uint64(buf[i+5])<<35 +
+			uint64(buf[i+6])<<42 + uint64(buf[i+7])<<49 - (1<<7 + 1<<14 + 1<<21 + 1<<28 + 1<<35 + 1<<42 + 1<<49)
+	default:
+		d.index += 9
+		return uint64(buf[i]) + uint64(buf[i+1])<<7 + uint64(buf[i+2])<<14 + uint64(buf[i+3])<<21 + uint64(buf[i+4])<<28 + uint64(buf[i+5])<<35 +
+			uint64(buf[i+6])<<42 + uint64(buf[i+7])<<49 + uint64(buf[i+8])<<56 - (1<<7 + 1<<14 + 1<<21 + 1<<28 + 1<<35 + 1<<42 + 1<<49 + 1<<56)
 	}
-	// we already checked the first byte
-	x := uint64(buf[i]) - 0x80
-	i++
-
-	b := uint64(buf[i])
-	i++
-	x += b << 7
-	if b&0x80 == 0 {
-		goto done
-	}
-	x -= 0x80 << 7
-
-	b = uint64(buf[i])
-	i++
-	x += b << 14
-	if b&0x80 == 0 {
-		goto done
-	}
-	x -= 0x80 << 14
-
-	b = uint64(buf[i])
-	i++
-	x += b << 21
-	if b&0x80 == 0 {
-		goto done
-	}
-	x -= 0x80 << 21
-
-	b = uint64(buf[i])
-	i++
-	x += b << 28
-	if b&0x80 == 0 {
-		goto done
-	}
-	x -= 0x80 << 28
-
-	b = uint64(buf[i])
-	i++
-	x += b << 35
-	if b&0x80 == 0 {
-		goto done
-	}
-	x -= 0x80 << 35
-
-	b = uint64(buf[i])
-	i++
-	x += b << 42
-	if b&0x80 == 0 {
-		goto done
-	}
-	x -= 0x80 << 42
-
-	b = uint64(buf[i])
-	i++
-	x += b << 49
-	if b&0x80 == 0 {
-		goto done
-	}
-	x -= 0x80 << 49
-
-	b = uint64(buf[i])
-	i++
-	x += b << 56
-	if b&0x80 == 0 {
-		goto done
-	}
-	x -= 0x80 << 56
-
-	b = uint64(buf[i])
-	i++
-	x += b << 63
-done:
-	d.index = i
-	return x
 }
 
 func (d *Decoder) decLength() int    { return int(d.decUint()) }
