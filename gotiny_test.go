@@ -364,7 +364,7 @@ func TestMap(t *testing.T) {
 		"a": 1,
 	}
 	var rm = map[string]int{
-	//"b": 2,
+		//"b": 2,
 	}
 	buf := gotiny.Marshal(&sm)
 	gotiny.Unmarshal(buf, &rm)
