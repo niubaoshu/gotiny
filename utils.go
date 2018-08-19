@@ -23,24 +23,6 @@ type flag uintptr
 //go:linkname flagIndir reflect.flagIndir
 const flagIndir flag = 1 << 7
 
-type eface struct {
-	typ  unsafe.Pointer
-	data unsafe.Pointer
-}
-
-// sliceHeader is a safe version of SliceHeader used within this package.
-type sliceHeader struct {
-	Data unsafe.Pointer
-	Len  int
-	Cap  int
-}
-
-// stringHeader is a safe version of StringHeader used within this package.
-type stringHeader struct {
-	Data unsafe.Pointer
-	Len  int
-}
-
 func float64ToUint64(v unsafe.Pointer) uint64 {
 	return reverse64Byte(*(*uint64)(v))
 }
@@ -194,15 +176,16 @@ func getFieldType(rt reflect.Type, baseOff uintptr) (fields []reflect.Type, offs
 			continue
 		}
 		ft := field.Type
-		_, engine := implementOtherSerializer(ft)
-		if ft.Kind() == reflect.Struct && engine == nil {
-			fFields, fOffs := getFieldType(ft, field.Offset+baseOff)
-			fields = append(fields, fFields...)
-			offs = append(offs, fOffs...)
-		} else {
-			fields = append(fields, ft)
-			offs = append(offs, field.Offset+baseOff)
+		if ft.Kind() == reflect.Struct {
+			if _, engine := implementOtherSerializer(ft); engine == nil {
+				fFields, fOffs := getFieldType(ft, field.Offset+baseOff)
+				fields = append(fields, fFields...)
+				offs = append(offs, fOffs...)
+				continue
+			}
 		}
+		fields = append(fields, ft)
+		offs = append(offs, field.Offset+baseOff)
 	}
 	return
 }

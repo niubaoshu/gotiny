@@ -92,7 +92,7 @@ func genBase() baseTyp {
 		fFloat64:    rand.Float64(),
 		fComplex64:  complex(rand.Float32(), rand.Float32()),
 		fComplex128: complex(rand.Float64(), rand.Float64()),
-		fString:     GetRandomString(20 + rand.Intn(256)),
+		fString:     getRandomString(20 + rand.Intn(256)),
 		array:       [3]uint32{rand.Uint32(), rand.Uint32()},
 		inter:       interface{}(int(1)),
 		A:           genA(),
@@ -101,9 +101,9 @@ func genBase() baseTyp {
 
 func genA() A {
 	return A{
-		Name:     GetRandomString(16),
+		Name:     getRandomString(16),
 		BirthDay: time.Now(),
-		//Phone:    GetRandomString(10),
+		//Phone:    getRandomString(10),
 		Siblings: rand.Intn(5),
 		Spouse:   rand.Intn(2) == 1,
 		Money:    rand.Float64(),
@@ -383,17 +383,20 @@ func TestHelloWorld(t *testing.T) {
 
 func Assert(t *testing.T, x, y interface{}) {
 	if !c.DeepEqual(x, y) {
-		if reflect.TypeOf(x).Kind() == reflect.Ptr {
-			e := reflect.ValueOf(x).Elem().Interface()
-			g := reflect.ValueOf(y).Elem().Interface()
-			t.Errorf("\n exp type = %T; value = %+v;\n got type = %T; value = %+v; \n", e, e, g, g)
-		} else {
-			t.Errorf("\n exp type = %T; value = %+v;\n got type = %T; value = %+v; \n", x, x, y, y)
-		}
+		e, g := indirect(x), indirect(y)
+		t.Errorf("\n exp type = %T; value = %+v;\n got type = %T; value = %+v; \n", e, e, g, g)
 	}
 }
 
-func GetRandomString(l int) string {
+func indirect(i interface{}) interface{} {
+	v := reflect.ValueOf(i)
+	for v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface {
+		v = v.Elem()
+	}
+	return v.Interface()
+}
+
+func getRandomString(l int) string {
 	bytes := []byte("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 	result := make([]byte, l)
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
