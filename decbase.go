@@ -18,81 +18,103 @@ func (d *Decoder) decBool() (b bool) {
 
 func (d *Decoder) decUint64() uint64 {
 	buf, i := d.buf, d.index
-	switch {
-	case buf[i] < 0x80:
+	x := uint64(buf[i])
+	if x < 0x80 {
 		d.index++
-		return uint64(buf[i])
-	case buf[i+1] < 0x80:
-		d.index += 2
-		return uint64(buf[i]) + uint64(buf[i+1]-1)<<7
-	case buf[i+2] < 0x80:
-		d.index += 3
-		return uint64(buf[i]) + uint64(buf[i+1])<<7 + uint64(buf[i+2])<<14 - (1<<7 + 1<<14)
-	case buf[i+3] < 0x80:
-		d.index += 4
-		return uint64(buf[i]) + uint64(buf[i+1])<<7 + uint64(buf[i+2])<<14 + uint64(buf[i+3])<<21 - (1<<7 + 1<<14 + 1<<21)
-	case buf[i+4] < 0x80:
-		d.index += 5
-		return uint64(buf[i]) + uint64(buf[i+1])<<7 + uint64(buf[i+2])<<14 + uint64(buf[i+3])<<21 + uint64(buf[i+4])<<28 - (1<<7 + 1<<14 + 1<<21 + 1<<28)
-	case buf[i+5] < 0x80:
-		d.index += 6
-		return uint64(buf[i]) + uint64(buf[i+1])<<7 + uint64(buf[i+2])<<14 + uint64(buf[i+3])<<21 + uint64(buf[i+4])<<28 + uint64(buf[i+5])<<35 -
-			(1<<7 + 1<<14 + 1<<21 + 1<<28 + 1<<35)
-	case buf[i+6] < 0x80:
-		d.index += 7
-		return uint64(buf[i]) + uint64(buf[i+1])<<7 + uint64(buf[i+2])<<14 + uint64(buf[i+3])<<21 + uint64(buf[i+4])<<28 + uint64(buf[i+5])<<35 +
-			uint64(buf[i+6])<<42 - (1<<7 + 1<<14 + 1<<21 + 1<<28 + 1<<35 + 1<<42)
-	case buf[i+7] < 0x80:
-		d.index += 8
-		return uint64(buf[i]) + uint64(buf[i+1])<<7 + uint64(buf[i+2])<<14 + uint64(buf[i+3])<<21 + uint64(buf[i+4])<<28 + uint64(buf[i+5])<<35 +
-			uint64(buf[i+6])<<42 + uint64(buf[i+7])<<49 - (1<<7 + 1<<14 + 1<<21 + 1<<28 + 1<<35 + 1<<42 + 1<<49)
-	default:
-		d.index += 9
-		return uint64(buf[i]) + uint64(buf[i+1])<<7 + uint64(buf[i+2])<<14 + uint64(buf[i+3])<<21 + uint64(buf[i+4])<<28 + uint64(buf[i+5])<<35 +
-			uint64(buf[i+6])<<42 + uint64(buf[i+7])<<49 + uint64(buf[i+8])<<56 - (1<<7 + 1<<14 + 1<<21 + 1<<28 + 1<<35 + 1<<42 + 1<<49 + 1<<56)
+		return x
 	}
+	x1 := buf[i+1]
+	x += uint64(x1) << 7
+	if x1 < 0x80 {
+		d.index += 2
+		return x - 1<<7
+	}
+	x2 := buf[i+2]
+	x += uint64(x2) << 14
+	if x2 < 0x80 {
+		d.index += 3
+		return x - (1<<7 + 1<<14)
+	}
+	x3 := buf[i+3]
+	x += uint64(x3) << 21
+	if x3 < 0x80 {
+		d.index += 4
+		return x - (1<<7 + 1<<14 + 1<<21)
+	}
+	x4 := buf[i+4]
+	x += uint64(x4) << 28
+	if x4 < 0x80 {
+		d.index += 5
+		return x - (1<<7 + 1<<14 + 1<<21 + 1<<28)
+	}
+	x5 := buf[i+5]
+	x += uint64(x5) << 35
+	if x5 < 0x80 {
+		d.index += 6
+		return x - (1<<7 + 1<<14 + 1<<21 + 1<<28 + 1<<35)
+	}
+	x6 := buf[i+6]
+	x += uint64(x6) << 42
+	if x6 < 0x80 {
+		d.index += 7
+		return x - (1<<7 + 1<<14 + 1<<21 + 1<<28 + 1<<35 + 1<<42)
+	}
+	x7 := buf[i+7]
+	x += uint64(x7) << 49
+	if x7 < 0x80 {
+		d.index += 8
+		return x - (1<<7 + 1<<14 + 1<<21 + 1<<28 + 1<<35 + 1<<42 + 1<<49)
+	}
+	d.index += 9
+	return x + uint64(buf[i+8])<<56 - (1<<7 + 1<<14 + 1<<21 + 1<<28 + 1<<35 + 1<<42 + 1<<49 + 1<<56)
 }
 
 func (d *Decoder) decUint16() uint16 {
 	buf, i := d.buf, d.index
-	x0 := buf[i]
-	if x0 < 0x80 {
+	x := uint16(buf[i])
+	if x < 0x80 {
 		d.index++
-		return uint16(x0)
+		return x
 	}
 	x1 := buf[i+1]
+	x += uint16(x1) << 7
 	if x1 < 0x80 {
 		d.index += 2
-		return uint16(x0) + uint16(x1-1)<<7
+		return x - 1<<7
 	}
 	d.index += 3
-	return uint16(x0) + uint16(x1)<<7 + uint16(buf[i+2])<<14 - (1<<7 + 1<<14)
+	return x + uint16(buf[i+2])<<14 - (1<<7 + 1<<14)
 }
 
 func (d *Decoder) decUint32() uint32 {
 	buf, i := d.buf, d.index
-	x0 := buf[i]
-	if x0 < 0x80 {
+	x := uint32(buf[i])
+	if x < 0x80 {
 		d.index++
-		return uint32(x0)
+		return x
 	}
 	x1 := buf[i+1]
+	x += uint32(x1) << 7
 	if x1 < 0x80 {
 		d.index += 2
-		return uint32(x0) + uint32(x1-1)<<7
+		return x - 1<<7
 	}
 	x2 := buf[i+2]
+	x += uint32(x2) << 14
 	if x2 < 0x80 {
 		d.index += 3
-		return uint32(x0) + uint32(x1)<<7 + uint32(x2)<<14 - (1<<7 + 1<<14)
+		return x - (1<<7 + 1<<14)
 	}
 	x3 := buf[i+3]
+	x += uint32(x3) << 21
 	if x3 < 0x80 {
 		d.index += 4
-		return uint32(x0) + uint32(x1)<<7 + uint32(x2)<<14 + uint32(x3)<<21 - (1<<7 + 1<<14 + 1<<21)
+		return x - (1<<7 + 1<<14 + 1<<21)
 	}
+	x4 := buf[i+4]
+	x += uint32(x4) << 28
 	d.index += 5
-	return uint32(x0) + uint32(x1)<<7 + uint32(x2)<<14 + uint32(x3)<<21 + uint32(buf[i+4])<<28 - (1<<7 + 1<<14 + 1<<21 + 1<<28)
+	return x - (1<<7 + 1<<14 + 1<<21 + 1<<28)
 }
 
 func (d *Decoder) decLength() int    { return int(d.decUint32()) }
