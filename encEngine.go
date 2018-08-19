@@ -60,6 +60,11 @@ var (
 	encLock sync.RWMutex
 )
 
+func UnusedUnixNanoEncodeTimeType() {
+	delete(rt2encEng, reflect.TypeOf((*time.Time)(nil)).Elem())
+	delete(rt2decEng, reflect.TypeOf((*time.Time)(nil)).Elem())
+}
+
 func getEncEngine(rt reflect.Type) encEng {
 	encLock.RLock()
 	engine := rt2encEng[rt]
