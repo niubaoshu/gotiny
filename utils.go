@@ -13,7 +13,7 @@ const (
 )
 
 type refVal struct {
-	typ  unsafe.Pointer
+	_    unsafe.Pointer
 	ptr  unsafe.Pointer
 	flag flag
 }
