@@ -65,8 +65,7 @@ func NewEncoderWithType(ts ...reflect.Type) *Encoder {
 func (e *Encoder) Encode(is ...interface{}) []byte {
 	engines, length := e.engines, e.length
 	for i := 0; i < length; i++ {
-		engines[i](e, unsafe.Pointer(reflect.ValueOf(&is[i]).Elem().InterfaceData()[1]))
-
+		engines[i](e, (*[2]unsafe.Pointer)(unsafe.Pointer(&is[i]))[1])
 	}
 	return e.reset()
 }
