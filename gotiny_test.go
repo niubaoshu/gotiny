@@ -376,7 +376,7 @@ func TestHelloWorld(t *testing.T) {
 	hello2, world2 := []byte("1"), ""
 
 	gotiny.Unmarshal(gotiny.Marshal(&hello, &world), &hello2, &world2)
-	if bytes.Equal(hello2, hello) && world2 != world {
+	if !bytes.Equal(hello2, hello) || world2 != world {
 		t.Error(hello2, world2)
 	}
 }
