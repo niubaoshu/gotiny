@@ -79,8 +79,8 @@ func getEncEngine(rt reflect.Type) encEng {
 }
 
 func buildEncEngine(rt reflect.Type, engPtr *encEng) {
-	engine, has := rt2encEng[rt]
-	if has {
+	engine := rt2encEng[rt]
+	if engine != nil {
 		*engPtr = engine
 		return
 	}
@@ -129,9 +129,9 @@ func buildEncEngine(rt reflect.Type, engPtr *encEng) {
 			}
 		}
 	case reflect.Map:
-		var kEng, vEng encEng
+		var kEng encEng
 		defer buildEncEngine(rt.Key(), &kEng)
-		defer buildEncEngine(rt.Elem(), &vEng)
+		defer buildEncEngine(rt.Elem(), &eEng)
 		engine = func(e *Encoder, p unsafe.Pointer) {
 			isNotNil := !isNil(p)
 			e.encIsNotNil(isNotNil)
@@ -151,7 +151,7 @@ func buildEncEngine(rt reflect.Type, engPtr *encEng) {
 						vp = unsafe.Pointer(&vv.ptr)
 					}
 					kEng(e, kp)
-					vEng(e, vp)
+					eEng(e, vp)
 				}
 			}
 		}

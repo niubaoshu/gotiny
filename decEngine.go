@@ -141,7 +141,7 @@ func buildDecEngine(rt reflect.Type, engPtr *decEng) {
 				l := d.decLength()
 				var v reflect.Value
 				if isNil(p) {
-					v = reflect.MakeMap(rt)
+					v = reflect.MakeMapWithSize(rt, l)
 					*(*unsafe.Pointer)(p) = unsafe.Pointer(v.Pointer())
 				} else {
 					v = reflect.NewAt(rt, p).Elem()
