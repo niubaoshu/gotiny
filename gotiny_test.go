@@ -3,6 +3,7 @@ package gotiny_test
 import (
 	"bytes"
 	"encoding"
+	"fmt"
 	"io"
 	"math/rand"
 	"net/url"
@@ -11,8 +12,6 @@ import (
 	"testing"
 	"time"
 	"unsafe"
-
-	"fmt"
 
 	"github.com/niubaoshu/gotiny"
 	"github.com/niubaoshu/goutils"
@@ -217,6 +216,9 @@ var (
 	vs = []interface{}{
 		vbool,
 		vfbool,
+		false,
+		true,
+		[10]bool{false, true, true, false, true, true},
 		vint8,
 		vint16,
 		vint32,
@@ -297,7 +299,7 @@ var (
 	}
 
 	length = len(vs)
-	buf    = make([]byte, 0, 1<<13)
+	buf    = make([]byte, 0, 1<<14)
 	e      = gotiny.NewEncoder(vs...)
 	d      = gotiny.NewDecoder(vs...)
 	c      = goutils.NewComparer()
@@ -332,30 +334,33 @@ func init() {
 }
 
 func TestEncodeDecode(t *testing.T) {
-	gotiny.Unmarshal(gotiny.Marshal(srci...), reti...)
+	buf := gotiny.Marshal(srci...)
+	gotiny.Unmarshal(buf, reti...)
 	for i, r := range reti {
-		Assert(t, srci[i], r)
+		Assert(t, buf, srci[i], r)
 	}
 }
 
 func TestInterface(t *testing.T) {
-	d.Decode(e.Encode(srci...), reti...)
+	buf := e.Encode(srci...)
+	d.Decode(buf, reti...)
 	for i, r := range reti {
-		Assert(t, srci[i], r)
+		Assert(t, buf, srci[i], r)
 	}
 }
 
 func TestPtr(t *testing.T) {
-	d.DecodePtr(e.EncodePtr(srcp...), retp...)
+	buf := e.EncodePtr(srcp...)
+	d.DecodePtr(buf, retp...)
 	for i, r := range reti {
-		Assert(t, srci[i], r)
+		Assert(t, buf, srci[i], r)
 	}
 }
 
 func TestValue(t *testing.T) {
 	d.DecodeValue(e.EncodeValue(srcv...), retv...)
 	for i, r := range reti {
-		Assert(t, srci[i], r)
+		Assert(t, buf, srci[i], r)
 	}
 }
 
@@ -368,7 +373,7 @@ func TestMap(t *testing.T) {
 	}
 	buf := gotiny.Marshal(&sm)
 	gotiny.Unmarshal(buf, &rm)
-	Assert(t, sm, rm)
+	Assert(t, buf, sm, rm)
 }
 
 func TestHelloWorld(t *testing.T) {
@@ -381,10 +386,10 @@ func TestHelloWorld(t *testing.T) {
 	}
 }
 
-func Assert(t *testing.T, x, y interface{}) {
+func Assert(t *testing.T, buf []byte, x, y interface{}) {
 	if !c.DeepEqual(x, y) {
 		e, g := indirect(x), indirect(y)
-		t.Errorf("\n exp type = %T; value = %+v;\n got type = %T; value = %+v; \n", e, e, g, g)
+		t.Errorf("\nbuf : %v\nlength:%d \nexp type = %T; value = %+v;\ngot type = %T; value = %+v; \n", buf, len(buf), e, e, g, g)
 	}
 }
 

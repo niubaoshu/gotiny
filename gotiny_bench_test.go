@@ -1,7 +1,7 @@
 package gotiny
 
 import (
-	"fmt"
+	"io"
 	"math/rand"
 	"reflect"
 	"testing"
@@ -21,7 +21,6 @@ func init() {
 	e = NewEncoderWithType(t)
 	d = NewDecoderWithType(t)
 	buf = e.Encode(value)
-	fmt.Println("buf length:", len(buf))
 }
 
 func BenchmarkEncode(b *testing.B) {
@@ -131,14 +130,13 @@ func GetRandomString(l int) string {
 }
 
 func BenchmarkDecodeUint64(b *testing.B) {
-	b.StopTimer()
 	var ints = make([][]byte, 10000)
 	for i := 0; i < len(ints); i++ {
 		a := rand.Uint64()
 		ints[i] = Marshal(&a)
 	}
 	d := Decoder{}
-	b.StartTimer()
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		d.buf = ints[rand.Intn(10000)]
 		d.index = 0
@@ -147,10 +145,42 @@ func BenchmarkDecodeUint64(b *testing.B) {
 }
 
 func BenchmarkEncodeUint64(b *testing.B) {
-	b.StopTimer()
 	e := Encoder{buf: make([]byte, 0, 600000000)}
-	b.StartTimer()
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		e.encUint64(rand.Uint64())
+	}
+}
+
+func BenchmarkEncodeBool(b *testing.B) {
+	l := 2000
+	e := Encoder{buf: make([]byte, 0, 600000000)}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		for j := 0; j < l*8; j++ {
+			e.encBool(i%2 == 0)
+		}
+	}
+}
+
+func BenchmarkDecodeBool(b *testing.B) {
+	l := 2000
+	var ints = make([][]byte, 10000)
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	for i := 0; i < len(ints); i++ {
+		s := make([]byte, l)
+		io.ReadFull(r, s)
+		ints[i] = s
+	}
+	d := Decoder{}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		d.buf = ints[rand.Intn(10000)]
+		d.boolBit = 0
+		d.boolPos = 0
+		d.index = 0
+		for j := 0; j < l*8; j++ {
+			d.decBool()
+		}
 	}
 }

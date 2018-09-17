@@ -7,9 +7,9 @@ import (
 
 func (e *Encoder) encBool(v bool) {
 	if e.boolBit == 0 {
-		e.boolBit = 1
 		e.boolPos = len(e.buf)
 		e.buf = append(e.buf, 0)
+		e.boolBit = 1
 	}
 	if v {
 		e.buf[e.boolPos] |= e.boolBit
