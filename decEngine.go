@@ -167,7 +167,7 @@ func buildDecEngine(rt reflect.Type, engPtr *decEng) {
 			}
 		}()
 		engine = func(d *Decoder, p unsafe.Pointer) {
-			for i := 0; i < nf; i++ {
+			for i := 0; i < len(fEngines) && i < len(offs); i++ {
 				fEngines[i](d, unsafe.Pointer(uintptr(p)+offs[i]))
 			}
 		}

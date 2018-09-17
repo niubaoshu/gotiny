@@ -165,7 +165,7 @@ func buildEncEngine(rt reflect.Type, engPtr *encEng) {
 			}
 		}()
 		engine = func(e *Encoder, p unsafe.Pointer) {
-			for i := 0; i < nf; i++ {
+			for i := 0; i < len(fEngines) && i < len(offs); i++ {
 				fEngines[i](e, unsafe.Pointer(uintptr(p)+offs[i]))
 			}
 		}
