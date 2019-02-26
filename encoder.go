@@ -83,12 +83,7 @@ func (e *Encoder) EncodePtr(ps ...unsafe.Pointer) []byte {
 func (e *Encoder) EncodeValue(vs ...reflect.Value) []byte {
 	engines := e.engines
 	for i := 0; i < len(engines) && i < len(vs); i++ {
-		v := (*refVal)(unsafe.Pointer(&vs[i]))
-		p := v.ptr
-		if v.flag&flagIndir == 0 {
-			p = unsafe.Pointer(&v.ptr)
-		}
-		engines[i](e, p)
+		engines[i](e, getUnsafePointer(&vs[i]))
 	}
 	return e.reset()
 }

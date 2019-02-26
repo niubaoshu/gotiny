@@ -141,17 +141,8 @@ func buildEncEngine(rt reflect.Type, engPtr *encEng) {
 				keys := v.MapKeys()
 				for i := 0; i < len(keys); i++ {
 					val := v.MapIndex(keys[i])
-					kv, vv := (*refVal)(unsafe.Pointer(&keys[i])), (*refVal)(unsafe.Pointer(&val))
-					kp, vp := kv.ptr, vv.ptr
-					//TODO flag&flagIndir 在编译时确定
-					if kv.flag&flagIndir == 0 {
-						kp = unsafe.Pointer(&kv.ptr)
-					}
-					if vv.flag&flagIndir == 0 {
-						vp = unsafe.Pointer(&vv.ptr)
-					}
-					kEng(e, kp)
-					eEng(e, vp)
+					kEng(e, getUnsafePointer(&keys[i]))
+					eEng(e, getUnsafePointer(&val))
 				}
 			}
 		}
@@ -180,12 +171,7 @@ func buildEncEngine(rt reflect.Type, engPtr *encEng) {
 					})(p))
 					et := v.Type()
 					e.encString(getNameOfType(et))
-					vv := (*refVal)(unsafe.Pointer(&v))
-					vp := vv.ptr
-					if vv.flag&flagIndir == 0 {
-						vp = unsafe.Pointer(&vv.ptr)
-					}
-					getEncEngine(et)(e, vp)
+					getEncEngine(et)(e, getUnsafePointer(&v))
 				}
 			}
 		} else {
@@ -196,12 +182,7 @@ func buildEncEngine(rt reflect.Type, engPtr *encEng) {
 					v := reflect.ValueOf(*(*interface{})(p))
 					et := v.Type()
 					e.encString(getNameOfType(et))
-					vv := (*refVal)(unsafe.Pointer(&v))
-					vp := vv.ptr
-					if vv.flag&flagIndir == 0 {
-						vp = unsafe.Pointer(&vv.ptr)
-					}
-					getEncEngine(et)(e, vp)
+					getEncEngine(et)(e, getUnsafePointer(&v))
 				}
 			}
 		}
