@@ -11,8 +11,9 @@ type Decoder struct {
 	boolPos byte   //下一次要读取的bool在buf中的下标,即buf[boolPos]
 	boolBit byte   //下一次要读取的bool的buf[boolPos]中的bit位
 
-	engines []decEng //解码器集合
-	length  int      //解码器数量
+	engines  []decEng //解码器集合
+	length   int      //解码器数量
+	copyMode bool     //使用原buf的拷贝,不再引用原buf
 }
 
 func Unmarshal(buf []byte, is ...interface{}) int {
@@ -57,6 +58,12 @@ func NewDecoderWithType(ts ...reflect.Type) *Decoder {
 		length:  l,
 		engines: des,
 	}
+}
+
+// SetCopyMode sets the decoder to allocate new buf and copy contents from
+// the supplied buf instead of keeping reference of it.
+func (d *Decoder) SetCopyMode() {
+	d.copyMode = true
 }
 
 func (d *Decoder) reset() int {

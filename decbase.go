@@ -153,7 +153,13 @@ func decBytes(d *Decoder, p unsafe.Pointer) {
 	bytes := (*[]byte)(p)
 	if d.decIsNotNil() {
 		l := int(d.decUint32())
-		*bytes = d.buf[d.index : d.index+l]
+		if d.copyMode {
+			buf := make([]byte, l)
+			copy(buf, d.buf[d.index:d.index+l])
+			*bytes = buf
+		} else {
+			*bytes = d.buf[d.index : d.index+l]
+		}
 		d.index += l
 	} else if !isNil(p) {
 		*bytes = nil

@@ -61,6 +61,15 @@ func NewEncoderWithType(ts ...reflect.Type) *Encoder {
 	}
 }
 
+// Copy returns a copy of the encoder with a small starting buf.
+func (e *Encoder) Copy() *Encoder {
+	return &Encoder{
+		buf:     make([]byte, 0, 256),
+		length:  e.length,
+		engines: e.engines,
+	}
+}
+
 // 入参是要编码值的指针
 func (e *Encoder) Encode(is ...interface{}) []byte {
 	engines := e.engines
