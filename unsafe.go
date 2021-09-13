@@ -44,7 +44,7 @@ type refVal struct {
 
 type flag uintptr
 
-//go:linkname flagIndir reflect.flagIndir
+////go:linkname flagIndir reflect.flagIndir
 const flagIndir flag = 1 << 7
 
 func getUnsafePointer(rv *reflect.Value) unsafe.Pointer {
