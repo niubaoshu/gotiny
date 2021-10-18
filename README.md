@@ -1,4 +1,4 @@
-## <font color="#FF4500" >gotiny 只是个玩具，不建议使用。不过或许你可以从中获得些灵感。</font>
+## <font color="#FF4500" >gotiny 只是个玩具，不建议使用。</font>
 
 
 # gotiny   [![Build status][travis-img]][travis-url] [![License][license-img]][license-url] [![GoDoc][doc-img]][doc-url] [![Go Report Card](https://goreportcard.com/badge/github.com/niubaoshu/gotiny)](https://goreportcard.com/report/github.com/niubaoshu/gotiny)
