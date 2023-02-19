@@ -42,11 +42,11 @@ $ go get -u github.com/niubaoshu/gotiny
 bool type takes up one bit, with the true value encoded as 1 and the false value encoded as 0. When bool type is encountered for the first time, a byte is allocated to encode the value into the least significant bit. When encountered for the second time, it is encoded into the second least significant bit. The ninth time a bool value is encountered, another byte is allocated to encode the value into the least significant bit, and so on.
 ### Integer type
 -   uint8 and int8 types are encoded as the next byte of the string.
-- uint16,uint32,uint64,uint,uintptr are encoded using[Varints](https://developers.google.com/protocol-buffers/docs/encoding#varints)编码方式。
+- uint16,uint32,uint64,uint,uintptr are encoded using[Varints](https://developers.google.com/protocol-buffers/docs/encoding#varints)Encoding method.
 - int16,int32,int64,int are converted to unsigned numbers using ZigZag and then encoded using[Varints](https://developers.google.com/protocol-buffers/docs/encoding#varints)编码方式。
 
 ### Floating point type
-float32 and float64 are encoded using the encoding method for floating point types in [gob](https://golang.org/pkg/encoding/gob/)中对浮点类型的编码方式。
+float32 and float64 are encoded using the encoding method for floating point types in [gob](https://golang.org/pkg/encoding/gob/)Encoding method for floating-point types.
 ### 复数类型
 - The complex64 type is forced to be converted to a uint64 and encoded using uint64 encoding
 - complex128 type encodes the real and imaginary parts as float64 types.
