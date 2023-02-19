@@ -6,20 +6,19 @@ import (
 )
 
 type Encoder struct {
-	buf     []byte //编码目的数组
-	off     int
-	boolPos int  //下一次要设置的bool在buf中的下标,即buf[boolPos]
-	boolBit byte //下一次要设置的bool的buf[boolPos]中的bit位
-
-	engines []encEng
-	length  int
+	buf     []byte   // the destination array for encoding
+	off     int      // the current offset in buf
+	boolPos int      // the next bool to be set in buf, i.e. buf[boolPos]
+	boolBit byte     // the next bit to be set in buf[boolPos]
+	engines []encEng // a collection of encoders
+	length  int      // number of encoders
 }
 
 func Marshal(is ...interface{}) []byte {
 	return NewEncoderWithPtr(is...).Encode(is...)
 }
 
-// 创建一个编码ps 指向类型的编码器
+// Create an encoder that points to the encoding of the given type.
 func NewEncoderWithPtr(ps ...interface{}) *Encoder {
 	l := len(ps)
 	engines := make([]encEng, l)
@@ -36,7 +35,7 @@ func NewEncoderWithPtr(ps ...interface{}) *Encoder {
 	}
 }
 
-// 创建一个编码is 类型的编码器
+// Create an encoder of type Encoder.
 func NewEncoder(is ...interface{}) *Encoder {
 	l := len(is)
 	engines := make([]encEng, l)
@@ -61,7 +60,7 @@ func NewEncoderWithType(ts ...reflect.Type) *Encoder {
 	}
 }
 
-// 入参是要编码值的指针
+// The input is a pointer to the value to be encoded.
 func (e *Encoder) Encode(is ...interface{}) []byte {
 	engines := e.engines
 	for i := 0; i < len(engines) && i < len(is); i++ {
@@ -70,7 +69,7 @@ func (e *Encoder) Encode(is ...interface{}) []byte {
 	return e.reset()
 }
 
-// 入参是要编码的值得unsafe.Pointer 指针
+// an unsafe.Pointer to the value to be encoded.
 func (e *Encoder) EncodePtr(ps ...unsafe.Pointer) []byte {
 	engines := e.engines
 	for i := 0; i < len(engines) && i < len(ps); i++ {
@@ -79,7 +78,7 @@ func (e *Encoder) EncodePtr(ps ...unsafe.Pointer) []byte {
 	return e.reset()
 }
 
-// vs 是持有要编码的值
+// vs holds the value to be encoded.
 func (e *Encoder) EncodeValue(vs ...reflect.Value) []byte {
 	engines := e.engines
 	for i := 0; i < len(engines) && i < len(vs); i++ {
@@ -88,7 +87,7 @@ func (e *Encoder) EncodeValue(vs ...reflect.Value) []byte {
 	return e.reset()
 }
 
-// 编码产生的数据将append到buf上
+// The encoded data will be appended to buf.
 func (e *Encoder) AppendTo(buf []byte) {
 	e.off = len(buf)
 	e.buf = buf
