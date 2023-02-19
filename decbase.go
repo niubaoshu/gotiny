@@ -29,39 +29,39 @@ func (d *Decoder) decUint64() uint64 {
 		d.index += 2
 		return x - 1<<7
 	}
-	x2 := buf[i+2]
-	x += uint64(x2) << 14
-	if x2 < 0x80 {
+	x1 = buf[i+2]
+	x += uint64(x1) << 14
+	if x1 < 0x80 {
 		d.index += 3
 		return x - (1<<7 + 1<<14)
 	}
-	x3 := buf[i+3]
-	x += uint64(x3) << 21
-	if x3 < 0x80 {
+	x1 = buf[i+3]
+	x += uint64(x1) << 21
+	if x1 < 0x80 {
 		d.index += 4
 		return x - (1<<7 + 1<<14 + 1<<21)
 	}
-	x4 := buf[i+4]
-	x += uint64(x4) << 28
-	if x4 < 0x80 {
+	x1 = buf[i+4]
+	x += uint64(x1) << 28
+	if x1 < 0x80 {
 		d.index += 5
 		return x - (1<<7 + 1<<14 + 1<<21 + 1<<28)
 	}
-	x5 := buf[i+5]
-	x += uint64(x5) << 35
-	if x5 < 0x80 {
+	x1 = buf[i+5]
+	x += uint64(x1) << 35
+	if x1 < 0x80 {
 		d.index += 6
 		return x - (1<<7 + 1<<14 + 1<<21 + 1<<28 + 1<<35)
 	}
-	x6 := buf[i+6]
-	x += uint64(x6) << 42
-	if x6 < 0x80 {
+	x1 = buf[i+6]
+	x += uint64(x1) << 42
+	if x1 < 0x80 {
 		d.index += 7
 		return x - (1<<7 + 1<<14 + 1<<21 + 1<<28 + 1<<35 + 1<<42)
 	}
-	x7 := buf[i+7]
-	x += uint64(x7) << 49
-	if x7 < 0x80 {
+	x1 = buf[i+7]
+	x += uint64(x1) << 49
+	if x1 < 0x80 {
 		d.index += 8
 		return x - (1<<7 + 1<<14 + 1<<21 + 1<<28 + 1<<35 + 1<<42 + 1<<49)
 	}

@@ -35,7 +35,7 @@ var (
 		reflect.TypeOf(nil):                           decIgnore,
 	}
 
-	baseDecEngines = []decEng{
+	baseDecEngines = [...]decEng{
 		reflect.Invalid:       decIgnore,
 		reflect.Bool:          decBool,
 		reflect.Int:           decInt,
@@ -60,15 +60,21 @@ var (
 )
 
 func getDecEngine(rt reflect.Type) decEng {
-	decLock.RLock()
 	engine := rt2decEng[rt]
-	decLock.RUnlock()
 	if engine != nil {
 		return engine
 	}
+
+	// The engine is not in the map, so acquire the write lock and build it
 	decLock.Lock()
+	defer decLock.Unlock()
+	engine = rt2decEng[rt]
+	if engine != nil {
+		return engine
+	}
+
 	buildDecEngine(rt, &engine)
-	decLock.Unlock()
+	rt2decEng[rt] = engine
 	return engine
 }
 
