@@ -37,7 +37,7 @@ type (
 		fComplex128 complex128
 		fString     string
 		array       [3]uint32
-		inter       interface{}
+		inter       any
 		A
 	}
 
@@ -93,7 +93,7 @@ func genBase() baseTyp {
 		fComplex128: complex(rand.Float64(), rand.Float64()),
 		fString:     getRandomString(20 + rand.Intn(256)),
 		array:       [3]uint32{rand.Uint32(), rand.Uint32()},
-		inter:       interface{}(int(1)),
+		inter:       any(int(1)),
 		A:           genA(),
 	}
 }
@@ -201,19 +201,19 @@ var (
 		encoding.BinaryUnmarshaler
 	} = vbinTest
 
-	v0interface interface{}
-	vinterface  interface{}        = varray
+	v0interface any
+	vinterface  any                = varray
 	v1interface io.ReadWriteCloser = tint(2)
 	v2interface io.ReadWriteCloser = os.Stdin
-	v3interface interface{}        = &vinterface
-	v4interface interface{}        = &v1interface
-	v5interface interface{}        = &v2interface
-	v6interface interface{}        = &v3interface
-	v7interface interface{}        = &v0interface
-	v8interface interface{}        = &vnilptr
-	v9interface interface{}        = &v8interface
+	v3interface any                = &vinterface
+	v4interface any                = &v1interface
+	v5interface any                = &v2interface
+	v6interface any                = &v3interface
+	v7interface any                = &v0interface
+	v8interface any                = &vnilptr
+	v9interface any                = &v8interface
 
-	vs = []interface{}{
+	vs = []any{
 		vbool,
 		vfbool,
 		false,
@@ -298,14 +298,16 @@ var (
 		struct{}{},
 	}
 
-	length = len(vs)
-	buf    = make([]byte, 0, 1<<14)
-	e      = gotiny.NewEncoder(vs...)
-	d      = gotiny.NewDecoder(vs...)
-	c      = goutils.NewComparer()
+	length          = len(vs)
+	buf             = make([]byte, 0, 1<<14)
+	encoder         = gotiny.NewEncoder(vs...)
+	encoderCompress = gotiny.NewEncoder(vs...)
+	decoder         = gotiny.NewDecoder(vs...)
+	decoderCompress = gotiny.NewDecoder(vs...)
+	comparer        = goutils.NewComparer()
 
-	srci = make([]interface{}, length)
-	reti = make([]interface{}, length)
+	srci = make([]any, length)
+	reti = make([]any, length)
 	srcv = make([]reflect.Value, length)
 	retv = make([]reflect.Value, length)
 	srcp = make([]unsafe.Pointer, length)
@@ -314,7 +316,7 @@ var (
 )
 
 func init() {
-	e.AppendTo(buf)
+	encoder.AppendTo(buf)
 	for i := 0; i < length; i++ {
 		typs[i] = reflect.TypeOf(vs[i])
 		srcv[i] = reflect.ValueOf(vs[i])
@@ -341,24 +343,40 @@ func TestEncodeDecode(t *testing.T) {
 	}
 }
 
+func TestEncodeDecodeCompress(t *testing.T) {
+	buf := gotiny.MarshalCompress(srci...)
+	gotiny.UnmarshalCompress(buf, reti...)
+	for i, r := range reti {
+		Assert(t, buf, srci[i], r)
+	}
+}
+
 func TestInterface(t *testing.T) {
-	buf := e.Encode(srci...)
-	d.Decode(buf, reti...)
+	buf := encoder.Encode(srci...)
+	decoder.Decode(buf, reti...)
+	for i, r := range reti {
+		Assert(t, buf, srci[i], r)
+	}
+}
+
+func TestInterfaceCompress(t *testing.T) {
+	buf := encoderCompress.EncodeCompress(srci...)
+	decoderCompress.DecodeCompress(buf, reti...)
 	for i, r := range reti {
 		Assert(t, buf, srci[i], r)
 	}
 }
 
 func TestPtr(t *testing.T) {
-	buf := e.EncodePtr(srcp...)
-	d.DecodePtr(buf, retp...)
+	buf := encoder.EncodePtr(srcp...)
+	decoder.DecodePtr(buf, retp...)
 	for i, r := range reti {
 		Assert(t, buf, srci[i], r)
 	}
 }
 
 func TestValue(t *testing.T) {
-	d.DecodeValue(e.EncodeValue(srcv...), retv...)
+	decoder.DecodeValue(encoder.EncodeValue(srcv...), retv...)
 	for i, r := range reti {
 		Assert(t, buf, srci[i], r)
 	}
@@ -386,14 +404,14 @@ func TestHelloWorld(t *testing.T) {
 	}
 }
 
-func Assert(t *testing.T, buf []byte, x, y interface{}) {
-	if !c.DeepEqual(x, y) {
+func Assert(t *testing.T, buf []byte, x, y any) {
+	if !comparer.DeepEqual(x, y) {
 		e, g := indirect(x), indirect(y)
 		t.Errorf("\nbuf : %v\nlength:%d \nexp type = %T; value = %+v;\ngot type = %T; value = %+v; \n", buf, len(buf), e, e, g, g)
 	}
 }
 
-func indirect(i interface{}) interface{} {
+func indirect(i any) any {
 	v := reflect.ValueOf(i)
 	for v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface {
 		v = v.Elem()
@@ -419,7 +437,7 @@ func TestGetName(t *testing.T) {
 	nt := newType()
 	items := []struct {
 		ret string
-		val interface{}
+		val any
 	}{
 		{"int", int(1)},
 		{"github.com/niubaoshu/gotiny.Encoder", gotiny.Encoder{}},
@@ -428,7 +446,7 @@ func TestGetName(t *testing.T) {
 		{"[]int", []int{}},
 		{"[]time.Time", []time.Time{}},
 		{"[]github.com/niubaoshu/gotiny.GoTinySerializer", []gotiny.GoTinySerializer{}},
-		{"*interface {}", (*interface{})(nil)},
+		{"*interface {}", (*any)(nil)},
 		{"map[int]string", map[int]string{}},
 		{"struct { a struct { int; b int; dec []github.com/niubaoshu/gotiny.Decoder; abb interface {}; c io.ReadWriteCloser } }",
 			struct {
@@ -436,7 +454,7 @@ func TestGetName(t *testing.T) {
 					int
 					b   int
 					dec []gotiny.Decoder
-					abb interface{}
+					abb any
 					c   io.ReadWriteCloser
 				}
 			}{}},

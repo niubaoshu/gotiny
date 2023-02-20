@@ -10,10 +10,10 @@ import (
 )
 
 var (
-	buf   []byte
-	value = genA()
-	e     *Encoder
-	d     *Decoder
+	buf, buffCompress []byte
+	value             = genA()
+	e                 *Encoder
+	d                 *Decoder
 )
 
 func init() {
@@ -21,33 +21,43 @@ func init() {
 	e = NewEncoderWithType(t)
 	d = NewDecoderWithType(t)
 	buf = e.Encode(value)
+
+	buffCompress = e.EncodeCompress(value)
 }
 
-func BenchmarkEncodeCompress(b *testing.B) {
-	// run the function multiple times and measure the performance
-	for i := 0; i < b.N; i++ {
-		_, err := e.EncodeCompress(value)
-		if err != nil {
-			b.Fatal(err)
-		}
-	}
-}
-
-func BenchmarkEncode(b *testing.B) {
+func BenchmarkMarshal(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		Marshal(value)
 	}
 }
 
-func BenchmarkDecode(b *testing.B) {
+func BenchmarkMarshalCompress(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		MarshalCompress(value)
+	}
+}
+
+func BenchmarkUnmarshal(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		Unmarshal(buf, value)
+	}
+}
+
+func BenchmarkUnmarshalCompress(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		UnmarshalCompress(buffCompress, value)
 	}
 }
 
 func BenchmarkEncode2(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		e.Encode(value)
+	}
+}
+
+func BenchmarkEncodeCompress(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		e.EncodeCompress(value)
 	}
 }
 
