@@ -19,6 +19,10 @@ func Unmarshal(buf []byte, is ...any) int {
 	return NewDecoderWithPtr(is...).Decode(buf, is...)
 }
 
+func UnmarshalCompress(buf []byte, is ...any) int {
+	return NewDecoderWithPtr(is...).DecodeCompress(buf, is...)
+}
+
 func NewDecoderWithPtr(is ...any) *Decoder {
 	l := len(is)
 	engines := make([]decEng, l)
@@ -75,6 +79,26 @@ func (d *Decoder) Decode(buf []byte, is ...any) int {
 		engines[i](d, (*[2]unsafe.Pointer)(unsafe.Pointer(&is[i]))[1])
 	}
 	return d.reset()
+}
+
+func (d *Decoder) DecodeCompress(buf []byte, is ...any) int {
+	inBuf := Gzip.Getbuffer()
+	inBuf.Write(buf)
+	defer Gzip.Putbuffer(inBuf)
+
+	outBuf := Gzip.Getbuffer()
+	defer Gzip.Putbuffer(outBuf)
+
+	Gunziper(outBuf, inBuf)
+	d.buf = outBuf.Bytes()
+	// Call the decoding engines with the uncompressed data
+	engines := d.engines
+	for i := 0; i < len(engines) && i < len(is); i++ {
+		engines[i](d, (*[2]unsafe.Pointer)(unsafe.Pointer(&is[i]))[1])
+	}
+
+	// Return the number of bytes read from the input buffer
+	return len(buf)
 }
 
 // ps is a unsafe.Pointer of the variable
