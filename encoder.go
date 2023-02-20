@@ -1,10 +1,7 @@
 package gotiny
 
 import (
-	"bytes"
-	"compress/gzip"
 	"reflect"
-	"sync"
 	"unsafe"
 )
 
@@ -19,6 +16,10 @@ type Encoder struct {
 
 func Marshal(is ...any) []byte {
 	return NewEncoderWithPtr(is...).Encode(is...)
+}
+
+func MarshalCompress(is ...any) []byte {
+	return NewEncoderWithPtr(is...).EncodeCompress(is...)
 }
 
 // Create an encoder that points to the encoding of the given type.
@@ -72,43 +73,19 @@ func (e *Encoder) Encode(is ...any) []byte {
 	return e.reset()
 }
 
-var (
-	bufferPool = sync.Pool{
-		New: func() interface{} {
-			return new(bytes.Buffer)
-		},
-	}
-
-	gzipWriterPool = sync.Pool{
-		New: func() interface{} {
-			return gzip.NewWriter(nil)
-		},
-	}
-)
-
-func (e *Encoder) EncodeCompress(is ...any) ([]byte, error) {
+func (e *Encoder) EncodeCompress(is ...any) []byte {
 	engines := e.engines
 	for i := 0; i < len(engines) && i < len(is); i++ {
 		engines[i](e, (*[2]unsafe.Pointer)(unsafe.Pointer(&is[i]))[1])
 	}
 
 	// Get a buffer from the pool to hold the compressed data
-	b := bufferPool.Get().(*bytes.Buffer)
-	b.Reset()
-	defer bufferPool.Put(b)
+	b := Gzip.Getbuffer()
+	defer Gzip.Putbuffer(b)
 
-	// Get a gzip writer from the pool
-	gw := gzipWriterPool.Get().(*gzip.Writer)
-	gw.Reset(b)
-	defer gzipWriterPool.Put(gw)
-
-	// Write the encoded data to the gzip writer
-	_, err := gw.Write(e.reset())
-	if err != nil {
-		return nil, err
-	}
+	Gziper(b, e.reset())
 	// Return the compressed data
-	return b.Bytes(), nil
+	return b.Bytes()
 }
 
 // an unsafe.Pointer to the value to be encoded.
