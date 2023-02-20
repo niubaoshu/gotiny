@@ -108,9 +108,8 @@ func getName(prefix []byte, rt reflect.Type) []byte {
 func getNameOfType(rt reflect.Type) string {
 	if name, has := type2name[rt]; has {
 		return name
-	} else {
-		return registerType(rt)
 	}
+	return registerType(rt)
 }
 
 func Register(i any) string {
