@@ -23,6 +23,16 @@ func init() {
 	buf = e.Encode(value)
 }
 
+func BenchmarkEncodeCompress(b *testing.B) {
+	// run the function multiple times and measure the performance
+	for i := 0; i < b.N; i++ {
+		_, err := e.EncodeCompress(value)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
 func BenchmarkEncode(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		Marshal(value)
