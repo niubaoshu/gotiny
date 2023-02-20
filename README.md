@@ -1,13 +1,13 @@
 ## <font color="#FF4500" >gotiny</font>
 
 
-# gotiny   [![Build status][travis-img]][travis-url] [![License][license-img]][license-url] [![GoDoc][doc-img]][doc-url] [![Go Report Card](https://goreportcard.com/badge/github.com/niubaoshu/gotiny)](https://goreportcard.com/report/github.com/niubaoshu/gotiny)
+# gotiny   [![Build status][travis-img]][travis-url] [![License][license-img]][license-url] [![GoDoc][doc-img]][doc-url] [![Go Report Card](https://goreportcard.com/badge/github.com/raszia/gotiny)](https://goreportcard.com/report/github.com/raszia/gotiny)
 gotiny is an efficient Go serialization library. By pre-generating encoding machines and reducing the use of the reflect library, gotiny improves efficiency and is almost as fast as serialization libraries that generate code.
 ## hello word 
     package main
     import (
    	    "fmt"
-   	    "github.com/niubaoshu/gotiny"
+   	    "github.com/raszia/gotiny"
     )
     
     func main() {
@@ -27,6 +27,7 @@ gotiny is an efficient Go serialization library. By pre-generating encoding mach
 -   Can handle cyclic types but not cyclic values. It will stack overflow.
 -   Decodes all types that can be encoded, regardless of the original and target values.
 -   Encoded byte strings do not contain type information, resulting in very small byte arrays.
+-   Encoded and Decode with compression (optional).
 ## Cannot process cyclic values. Does not support circular references. TODO
 	type a *a
 	var b a
@@ -34,7 +35,7 @@ gotiny is an efficient Go serialization library. By pre-generating encoding mach
 
 ## install
 ```bash
-$ go get -u github.com/niubaoshu/gotiny
+$ go get -u github.com/raszia/gotiny
 ```
 
 ## Encoding Protocol
@@ -77,4 +78,4 @@ MIT
 [license-img]: http://img.shields.io/badge/license-MIT-green.svg?style=flat-square
 [license-url]: http://opensource.org/licenses/MIT
 [doc-img]: http://img.shields.io/badge/GoDoc-reference-blue.svg?style=flat-square
-[doc-url]: https://godoc.org/github.com/niubaoshu/gotiny
+[doc-url]: https://godoc.org/github.com/raszia/gotiny
