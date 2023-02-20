@@ -73,8 +73,8 @@ It encodes all the members of the struct based on their types, whether they are 
 ### License
 MIT
 
-[travis-img]: https://travis-ci.org/niubaoshu/gotiny.svg?branch=master
-[travis-url]: https://travis-ci.org/niubaoshu/gotiny
+[travis-img]: https://travis-ci.org/raszia/gotiny.svg?branch=master
+[travis-url]: https://travis-ci.org/raszia/gotiny
 [license-img]: http://img.shields.io/badge/license-MIT-green.svg?style=flat-square
 [license-url]: http://opensource.org/licenses/MIT
 [doc-img]: http://img.shields.io/badge/GoDoc-reference-blue.svg?style=flat-square
