@@ -13,8 +13,8 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/niubaoshu/gotiny"
 	"github.com/niubaoshu/goutils"
+	"github.com/raszia/gotiny"
 )
 
 type (

@@ -1,4 +1,4 @@
-module github.com/niubaoshu/gotiny
+module github.com/raszia/gotiny
 
 go 1.19
 
