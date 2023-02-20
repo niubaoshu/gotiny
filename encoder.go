@@ -14,12 +14,12 @@ type Encoder struct {
 	length  int      // number of encoders
 }
 
-func Marshal(is ...interface{}) []byte {
+func Marshal(is ...any) []byte {
 	return NewEncoderWithPtr(is...).Encode(is...)
 }
 
 // Create an encoder that points to the encoding of the given type.
-func NewEncoderWithPtr(ps ...interface{}) *Encoder {
+func NewEncoderWithPtr(ps ...any) *Encoder {
 	l := len(ps)
 	engines := make([]encEng, l)
 	for i := 0; i < l; i++ {
@@ -36,7 +36,7 @@ func NewEncoderWithPtr(ps ...interface{}) *Encoder {
 }
 
 // Create an encoder of type Encoder.
-func NewEncoder(is ...interface{}) *Encoder {
+func NewEncoder(is ...any) *Encoder {
 	l := len(is)
 	engines := make([]encEng, l)
 	for i := 0; i < l; i++ {
@@ -61,7 +61,7 @@ func NewEncoderWithType(ts ...reflect.Type) *Encoder {
 }
 
 // The input is a pointer to the value to be encoded.
-func (e *Encoder) Encode(is ...interface{}) []byte {
+func (e *Encoder) Encode(is ...any) []byte {
 	engines := e.engines
 	for i := 0; i < len(engines) && i < len(is); i++ {
 		engines[i](e, (*[2]unsafe.Pointer)(unsafe.Pointer(&is[i]))[1])

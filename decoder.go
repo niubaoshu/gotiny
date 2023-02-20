@@ -15,11 +15,11 @@ type Decoder struct {
 
 }
 
-func Unmarshal(buf []byte, is ...interface{}) int {
+func Unmarshal(buf []byte, is ...any) int {
 	return NewDecoderWithPtr(is...).Decode(buf, is...)
 }
 
-func NewDecoderWithPtr(is ...interface{}) *Decoder {
+func NewDecoderWithPtr(is ...any) *Decoder {
 	l := len(is)
 	engines := make([]decEng, l)
 	for i := 0; i < l; i++ {
@@ -35,7 +35,7 @@ func NewDecoderWithPtr(is ...interface{}) *Decoder {
 	}
 }
 
-func NewDecoder(is ...interface{}) *Decoder {
+func NewDecoder(is ...any) *Decoder {
 	l := len(is)
 	engines := make([]decEng, l)
 	for i := 0; i < l; i++ {
@@ -68,7 +68,7 @@ func (d *Decoder) reset() int {
 }
 
 // is is pointer of variable
-func (d *Decoder) Decode(buf []byte, is ...interface{}) int {
+func (d *Decoder) Decode(buf []byte, is ...any) int {
 	d.buf = buf
 	engines := d.engines
 	for i := 0; i < len(engines) && i < len(is); i++ {
