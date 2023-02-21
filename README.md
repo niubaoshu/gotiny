@@ -1,7 +1,7 @@
 
 # gotiny
 
-   [![build status][build-url]] [![License][license-img]][license-url] [![GoDoc][doc-img]][doc-url] [![Go Report Card](https://goreportcard.com/badge/github.com/raszia/gotiny)](https://goreportcard.com/report/github.com/raszia/gotiny)
+   ![build status][build-url] [![License][license-img]][license-url] [![GoDoc][doc-img]][doc-url] [![Go Report Card](https://goreportcard.com/badge/github.com/raszia/gotiny)](https://goreportcard.com/report/github.com/raszia/gotiny)
 gotiny is an efficient Go serialization library. By pre-generating encoding machines and reducing the use of the reflect library, gotiny improves efficiency and is almost as fast as serialization libraries that generate code.
 
 ## examples
