@@ -440,15 +440,15 @@ func TestGetName(t *testing.T) {
 		val any
 	}{
 		{"int", int(1)},
-		{"github.com/niubaoshu/gotiny.Encoder", gotiny.Encoder{}},
+		{"github.com/raszia/gotiny.Encoder", gotiny.Encoder{}},
 		{"*int", (*int)(nil)},
 		{"**int", (**int)(nil)},
 		{"[]int", []int{}},
 		{"[]time.Time", []time.Time{}},
-		{"[]github.com/niubaoshu/gotiny.GoTinySerializer", []gotiny.GoTinySerializer{}},
+		{"[]github.com/raszia/gotiny.GoTinySerializer", []gotiny.GoTinySerializer{}},
 		{"*interface {}", (*any)(nil)},
 		{"map[int]string", map[int]string{}},
-		{"struct { a struct { int; b int; dec []github.com/niubaoshu/gotiny.Decoder; abb interface {}; c io.ReadWriteCloser } }",
+		{"struct { a struct { int; b int; dec []github.com/raszia/gotiny.Decoder; abb interface {}; c io.ReadWriteCloser } }",
 			struct {
 				a struct {
 					int
