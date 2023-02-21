@@ -155,4 +155,4 @@ MIT
 [license-url]: http://opensource.org/licenses/MIT
 [doc-img]: http://img.shields.io/badge/GoDoc-reference-blue.svg?style=flat-square
 [doc-url]: https://godoc.org/github.com/raszia/gotiny
-[build-url]: https://img.shields.io/badge/build-passing-brightgreen.svg
+[build-url]: https://github.com/raszia/gotiny/actions/workflows/go.yml/badge.svg
