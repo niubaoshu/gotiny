@@ -27,12 +27,14 @@ type GzipPool struct {
 	bufferPool sync.Pool
 }
 
+// get a buffer from pool
 func (pool *GzipPool) Getbuffer() *bytes.Buffer {
 	b := pool.bufferPool.Get().(*bytes.Buffer)
 	b.Reset()
 	return b
 }
 
+// put back a buffer to the pool
 func (pool *GzipPool) Putbuffer(b *bytes.Buffer) {
 	pool.bufferPool.Put(b)
 }
