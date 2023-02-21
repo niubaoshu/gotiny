@@ -1,7 +1,8 @@
 
 # gotiny
 
-   ![build status][build-url] [![License][license-img]][license-url] [![GoDoc][doc-img]][doc-url] [![Go Report Card](https://goreportcard.com/badge/github.com/raszia/gotiny)](https://goreportcard.com/report/github.com/raszia/gotiny)
+   [![Go Report Card](https://goreportcard.com/badge/github.com/raszia/gotiny)](https://goreportcard.com/report/github.com/raszia/gotiny) [![CodeCov](https://codecov.io/gh/raszia/gotiny/branch/master/graph/badge.svg)](https://codecov.io/gh/raszia/gotiny) [![GoDoc](https://godoc.org/github.com/raszia/gotiny?status.svg)](https://godoc.org/github.com/raszia/gotiny) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/raszia/gotiny/blob/master/LICENSE)
+
 gotiny is an efficient Go serialization library. By pre-generating encoding machines and reducing the use of the reflect library, gotiny improves efficiency and is almost as fast as serialization libraries that generate code.
 
 ## examples
@@ -150,9 +151,3 @@ It encodes all the members of the struct based on their types, whether they are 
 ### License
 
 MIT
-
-[license-img]: http://img.shields.io/badge/license-MIT-green.svg?style=flat-square
-[license-url]: http://opensource.org/licenses/MIT
-[doc-img]: http://img.shields.io/badge/GoDoc-reference-blue.svg?style=flat-square
-[doc-url]: https://godoc.org/github.com/raszia/gotiny
-[build-url]: https://github.com/raszia/gotiny/actions/workflows/go.yml/badge.svg
