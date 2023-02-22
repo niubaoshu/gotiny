@@ -110,6 +110,13 @@ func genA() A {
 }
 
 var (
+	encKey = [32]byte{
+		1, 2, 3, 4, 5, 6, 7, 8,
+		9, 10, 11, 12, 13, 14,
+		15, 16, 17, 18, 19, 20,
+		21, 22, 23, 24, 25, 26,
+		27, 28, 29, 30, 31, 32,
+	}
 	vbool       = true
 	vfbool      = false
 	vint8       = int8(123)
@@ -334,6 +341,32 @@ func init() {
 	}
 	fmt.Printf("total %d value. buf length: %d, encode length: %d \n", length, cap(buf), len(gotiny.Marshal(srci...)))
 }
+func TestEncrypt(t *testing.T) {
+	aesConfig := gotiny.NewAES256config(encKey)
+	plaintext := []byte("secret message")
+
+	ciphertext := aesConfig.Encrypt(plaintext)
+
+	if len(ciphertext) == 0 {
+		t.Errorf("Ciphertext should not be empty")
+	}
+
+	if bytes.Equal(ciphertext, plaintext) {
+		t.Errorf("Ciphertext should be different from plaintext")
+	}
+}
+
+func TestDecrypt(t *testing.T) {
+	aesConfig := gotiny.NewAES256config(encKey)
+	plaintext := []byte("secret message")
+
+	ciphertext := aesConfig.Encrypt(plaintext)
+	decrypted := aesConfig.Decrypt(ciphertext)
+
+	if !bytes.Equal(decrypted, plaintext) {
+		t.Errorf("Decrypted plaintext should be the same as original plaintext")
+	}
+}
 
 func TestEncodeDecode(t *testing.T) {
 	buf := gotiny.Marshal(srci...)
@@ -350,7 +383,24 @@ func TestEncodeDecodeCompress(t *testing.T) {
 		Assert(t, buf, srci[i], r)
 	}
 }
+func TestEncodeDecodeCompressEncrypt(t *testing.T) {
 
+	aesConfig := gotiny.NewAES256config(encKey)
+	buf := gotiny.MarshalCompressEncrypt(aesConfig, srci...)
+	gotiny.UnmarshalCompressEncrypt(aesConfig, buf, reti...)
+	for i, r := range reti {
+		Assert(t, buf, srci[i], r)
+	}
+}
+func TestEncodeDecodeEncrypt(t *testing.T) {
+
+	aesConfig := gotiny.NewAES256config(encKey)
+	buf := gotiny.MarshalEncrypt(aesConfig, srci...)
+	gotiny.UnmarshalEncrypt(aesConfig, buf, reti...)
+	for i, r := range reti {
+		Assert(t, buf, srci[i], r)
+	}
+}
 func TestInterface(t *testing.T) {
 	buf := encoder.Encode(srci...)
 	decoder.Decode(buf, reti...)
@@ -401,6 +451,26 @@ func TestHelloWorld(t *testing.T) {
 	gotiny.Unmarshal(gotiny.Marshal(&hello, &world), &hello2, &world2)
 	if !bytes.Equal(hello2, hello) || world2 != world {
 		t.Error(hello2, world2)
+	}
+}
+
+func TestGziperAndGunziper(t *testing.T) {
+	testData := []byte("hello world")
+
+	// test Gziper
+	var output bytes.Buffer
+	gotiny.Gziper(&output, testData)
+
+	if output.Len() == 0 {
+		t.Errorf("Gziper output is empty")
+	}
+
+	// test Gunziper
+	var output2 bytes.Buffer
+	gotiny.Gunziper(&output2, &output)
+
+	if !bytes.Equal(testData, output2.Bytes()) {
+		t.Errorf("Gunziper output is different from input")
 	}
 }
 

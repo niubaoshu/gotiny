@@ -15,12 +15,24 @@ type Decoder struct {
 
 }
 
+// Unmarshal unmarshal data with no encryption and no compression
 func Unmarshal(buf []byte, is ...any) int {
 	return NewDecoderWithPtr(is...).Decode(buf, is...)
 }
 
+// UnmarshalCompress unmarshal compressed data
 func UnmarshalCompress(buf []byte, is ...any) int {
 	return NewDecoderWithPtr(is...).DecodeCompress(buf, is...)
+}
+
+// UnmarshalEncrypt unmarshal encrypted data
+func UnmarshalEncrypt(aesConfig *aesConfigStruct, buf []byte, is ...any) int {
+	return NewDecoderWithPtr(is...).DecodeEncrypt(aesConfig, buf, is...)
+}
+
+// UnmarshalCompressEncrypt unmarshal compressed and encrypted data
+func UnmarshalCompressEncrypt(aesConfig *aesConfigStruct, buf []byte, is ...any) int {
+	return NewDecoderWithPtr(is...).DecodeCompressEncrypt(aesConfig, buf, is...)
 }
 
 func NewDecoderWithPtr(is ...any) *Decoder {
@@ -90,15 +102,17 @@ func (d *Decoder) DecodeCompress(buf []byte, is ...any) int {
 	defer Gzip.Putbuffer(outBuf)
 
 	Gunziper(outBuf, inBuf)
-	d.buf = outBuf.Bytes()
-	// Call the decoding engines with the uncompressed data
-	engines := d.engines
-	for i := 0; i < len(engines) && i < len(is); i++ {
-		engines[i](d, (*[2]unsafe.Pointer)(unsafe.Pointer(&is[i]))[1])
-	}
+	return d.Decode(outBuf.Bytes(), is...)
+}
 
-	// Return the number of bytes read from the input buffer
-	return len(buf)
+// DecodeCompressEncrypt decompress and decrypt and decode the data
+func (d *Decoder) DecodeCompressEncrypt(aesConfig *aesConfigStruct, buf []byte, is ...any) int {
+	return d.DecodeCompress(aesConfig.Decrypt(buf), is...)
+}
+
+// DecodeEncrypt  decrypt and decode the data
+func (d *Decoder) DecodeEncrypt(aesConfig *aesConfigStruct, buf []byte, is ...any) int {
+	return d.Decode(aesConfig.Decrypt(buf), is...)
 }
 
 // ps is a unsafe.Pointer of the variable
