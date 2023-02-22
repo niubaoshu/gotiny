@@ -9,24 +9,27 @@ gotiny is an efficient Go serialization library. By pre-generating encoding mach
 
 ```go
 
- package main
+package main
 
- import (
- "fmt"
- "reflect"
+import (
+    "encoding/hex"
+    "fmt"
+    "reflect"
 
- "github.com/raszia/gotiny"
- )
+    "github.com/raszia/gotiny"
+)
 
 func main() {
 
     marshalUnmarshalExample()
     encodeDecodeExample()
     marshalUnmarshalCompressExample()
+    marshalUnmarshalEncryptExample()
+    marshalUnmarshalCompressEncryptExample()
 }
 
- // marshal src and unmarshel the returned data to dst
- // no compression
+// marshal src and unmarshel the returned data to dst
+// no compression
 func marshalUnmarshalExample() {
     src1, src2 := "marshalUnmarshal", []byte(" Example!")
     dst1, dst2 := "", []byte{3, 4, 5}
@@ -37,8 +40,8 @@ func marshalUnmarshalExample() {
     fmt.Println(dst1 + string(dst2)) // print "marshalUnmarshal Example!"
 }
 
- // encode the data using encoder and decode the data using decoder
- // no compression
+// encode the data using encoder and decode the data using decoder
+// no compression
 func encodeDecodeExample() {
     src1, src2 := "encodeDecode", []byte(" Example!")
     dst1, dst2 := "", []byte{3, 4, 5}
@@ -60,8 +63,8 @@ func encodeDecodeExample() {
     fmt.Println(dst1 + string(dst2)) // print "encodeDecode Example!"
 }
 
- // marshal src and unmarshel the returned data to dst
- // with compression
+// marshal src and unmarshel the returned data to dst
+// with compression
 func marshalUnmarshalCompressExample() {
     src1, src2 := "marshalUnmarshalCompress", []byte(" Example!")
     dst1, dst2 := "", []byte{3, 4, 5}
@@ -71,6 +74,55 @@ func marshalUnmarshalCompressExample() {
 
     fmt.Println(dst1 + string(dst2)) // print "marshalUnmarshalCompress Example!"
 }
+
+// marshal src and unmarshel the returned data to dst
+// with compression and encryption
+func marshalUnmarshalCompressEncryptExample() {
+    src1, src2 := "marshalUnmarshalCompressEncrypt", []byte(" Example!")
+    dst1, dst2 := "", []byte{3, 4, 5}
+
+    var str = "0123456789abcdef0123456789abcdef" // 32-byte hex string
+    var key [32]byte
+
+    // Convert the string to a byte slice
+    bSlice, err := hex.DecodeString(str)
+    if err != nil {
+    panic(err)
+    }
+
+    // Copy the byte slice into the array
+    copy(key[:], bSlice)
+    aesConfig := gotiny.NewAES256config(key)
+    data := gotiny.MarshalCompressEncrypt(aesConfig, &src1, &src2)
+    gotiny.UnmarshalCompressEncrypt(aesConfig, data, &dst1, &dst2)
+
+    fmt.Println(dst1 + string(dst2)) // print "marshalUnmarshalCompressEncrypt Example!"
+}
+
+// marshal src and unmarshel the returned data to dst
+// with compression and encryption
+func marshalUnmarshalEncryptExample() {
+    src1, src2 := "marshalUnmarshalEncrypt", []byte(" Example!")
+    dst1, dst2 := "", []byte{3, 4, 5}
+
+    var str = "0123456789abcdef0123456789abcdef" // 32-byte hex string
+    var key [32]byte
+
+    // Convert the string to a byte slice
+    bSlice, err := hex.DecodeString(str)
+    if err != nil {
+    panic(err)
+    }
+
+    // Copy the byte slice into the array
+    copy(key[:], bSlice)
+    aesConfig := gotiny.NewAES256config(key)
+    data := gotiny.MarshalEncrypt(aesConfig, &src1, &src2)
+    gotiny.UnmarshalEncrypt(aesConfig, data, &dst1, &dst2)
+
+    fmt.Println(dst1 + string(dst2)) // print "marshalUnmarshalEncrypt Example!"
+}
+
 ```
 
 ## Features
@@ -85,12 +137,7 @@ func marshalUnmarshalCompressExample() {
 - Decodes all types that can be encoded, regardless of the original and target values.
 - Encoded byte strings do not contain type information, resulting in very small byte arrays.
 - Encoded and Decode with compression (optional).
-
-## Cannot process cyclic values. Does not support circular references. TODO
-
- type a *a
- var b a
- b = &b
+- Encoded and Decode with encryption (optional).
 
 ## install
 
@@ -102,7 +149,7 @@ go get -u github.com/raszia/gotiny
 
 ### Boolean type
 
-bool type takes up one bit, with the true value encoded as 1 and the false value encoded as 0. When bool type is encountered for the first time, a byte is allocated to encode the value into the least significant bit. When encountered for the second time, it is encoded into the second least significant bit. The ninth time a bool value is encountered, another byte is allocated to encode the value into the least significant bit, and so on.
+- bool type takes up one bit, with the true value encoded as 1 and the false value encoded as 0. When bool type is encountered for the first time, a byte is allocated to encode the value into the least significant bit. When encountered for the second time, it is encoded into the second least significant bit. The ninth time a bool value is encountered, another byte is allocated to encode the value into the least significant bit, and so on.
 
 ### Integer type
 
@@ -112,7 +159,7 @@ bool type takes up one bit, with the true value encoded as 1 and the false value
 
 ### Floating point type
 
-float32 and float64 are encoded using the encoding method for floating point types in [gob](https://golang.org/pkg/encoding/gob/)Encoding method for floating-point types.
+- float32 and float64 are encoded using the encoding method for floating point types in [gob](https://golang.org/pkg/encoding/gob/)Encoding method for floating-point types.
 
 ### Complex number
 
@@ -121,23 +168,23 @@ float32 and float64 are encoded using the encoding method for floating point typ
 
 ### String type
 
-The string type first encodes the length of the string by casting it to uint64 type and then encoding it. After that, it encodes the byte array of the string as is.
+- The string type first encodes the length of the string by casting it to uint64 type and then encoding it. After that, it encodes the byte array of the string as is.
 
 ### Pointer type
 
-For the pointer type, it checks whether it is nil. If it is nil, it encodes a false value of bool type and then ends. If it is not nil, it encodes a true value of bool type, and then dereferences the pointer and encodes it based on the type of the dereferenced object.
+- For the pointer type, it checks whether it is nil. If it is nil, it encodes a false value of bool type and then ends. If it is not nil, it encodes a true value of bool type, and then dereferences the pointer and encodes it based on the type of the dereferenced object.
 
 ### Array and Slice type
 
-It first casts the length to uint64 and encodes it using uint64 encoding. After that, it encodes each element based on its type.
+- It first casts the length to uint64 and encodes it using uint64 encoding. After that, it encodes each element based on its type.
 
 ### Map type
 
-Similar to the above, it first encodes the length and then encodes each key and its corresponding value. It does this for each key-value pair in the map.
+- Similar to the above, it first encodes the length and then encodes each key and its corresponding value. It does this for each key-value pair in the map.
 
 ### Struct type
 
-It encodes all the members of the struct based on their types, whether they are exported or not. The struct is strictly reconstructed.
+- It encodes all the members of the struct based on their types, whether they are exported or not. The struct is strictly reconstructed.
 
 ### Types that implement interfaces
 
