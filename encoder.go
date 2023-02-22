@@ -14,12 +14,24 @@ type Encoder struct {
 	length  int      // number of encoders
 }
 
+// Marshal marshal value
 func Marshal(is ...any) []byte {
 	return NewEncoderWithPtr(is...).Encode(is...)
 }
 
+// MarshalEncrypt marshal and encrypt value
+func MarshalEncrypt(aesConfig *aesConfigStruct, is ...any) []byte {
+	return NewEncoderWithPtr(is...).EncodeEncrypt(aesConfig, is...)
+}
+
+// MarshalCompress marshal and compress value
 func MarshalCompress(is ...any) []byte {
 	return NewEncoderWithPtr(is...).EncodeCompress(is...)
+}
+
+// MarshalCompressEncrypt marshal and compress and encrypt value
+func MarshalCompressEncrypt(aesConfig *aesConfigStruct, is ...any) []byte {
+	return NewEncoderWithPtr(is...).EncodeCompressEncrypt(aesConfig, is...)
 }
 
 // Create an encoder that points to the encoding of the given type.
@@ -64,7 +76,7 @@ func NewEncoderWithType(ts ...reflect.Type) *Encoder {
 	}
 }
 
-// The input is a pointer to the value to be encoded.
+// Encode encode value The input is a pointer to the value to be encoded.
 func (e *Encoder) Encode(is ...any) []byte {
 	engines := e.engines
 	for i := 0; i < len(engines) && i < len(is); i++ {
@@ -73,19 +85,23 @@ func (e *Encoder) Encode(is ...any) []byte {
 	return e.reset()
 }
 
-func (e *Encoder) EncodeCompress(is ...any) []byte {
-	engines := e.engines
-	for i := 0; i < len(engines) && i < len(is); i++ {
-		engines[i](e, (*[2]unsafe.Pointer)(unsafe.Pointer(&is[i]))[1])
-	}
+// EncodeEncrypt encrypt and encode value The input is a pointer to the value to be encoded.
+func (e *Encoder) EncodeEncrypt(aesConfig *aesConfigStruct, is ...any) []byte {
+	return aesConfig.Encrypt(e.Encode(is...))
+}
 
-	// Get a buffer from the pool to hold the compressed data
+// EncodeCompress compress and encode value The input is a pointer to the value to be encoded.
+func (e *Encoder) EncodeCompress(is ...any) []byte {
+
 	b := Gzip.Getbuffer()
 	defer Gzip.Putbuffer(b)
-
-	Gziper(b, e.reset())
-	// Return the compressed data
+	Gziper(b, e.Encode(is...))
 	return b.Bytes()
+}
+
+// EncodeCompressEncrypt compress and ecrypt and encode value The input is a pointer to the value to be encoded.
+func (e *Encoder) EncodeCompressEncrypt(aesConfig *aesConfigStruct, is ...any) []byte {
+	return aesConfig.Encrypt(e.EncodeCompress(is...))
 }
 
 // an unsafe.Pointer to the value to be encoded.

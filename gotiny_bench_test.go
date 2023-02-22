@@ -14,6 +14,18 @@ var (
 	value             = genA()
 	e                 *Encoder
 	d                 *Decoder
+	encKey128         = [16]byte{
+		1, 2, 3, 4, 5, 6, 7, 8,
+		9, 10, 11, 12, 13, 14,
+		15, 16,
+	}
+	encKey256 = [32]byte{
+		1, 2, 3, 4, 5, 6, 7, 8,
+		9, 10, 11, 12, 13, 14,
+		15, 16, 17, 18, 19, 20,
+		21, 22, 23, 24, 25, 26,
+		27, 28, 29, 30, 31, 32,
+	}
 )
 
 func init() {
@@ -34,6 +46,19 @@ func BenchmarkMarshal(b *testing.B) {
 func BenchmarkMarshalCompress(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		MarshalCompress(value)
+	}
+}
+
+func BenchmarkMarshalEncryptAES256(b *testing.B) {
+	aesConfig := NewAES256config(encKey256)
+	for i := 0; i < b.N; i++ {
+		MarshalEncrypt(aesConfig, value)
+	}
+}
+func BenchmarkMarshalEncryptAES128(b *testing.B) {
+	aesConfig := NewAES128config(encKey128)
+	for i := 0; i < b.N; i++ {
+		MarshalEncrypt(aesConfig, value)
 	}
 }
 
@@ -64,6 +89,24 @@ func BenchmarkEncodeCompress(b *testing.B) {
 func BenchmarkDecode2(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		d.Decode(buf, value)
+	}
+}
+
+func BenchmarkEncrypt(b *testing.B) {
+	aesConfig := NewAES256config(encKey256)
+	plaintext := []byte("secret message")
+
+	for i := 0; i < b.N; i++ {
+		aesConfig.Encrypt(plaintext)
+	}
+}
+func BenchmarkDecrypt(b *testing.B) {
+	aesConfig := NewAES256config(encKey256)
+	plaintext := []byte("secret message")
+	ciphertext := aesConfig.Encrypt(plaintext)
+
+	for i := 0; i < b.N; i++ {
+		aesConfig.Decrypt(ciphertext)
 	}
 }
 

@@ -77,6 +77,7 @@ func (pool *GzipPool) PutWriter(writer *gzip.Writer) {
 	pool.writers.Put(writer)
 }
 
+// Gziper compress input and write to output
 func Gziper(outPut *bytes.Buffer, inPut []byte) error {
 	gz := Gzip.GetWriter(outPut)
 	defer Gzip.PutWriter(gz)
@@ -85,6 +86,7 @@ func Gziper(outPut *bytes.Buffer, inPut []byte) error {
 	return nil
 }
 
+// Gunziper unzip input and write to output
 func Gunziper(outPut *bytes.Buffer, input *bytes.Buffer) error {
 	gz := Gzip.GetReader(input)
 	defer Gzip.PutReader(gz)
