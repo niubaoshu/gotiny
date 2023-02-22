@@ -193,7 +193,7 @@ go get -u github.com/raszia/gotiny
 
 ## benchmark
 
-[benchmark](https://github.com/alecthomas/go_serialization_benchmarks)
+[benchmark](https://github.com/raszia/go_serialization_benchmarks)
 
 ### License
 
