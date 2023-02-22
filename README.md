@@ -3,7 +3,7 @@
 
    [![Go Report Card](https://goreportcard.com/badge/github.com/raszia/gotiny)](https://goreportcard.com/report/github.com/raszia/gotiny) [![CodeCov](https://codecov.io/gh/raszia/gotiny/branch/master/graph/badge.svg)](https://codecov.io/gh/raszia/gotiny) [![GoDoc](https://godoc.org/github.com/raszia/gotiny?status.svg)](https://godoc.org/github.com/raszia/gotiny) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/raszia/gotiny/blob/master/LICENSE) ![build status](https://github.com/raszia/gotiny/actions/workflows/go.yml/badge.svg)
 
-gotiny is an efficient Go serialization library. By pre-generating encoding machines and reducing the use of the reflect library, gotiny improves efficiency and is almost as fast as serialization libraries that generate code.
+Gotiny is an efficient Go serialization library that utilizes pre-generated encoding engine and minimizes the usage of the reflect library. This approach results in improved efficiency, making gotiny almost as fast as serialization libraries that generate code.
 
 ## examples
 
@@ -127,15 +127,15 @@ func marshalUnmarshalEncryptExample() {
 
 ## Features
 
-- High efficiency: gotiny is over three times as fast as gob, the serialization library that comes with Golang. It is on par with other serialization frameworks that generate code and is even faster than some of them.
+- High efficiency: Gotiny is more than three times faster than the serialization library that comes with Golang, gob. Additionally, gotiny performs comparably to other serialization frameworks that generate code and even outperforms some of them in terms of speed.
 - Zero memory allocation except for map types.
 - Supports encoding all built-in types and custom types, except func and chan types.
 - Encodes non-exported fields of struct types. Non-encoding fields can be set using Golang tags.
-- Strict type conversion: only types that are exactly the same are correctly encoded and decoded.
+- Strict type conversion: only types that are EXACTLY the same are correctly encoded and decoded.
 - Encodes nil values with types.
-- Can handle cyclic types but not cyclic values. It will stack overflow.
+- Can handle cyclic types but not cyclic values.
 - Decodes all types that can be encoded, regardless of the original and target values.
-- Encoded byte strings do not contain type information, resulting in very small byte arrays.
+- Encoded byte strings do not include type information, which results in very small byte arrays.
 - Encoded and Decode with compression (optional).
 - Encoded and Decode with encryption (optional).
 
