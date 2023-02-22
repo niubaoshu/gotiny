@@ -55,6 +55,12 @@ func BenchmarkMarshalEncryptAES256(b *testing.B) {
 		MarshalEncrypt(aesConfig, value)
 	}
 }
+func BenchmarkMarshalCompressEncryptAES256(b *testing.B) {
+	aesConfig := NewAES256config(encKey256)
+	for i := 0; i < b.N; i++ {
+		MarshalCompressEncrypt(aesConfig, value)
+	}
+}
 func BenchmarkMarshalEncryptAES128(b *testing.B) {
 	aesConfig := NewAES128config(encKey128)
 	for i := 0; i < b.N; i++ {
