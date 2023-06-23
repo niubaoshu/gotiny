@@ -74,7 +74,9 @@ building the same decoding engine at the same time.
 */
 func getDecEngine(rt reflect.Type) decEng {
 	// Check if the decoding engine is already in the map. If it is, return it.
+	decLock.RLock()
 	engine := rt2decEng[rt]
+	decLock.RUnlock()
 	if engine != nil {
 		return engine
 	}
