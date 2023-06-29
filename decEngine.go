@@ -172,12 +172,12 @@ func buildDecEngine(rt reflect.Type, engPtr *decEng) {
 			if d.decIsNotNil() {
 				l := d.decLength()
 				if isNil(p) || header.Cap < l {
-					*header = reflect.SliceHeader{Data: reflect.MakeSlice(rt, l, l).Pointer(), Len: l, Cap: l}
+					*header = reflect.SliceHeader{Data: uintptr(unsafe.Pointer(reflect.MakeSlice(rt, l, l).Pointer())), Len: l, Cap: l}
 				} else {
 					header.Len = l
 				}
 				for i := 0; i < l; i++ {
-					eEng(d, unsafe.Pointer(header.Data+uintptr(i)*size))
+					eEng(d, unsafe.Pointer(uintptr(unsafe.Pointer(header.Data))+uintptr(i)*size))
 				}
 			} else if !isNil(p) {
 				*header = reflect.SliceHeader{}
