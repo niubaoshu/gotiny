@@ -336,8 +336,8 @@ func init() {
 		retv[i] = tempv.Elem()
 		reti[i] = tempv.Interface()
 
-		srcp[i] = unsafe.Pointer(reflect.ValueOf(&srci[i]).Elem().InterfaceData()[1])
-		retp[i] = unsafe.Pointer(reflect.ValueOf(&reti[i]).Elem().InterfaceData()[1])
+		srcp[i] = unsafe.Pointer(reflect.ValueOf(reflect.ValueOf(&srci[i]).Elem().Interface()).Pointer())
+		retp[i] = unsafe.Pointer(reflect.ValueOf(reflect.ValueOf(&reti[i]).Elem().Interface()).Pointer())
 	}
 	fmt.Printf("total %d value. buf length: %d, encode length: %d \n", length, cap(buf), len(gotiny.Marshal(srci...)))
 }

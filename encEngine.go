@@ -124,7 +124,7 @@ func buildEncEngine(rt reflect.Type, engPtr *encEng) {
 				l := header.Len
 				e.encLength(l)
 				for i := 0; i < l; i++ {
-					eEng(e, unsafe.Pointer(header.Data+uintptr(i)*size))
+					eEng(e, unsafe.Pointer(uintptr(unsafe.Pointer(header.Data))+uintptr(i)*size))
 				}
 			}
 		}
