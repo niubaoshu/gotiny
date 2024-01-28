@@ -10,7 +10,7 @@ var (
 	name2type = map[string]reflect.Type{}
 )
 
-func GetName(obj interface{}) string {
+func GetName(obj any) string {
 	return GetNameByType(reflect.TypeOf(obj))
 }
 func GetNameByType(rt reflect.Type) string {
@@ -21,7 +21,7 @@ func getName(prefix []byte, rt reflect.Type) []byte {
 	if rt == nil || rt.Kind() == reflect.Invalid {
 		return append(prefix, []byte("<nil>")...)
 	}
-	if rt.Name() == "" { //未命名的，组合类型
+	if rt.Name() == "" { //structured type
 		switch rt.Kind() {
 		case reflect.Ptr:
 			return getName(append(prefix, '*'), rt.Elem())
@@ -108,12 +108,11 @@ func getName(prefix []byte, rt reflect.Type) []byte {
 func getNameOfType(rt reflect.Type) string {
 	if name, has := type2name[rt]; has {
 		return name
-	} else {
-		return registerType(rt)
 	}
+	return registerType(rt)
 }
 
-func Register(i interface{}) string {
+func Register(i any) string {
 	return registerType(reflect.TypeOf(i))
 }
 

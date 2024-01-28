@@ -7,7 +7,7 @@ import (
 	"unsafe"
 )
 
-type decEng func(*Decoder, unsafe.Pointer) // 解码器
+type decEng func(*Decoder, unsafe.Pointer) // Decoder
 
 var (
 	rt2decEng = map[reflect.Type]decEng{
@@ -35,7 +35,7 @@ var (
 		reflect.TypeOf(nil):                           decIgnore,
 	}
 
-	baseDecEngines = []decEng{
+	baseDecEngines = [...]decEng{
 		reflect.Invalid:       decIgnore,
 		reflect.Bool:          decBool,
 		reflect.Int:           decInt,
@@ -59,54 +59,107 @@ var (
 	decLock sync.RWMutex
 )
 
+/*
+getDecEngine is a function that retrieves a decoding engine for a given reflect.Type from a map.
+The function takes a reflect.Type as its only argument and returns a decEng (decoding engine) struct.
+
+The function first checks if the decoding engine already exists in the rt2decEng map.
+If it does, it returns it. If it does not, it acquires a write lock using decLock,
+and checks again if the engine exists in the map. If it does, it returns it.
+If the engine still does not exist in the map, the function builds it using the buildDecEngine function,
+adds it to the map, and then returns it.
+
+This function is designed to be thread-safe, as it uses a lock to prevent multiple goroutines from
+building the same decoding engine at the same time.
+*/
 func getDecEngine(rt reflect.Type) decEng {
+	// Check if the decoding engine is already in the map. If it is, return it.
 	decLock.RLock()
 	engine := rt2decEng[rt]
 	decLock.RUnlock()
 	if engine != nil {
 		return engine
 	}
+
+	// If the engine is not in the map, acquire the write lock and build it.
+	// This is to prevent multiple goroutines from building the engine at the same time.
 	decLock.Lock()
+	defer decLock.Unlock()
+	engine = rt2decEng[rt]
+	if engine != nil {
+		return engine
+	}
+
+	// If the engine is still not in the map, build it using the buildDecEngine function.
 	buildDecEngine(rt, &engine)
-	decLock.Unlock()
+	rt2decEng[rt] = engine
 	return engine
 }
 
+// buildDecEngine takes a reflect type and a pointer to a decEng, and builds the decoding engine for that type.
 func buildDecEngine(rt reflect.Type, engPtr *decEng) {
+	// check if engine for the type already exists in the map
 	engine, has := rt2decEng[rt]
 	if has {
 		*engPtr = engine
 		return
 	}
-
+	// check if the type implements an unsupported serializer
 	if _, engine = implementOtherSerializer(rt); engine != nil {
 		rt2decEng[rt] = engine
 		*engPtr = engine
 		return
 	}
-
+	// determine the kind of the type
 	kind := rt.Kind()
 	var eEng decEng
+
+	// build engine based on the kind of the type
 	switch kind {
+	// This case statement checks if the type is a pointer
 	case reflect.Ptr:
+		// et is set to the element type of the pointer type
 		et := rt.Elem()
+		// buildDecEngine is called with et and a pointer to eEng is passed to set it
+		// to the new decoding engine
 		defer buildDecEngine(et, &eEng)
+		// a new function called "engine" is defined with parameters d *Decoder and p unsafe.Pointer
 		engine = func(d *Decoder, p unsafe.Pointer) {
+			// If the decoder is not nil
 			if d.decIsNotNil() {
+				// If the pointer is nil
 				if isNil(p) {
+					// A new element of et is created with reflect.New
+					// It is then dereferenced with Elem() and converted to an unsafe.Pointer
+					// It is then set to the value of p as an unsafe.Pointer
 					*(*unsafe.Pointer)(p) = unsafe.Pointer(reflect.New(et).Elem().UnsafeAddr())
 				}
+				// The decoding engine eEng is called with d and the dereferenced value of p as an unsafe.Pointer
 				eEng(d, *(*unsafe.Pointer)(p))
+				// If the decoder is nil and the pointer is not nil
 			} else if !isNil(p) {
+				// Set the value of the pointer to nil
 				*(*unsafe.Pointer)(p) = nil
 			}
 		}
+
+	//the case where the type of the data being decoded is an array.
 	case reflect.Array:
+		// Get the length of the array and the element type.
 		l, et := rt.Len(), rt.Elem()
+
+		// Get the size of each element in the array.
 		size := et.Size()
+
+		// Create a deferred decoding engine for the element type.
 		defer buildDecEngine(et, &eEng)
+
+		// Define the decoding engine for the array.
 		engine = func(d *Decoder, p unsafe.Pointer) {
+
+			// Loop over each element in the array.
 			for i := 0; i < l; i++ {
+				// Pass the decoder and a pointer to the current element to the decoding engine for the element type.
 				eEng(d, unsafe.Pointer(uintptr(p)+uintptr(i)*size))
 			}
 		}
@@ -119,12 +172,12 @@ func buildDecEngine(rt reflect.Type, engPtr *decEng) {
 			if d.decIsNotNil() {
 				l := d.decLength()
 				if isNil(p) || header.Cap < l {
-					*header = reflect.SliceHeader{Data: reflect.MakeSlice(rt, l, l).Pointer(), Len: l, Cap: l}
+					*header = reflect.SliceHeader{Data: uintptr(unsafe.Pointer(reflect.MakeSlice(rt, l, l).Pointer())), Len: l, Cap: l}
 				} else {
 					header.Len = l
 				}
 				for i := 0; i < l; i++ {
-					eEng(d, unsafe.Pointer(header.Data+uintptr(i)*size))
+					eEng(d, unsafe.Pointer(uintptr(unsafe.Pointer(header.Data))+uintptr(i)*size))
 				}
 			} else if !isNil(p) {
 				*header = reflect.SliceHeader{}

@@ -13,8 +13,8 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/niubaoshu/gotiny"
 	"github.com/niubaoshu/goutils"
+	"github.com/raszia/gotiny"
 )
 
 type (
@@ -37,7 +37,7 @@ type (
 		fComplex128 complex128
 		fString     string
 		array       [3]uint32
-		inter       interface{}
+		inter       any
 		A
 	}
 
@@ -93,7 +93,7 @@ func genBase() baseTyp {
 		fComplex128: complex(rand.Float64(), rand.Float64()),
 		fString:     getRandomString(20 + rand.Intn(256)),
 		array:       [3]uint32{rand.Uint32(), rand.Uint32()},
-		inter:       interface{}(int(1)),
+		inter:       any(int(1)),
 		A:           genA(),
 	}
 }
@@ -110,6 +110,13 @@ func genA() A {
 }
 
 var (
+	encKey = [32]byte{
+		1, 2, 3, 4, 5, 6, 7, 8,
+		9, 10, 11, 12, 13, 14,
+		15, 16, 17, 18, 19, 20,
+		21, 22, 23, 24, 25, 26,
+		27, 28, 29, 30, 31, 32,
+	}
 	vbool       = true
 	vfbool      = false
 	vint8       = int8(123)
@@ -201,19 +208,19 @@ var (
 		encoding.BinaryUnmarshaler
 	} = vbinTest
 
-	v0interface interface{}
-	vinterface  interface{}        = varray
+	v0interface any
+	vinterface  any                = varray
 	v1interface io.ReadWriteCloser = tint(2)
 	v2interface io.ReadWriteCloser = os.Stdin
-	v3interface interface{}        = &vinterface
-	v4interface interface{}        = &v1interface
-	v5interface interface{}        = &v2interface
-	v6interface interface{}        = &v3interface
-	v7interface interface{}        = &v0interface
-	v8interface interface{}        = &vnilptr
-	v9interface interface{}        = &v8interface
+	v3interface any                = &vinterface
+	v4interface any                = &v1interface
+	v5interface any                = &v2interface
+	v6interface any                = &v3interface
+	v7interface any                = &v0interface
+	v8interface any                = &vnilptr
+	v9interface any                = &v8interface
 
-	vs = []interface{}{
+	vs = []any{
 		vbool,
 		vfbool,
 		false,
@@ -298,14 +305,16 @@ var (
 		struct{}{},
 	}
 
-	length = len(vs)
-	buf    = make([]byte, 0, 1<<14)
-	e      = gotiny.NewEncoder(vs...)
-	d      = gotiny.NewDecoder(vs...)
-	c      = goutils.NewComparer()
+	length          = len(vs)
+	buf             = make([]byte, 0, 1<<14)
+	encoder         = gotiny.NewEncoder(vs...)
+	encoderCompress = gotiny.NewEncoder(vs...)
+	decoder         = gotiny.NewDecoder(vs...)
+	decoderCompress = gotiny.NewDecoder(vs...)
+	comparer        = goutils.NewComparer()
 
-	srci = make([]interface{}, length)
-	reti = make([]interface{}, length)
+	srci = make([]any, length)
+	reti = make([]any, length)
 	srcv = make([]reflect.Value, length)
 	retv = make([]reflect.Value, length)
 	srcp = make([]unsafe.Pointer, length)
@@ -314,7 +323,7 @@ var (
 )
 
 func init() {
-	e.AppendTo(buf)
+	encoder.AppendTo(buf)
 	for i := 0; i < length; i++ {
 		typs[i] = reflect.TypeOf(vs[i])
 		srcv[i] = reflect.ValueOf(vs[i])
@@ -327,10 +336,36 @@ func init() {
 		retv[i] = tempv.Elem()
 		reti[i] = tempv.Interface()
 
-		srcp[i] = unsafe.Pointer(reflect.ValueOf(&srci[i]).Elem().InterfaceData()[1])
-		retp[i] = unsafe.Pointer(reflect.ValueOf(&reti[i]).Elem().InterfaceData()[1])
+		srcp[i] = unsafe.Pointer(reflect.ValueOf(reflect.ValueOf(&srci[i]).Elem().Interface()).Pointer())
+		retp[i] = unsafe.Pointer(reflect.ValueOf(reflect.ValueOf(&reti[i]).Elem().Interface()).Pointer())
 	}
 	fmt.Printf("total %d value. buf length: %d, encode length: %d \n", length, cap(buf), len(gotiny.Marshal(srci...)))
+}
+func TestEncrypt(t *testing.T) {
+	aesConfig := gotiny.NewAES256config(encKey)
+	plaintext := []byte("secret message")
+
+	ciphertext := aesConfig.Encrypt(plaintext)
+
+	if len(ciphertext) == 0 {
+		t.Errorf("Ciphertext should not be empty")
+	}
+
+	if bytes.Equal(ciphertext, plaintext) {
+		t.Errorf("Ciphertext should be different from plaintext")
+	}
+}
+
+func TestDecrypt(t *testing.T) {
+	aesConfig := gotiny.NewAES256config(encKey)
+	plaintext := []byte("secret message")
+
+	ciphertext := aesConfig.Encrypt(plaintext)
+	decrypted := aesConfig.Decrypt(ciphertext)
+
+	if !bytes.Equal(decrypted, plaintext) {
+		t.Errorf("Decrypted plaintext should be the same as original plaintext")
+	}
 }
 
 func TestEncodeDecode(t *testing.T) {
@@ -341,24 +376,57 @@ func TestEncodeDecode(t *testing.T) {
 	}
 }
 
+func TestEncodeDecodeCompress(t *testing.T) {
+	buf := gotiny.MarshalCompress(srci...)
+	gotiny.UnmarshalCompress(buf, reti...)
+	for i, r := range reti {
+		Assert(t, buf, srci[i], r)
+	}
+}
+func TestEncodeDecodeCompressEncrypt(t *testing.T) {
+
+	aesConfig := gotiny.NewAES256config(encKey)
+	buf := gotiny.MarshalCompressEncrypt(aesConfig, srci...)
+	gotiny.UnmarshalCompressEncrypt(aesConfig, buf, reti...)
+	for i, r := range reti {
+		Assert(t, buf, srci[i], r)
+	}
+}
+func TestEncodeDecodeEncrypt(t *testing.T) {
+
+	aesConfig := gotiny.NewAES256config(encKey)
+	buf := gotiny.MarshalEncrypt(aesConfig, srci...)
+	gotiny.UnmarshalEncrypt(aesConfig, buf, reti...)
+	for i, r := range reti {
+		Assert(t, buf, srci[i], r)
+	}
+}
 func TestInterface(t *testing.T) {
-	buf := e.Encode(srci...)
-	d.Decode(buf, reti...)
+	buf := encoder.Encode(srci...)
+	decoder.Decode(buf, reti...)
+	for i, r := range reti {
+		Assert(t, buf, srci[i], r)
+	}
+}
+
+func TestInterfaceCompress(t *testing.T) {
+	buf := encoderCompress.EncodeCompress(srci...)
+	decoderCompress.DecodeCompress(buf, reti...)
 	for i, r := range reti {
 		Assert(t, buf, srci[i], r)
 	}
 }
 
 func TestPtr(t *testing.T) {
-	buf := e.EncodePtr(srcp...)
-	d.DecodePtr(buf, retp...)
+	buf := encoder.EncodePtr(srcp...)
+	decoder.DecodePtr(buf, retp...)
 	for i, r := range reti {
 		Assert(t, buf, srci[i], r)
 	}
 }
 
 func TestValue(t *testing.T) {
-	d.DecodeValue(e.EncodeValue(srcv...), retv...)
+	decoder.DecodeValue(encoder.EncodeValue(srcv...), retv...)
 	for i, r := range reti {
 		Assert(t, buf, srci[i], r)
 	}
@@ -386,14 +454,34 @@ func TestHelloWorld(t *testing.T) {
 	}
 }
 
-func Assert(t *testing.T, buf []byte, x, y interface{}) {
-	if !c.DeepEqual(x, y) {
+func TestGziperAndGunziper(t *testing.T) {
+	testData := []byte("hello world")
+
+	// test Gziper
+	var output bytes.Buffer
+	gotiny.Gziper(&output, testData)
+
+	if output.Len() == 0 {
+		t.Errorf("Gziper output is empty")
+	}
+
+	// test Gunziper
+	var output2 bytes.Buffer
+	gotiny.Gunziper(&output2, &output)
+
+	if !bytes.Equal(testData, output2.Bytes()) {
+		t.Errorf("Gunziper output is different from input")
+	}
+}
+
+func Assert(t *testing.T, buf []byte, x, y any) {
+	if !comparer.DeepEqual(x, y) {
 		e, g := indirect(x), indirect(y)
 		t.Errorf("\nbuf : %v\nlength:%d \nexp type = %T; value = %+v;\ngot type = %T; value = %+v; \n", buf, len(buf), e, e, g, g)
 	}
 }
 
-func indirect(i interface{}) interface{} {
+func indirect(i any) any {
 	v := reflect.ValueOf(i)
 	for v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface {
 		v = v.Elem()
@@ -419,24 +507,24 @@ func TestGetName(t *testing.T) {
 	nt := newType()
 	items := []struct {
 		ret string
-		val interface{}
+		val any
 	}{
 		{"int", int(1)},
-		{"github.com/niubaoshu/gotiny.Encoder", gotiny.Encoder{}},
+		{"github.com/raszia/gotiny.Encoder", gotiny.Encoder{}},
 		{"*int", (*int)(nil)},
 		{"**int", (**int)(nil)},
 		{"[]int", []int{}},
 		{"[]time.Time", []time.Time{}},
-		{"[]github.com/niubaoshu/gotiny.GoTinySerializer", []gotiny.GoTinySerializer{}},
-		{"*interface {}", (*interface{})(nil)},
+		{"[]github.com/raszia/gotiny.GoTinySerializer", []gotiny.GoTinySerializer{}},
+		{"*interface {}", (*any)(nil)},
 		{"map[int]string", map[int]string{}},
-		{"struct { a struct { int; b int; dec []github.com/niubaoshu/gotiny.Decoder; abb interface {}; c io.ReadWriteCloser } }",
+		{"struct { a struct { int; b int; dec []github.com/raszia/gotiny.Decoder; abb interface {}; c io.ReadWriteCloser } }",
 			struct {
 				a struct {
 					int
 					b   int
 					dec []gotiny.Decoder
-					abb interface{}
+					abb any
 					c   io.ReadWriteCloser
 				}
 			}{}},
