@@ -20,4 +20,9 @@ func main() {
 	dec.DecodeValue(enc.EncodeValue(reflect.ValueOf(src1), reflect.ValueOf(src2)),
 		reflect.ValueOf(&ret1).Elem(), reflect.ValueOf(&ret2).Elem())
 	fmt.Println(ret1 + string(ret2)) // print "hello world!"
+
+	var a1 uint64 = 1 << 56
+	var a2 uint64 = 0
+	gotiny.Unmarshal(gotiny.Marshal(&a1), &a2)
+	fmt.Println(a1, a2, a1 == a2)
 }

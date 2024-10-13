@@ -105,11 +105,12 @@ func buildEncEngine(rt reflect.Type, engPtr *encEng) {
 		}
 	case reflect.Array:
 		et, l := rt.Elem(), rt.Len()
-		defer buildEncEngine(et, &eEng)
 		size := et.Size()
+		defer buildEncEngine(et, &eEng)
 		engine = func(e *Encoder, p unsafe.Pointer) {
 			for i := 0; i < l; i++ {
-				eEng(e, unsafe.Pointer(uintptr(p)+uintptr(i)*size))
+				// eEng(e, unsafe.Pointer(uintptr(p)+uintptr(i)*size))
+				eEng(e, unsafe.Add(p, i*int(size)))
 			}
 		}
 	case reflect.Slice:
