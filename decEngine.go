@@ -11,50 +11,47 @@ type decEng func(*Decoder, unsafe.Pointer) // 解码器
 
 var (
 	rt2decEng = map[reflect.Type]decEng{
-		reflect.TypeOf((*bool)(nil)).Elem():           decBool,
-		reflect.TypeOf((*int)(nil)).Elem():            decInt,
-		reflect.TypeOf((*int8)(nil)).Elem():           decInt8,
-		reflect.TypeOf((*int16)(nil)).Elem():          decInt16,
-		reflect.TypeOf((*int32)(nil)).Elem():          decInt32,
-		reflect.TypeOf((*int64)(nil)).Elem():          decInt64,
-		reflect.TypeOf((*uint)(nil)).Elem():           decUint,
-		reflect.TypeOf((*uint8)(nil)).Elem():          decUint8,
-		reflect.TypeOf((*uint16)(nil)).Elem():         decUint16,
-		reflect.TypeOf((*uint32)(nil)).Elem():         decUint32,
-		reflect.TypeOf((*uint64)(nil)).Elem():         decUint64,
-		reflect.TypeOf((*uintptr)(nil)).Elem():        decUintptr,
-		reflect.TypeOf((*unsafe.Pointer)(nil)).Elem(): decPointer,
-		reflect.TypeOf((*float32)(nil)).Elem():        decFloat32,
-		reflect.TypeOf((*float64)(nil)).Elem():        decFloat64,
-		reflect.TypeOf((*complex64)(nil)).Elem():      decComplex64,
-		reflect.TypeOf((*complex128)(nil)).Elem():     decComplex128,
-		reflect.TypeOf((*[]byte)(nil)).Elem():         decBytes,
-		reflect.TypeOf((*string)(nil)).Elem():         decString,
-		reflect.TypeOf((*time.Time)(nil)).Elem():      decTime,
-		reflect.TypeOf((*struct{})(nil)).Elem():       decIgnore,
-		reflect.TypeOf(nil):                           decIgnore,
+		reflect.TypeOf((*bool)(nil)).Elem():       decBool,
+		reflect.TypeOf((*int)(nil)).Elem():        decInt,
+		reflect.TypeOf((*int8)(nil)).Elem():       decInt8,
+		reflect.TypeOf((*int16)(nil)).Elem():      decInt16,
+		reflect.TypeOf((*int32)(nil)).Elem():      decInt32,
+		reflect.TypeOf((*int64)(nil)).Elem():      decInt64,
+		reflect.TypeOf((*uint)(nil)).Elem():       decUint,
+		reflect.TypeOf((*uint8)(nil)).Elem():      decUint8,
+		reflect.TypeOf((*uint16)(nil)).Elem():     decUint16,
+		reflect.TypeOf((*uint32)(nil)).Elem():     decUint32,
+		reflect.TypeOf((*uint64)(nil)).Elem():     decUint64,
+		reflect.TypeOf((*uintptr)(nil)).Elem():    decUintptr,
+		reflect.TypeOf((*float32)(nil)).Elem():    decFloat32,
+		reflect.TypeOf((*float64)(nil)).Elem():    decFloat64,
+		reflect.TypeOf((*complex64)(nil)).Elem():  decComplex64,
+		reflect.TypeOf((*complex128)(nil)).Elem(): decComplex128,
+		reflect.TypeOf((*[]byte)(nil)).Elem():     decBytes,
+		reflect.TypeOf((*string)(nil)).Elem():     decString,
+		reflect.TypeOf((*time.Time)(nil)).Elem():  decTime,
+		reflect.TypeOf((*struct{})(nil)).Elem():   decIgnore,
+		reflect.TypeOf(nil):                       decIgnore,
 	}
 
 	baseDecEngines = []decEng{
-		reflect.Invalid:       decIgnore,
-		reflect.Bool:          decBool,
-		reflect.Int:           decInt,
-		reflect.Int8:          decInt8,
-		reflect.Int16:         decInt16,
-		reflect.Int32:         decInt32,
-		reflect.Int64:         decInt64,
-		reflect.Uint:          decUint,
-		reflect.Uint8:         decUint8,
-		reflect.Uint16:        decUint16,
-		reflect.Uint32:        decUint32,
-		reflect.Uint64:        decUint64,
-		reflect.Uintptr:       decUintptr,
-		reflect.UnsafePointer: decPointer,
-		reflect.Float32:       decFloat32,
-		reflect.Float64:       decFloat64,
-		reflect.Complex64:     decComplex64,
-		reflect.Complex128:    decComplex128,
-		reflect.String:        decString,
+		reflect.Bool:       decBool,
+		reflect.Int:        decInt,
+		reflect.Int8:       decInt8,
+		reflect.Int16:      decInt16,
+		reflect.Int32:      decInt32,
+		reflect.Int64:      decInt64,
+		reflect.Uint:       decUint,
+		reflect.Uint8:      decUint8,
+		reflect.Uint16:     decUint16,
+		reflect.Uint32:     decUint32,
+		reflect.Uint64:     decUint64,
+		reflect.Uintptr:    decUintptr,
+		reflect.Float32:    decFloat32,
+		reflect.Float64:    decFloat64,
+		reflect.Complex64:  decComplex64,
+		reflect.Complex128: decComplex128,
+		reflect.String:     decString,
 	}
 	decLock sync.RWMutex
 )
@@ -94,7 +91,8 @@ func buildDecEngine(rt reflect.Type, engPtr *decEng) {
 		engine = func(d *Decoder, p unsafe.Pointer) {
 			if d.decIsNotNil() {
 				if isNil(p) {
-					*(*unsafe.Pointer)(p) = unsafe.Pointer(reflect.New(et).Elem().UnsafeAddr())
+					//*(*unsafe.Pointer)(p) = unsafe.Pointer(reflect.New(et).Elem().UnsafeAddr())
+					*(*unsafe.Pointer)(p) = reflect.New(et).UnsafePointer()
 				}
 				eEng(d, *(*unsafe.Pointer)(p))
 			} else if !isNil(p) {
@@ -107,7 +105,7 @@ func buildDecEngine(rt reflect.Type, engPtr *decEng) {
 		defer buildDecEngine(et, &eEng)
 		engine = func(d *Decoder, p unsafe.Pointer) {
 			for i := 0; i < l; i++ {
-				eEng(d, unsafe.Pointer(uintptr(p)+uintptr(i)*size))
+				eEng(d, unsafe.Add(p, i*int(size)))
 			}
 		}
 	case reflect.Slice:
@@ -115,19 +113,19 @@ func buildDecEngine(rt reflect.Type, engPtr *decEng) {
 		size := et.Size()
 		defer buildDecEngine(et, &eEng)
 		engine = func(d *Decoder, p unsafe.Pointer) {
-			header := (*reflect.SliceHeader)(p)
+			header := (*sliceHeader)(p)
 			if d.decIsNotNil() {
 				l := d.decLength()
-				if isNil(p) || header.Cap < l {
-					*header = reflect.SliceHeader{Data: reflect.MakeSlice(rt, l, l).Pointer(), Len: l, Cap: l}
+				if isNil(p) || header.cap < l {
+					*header = sliceHeader{data: reflect.MakeSlice(rt, l, l).UnsafePointer(), len: l, cap: l}
 				} else {
-					header.Len = l
+					header.len = l
 				}
 				for i := 0; i < l; i++ {
-					eEng(d, unsafe.Pointer(header.Data+uintptr(i)*size))
+					eEng(d, unsafe.Add(header.data, uintptr(i)*size))
 				}
 			} else if !isNil(p) {
-				*header = reflect.SliceHeader{}
+				*header = sliceHeader{data: nil, len: 0, cap: 0}
 			}
 		}
 	case reflect.Map:
@@ -142,7 +140,7 @@ func buildDecEngine(rt reflect.Type, engPtr *decEng) {
 				var v reflect.Value
 				if isNil(p) {
 					v = reflect.MakeMapWithSize(rt, l)
-					*(*unsafe.Pointer)(p) = unsafe.Pointer(v.Pointer())
+					*(*unsafe.Pointer)(p) = v.UnsafePointer()
 				} else {
 					v = reflect.NewAt(rt, p).Elem()
 				}
@@ -167,8 +165,8 @@ func buildDecEngine(rt reflect.Type, engPtr *decEng) {
 			}
 		}()
 		engine = func(d *Decoder, p unsafe.Pointer) {
-			for i := 0; i < len(fEngines) && i < len(offs); i++ {
-				fEngines[i](d, unsafe.Pointer(uintptr(p)+offs[i]))
+			for i := 0; i < nf && i < len(offs); i++ {
+				fEngines[i](d, unsafe.Add(p, offs[i]))
 			}
 		}
 	case reflect.Interface:
@@ -187,13 +185,13 @@ func buildDecEngine(rt reflect.Type, engPtr *decEng) {
 				} else {
 					ev = v.Elem()
 				}
-				getDecEngine(et)(d, getUnsafePointer(&ev))
+				getDecEngine(et)(d, getUnsafePointer(ev))
 				v.Set(ev)
 			} else if !isNil(p) {
 				*(*unsafe.Pointer)(p) = nil
 			}
 		}
-	case reflect.Chan, reflect.Func:
+	case reflect.Chan, reflect.Func, reflect.Invalid, reflect.UnsafePointer:
 		panic("not support " + rt.String() + " type")
 	default:
 		engine = baseDecEngines[kind]

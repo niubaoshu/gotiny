@@ -9,7 +9,8 @@ import (
 
 func main() {
 	src1, src2 := "hello", []byte(" world!")
-	ret1, ret2 := "", []byte{3, 4, 5}
+	var ret1 string
+	var ret2 []byte
 	gotiny.Unmarshal(gotiny.Marshal(&src1, &src2), &ret1, &ret2)
 	fmt.Println(ret1 + string(ret2)) // print "hello world!"
 
@@ -20,4 +21,19 @@ func main() {
 	dec.DecodeValue(enc.EncodeValue(reflect.ValueOf(src1), reflect.ValueOf(src2)),
 		reflect.ValueOf(&ret1).Elem(), reflect.ValueOf(&ret2).Elem())
 	fmt.Println(ret1 + string(ret2)) // print "hello world!"
+
+	var a1 uint64 = 1 << 56
+	var a2 uint64 = 0
+	gotiny.Unmarshal(gotiny.Marshal(&a1), &a2)
+	fmt.Println(a1, a2, a1 == a2)
+
+	sm := map[string]int{
+		"a": 1,
+		"b": 2,
+		"c": 3,
+	}
+	var dm map[string]int
+	buf := gotiny.Marshal(&sm)
+	gotiny.Unmarshal(buf, &dm)
+	fmt.Println(sm, dm)
 }

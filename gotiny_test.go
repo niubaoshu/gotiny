@@ -14,7 +14,6 @@ import (
 	"unsafe"
 
 	"github.com/niubaoshu/gotiny"
-	"github.com/niubaoshu/goutils"
 )
 
 type (
@@ -42,23 +41,24 @@ type (
 	}
 
 	A struct {
-		Name     string
-		BirthDay time.Time
-		Phone    string `gotiny:"-"`
+		Name string
+		// Phone    string `gotiny:"-"`
 		Siblings int
 		Spouse   bool
 		Money    float64
 	}
+	tint struct {
+		a uint8
+	}
 
 	cirTyp    *cirTyp
 	cirStruct struct {
+		b tint
 		a int
 		*cirStruct
 	}
 	cirMap   map[int]cirMap
 	cirSlice []cirSlice
-
-	tint int
 
 	gotinyTest string
 )
@@ -66,6 +66,9 @@ type (
 func (tint) Read([]byte) (int, error)  { return 0, nil }
 func (tint) Write([]byte) (int, error) { return 0, nil }
 func (tint) Close() error              { return nil }
+
+func (t *tint) GotinyEncode(buf []byte) []byte { return append(buf, byte(t.a)) }
+func (t *tint) GotinyDecode(buf []byte) int    { t.a = buf[0]; return 1 }
 
 func (v *gotinyTest) GotinyEncode(buf []byte) []byte {
 	return append(buf, gotiny.Marshal((*string)(v))...)
@@ -75,34 +78,40 @@ func (v *gotinyTest) GotinyDecode(buf []byte) int {
 	return gotiny.Unmarshal(buf, (*string)(v))
 }
 
-func genBase() baseTyp {
-	return baseTyp{
-		fBool:       rand.Int()%2 == 0,
-		fInt8:       int8(rand.Int()),
-		fInt16:      int16(rand.Int()),
-		fInt32:      int32(rand.Int()),
-		fInt64:      int64(rand.Int()),
-		fInt:        int(rand.Int()),
-		fUint8:      uint8(rand.Int()),
-		fUint16:     uint16(rand.Int()),
-		fUint64:     uint64(rand.Int()),
-		fUintptr:    uintptr(rand.Int()),
-		fFloat32:    rand.Float32(),
-		fFloat64:    rand.Float64(),
-		fComplex64:  complex(rand.Float32(), rand.Float32()),
-		fComplex128: complex(rand.Float64(), rand.Float64()),
-		fString:     getRandomString(20 + rand.Intn(256)),
-		array:       [3]uint32{rand.Uint32(), rand.Uint32()},
-		inter:       interface{}(int(1)),
-		A:           genA(),
+func genBase() []baseTyp {
+	n := 1
+	base := make([]baseTyp, n)
+	for i := 0; i < n; i++ {
+		base[i] = baseTyp{
+			fBool:       rand.Int()%2 == 0,
+			fInt8:       int8(rand.Int()),
+			fInt16:      int16(rand.Int()),
+			fInt32:      int32(rand.Int()),
+			fInt64:      int64(rand.Int()),
+			fInt:        rand.Int(),
+			fUint8:      uint8(rand.Int()),
+			fUint16:     uint16(rand.Int()),
+			fUint32:     uint32(rand.Int()),
+			fUint64:     uint64(rand.Int()),
+			fUint:       uint(rand.Int()),
+			fUintptr:    uintptr(rand.Int()),
+			fFloat32:    rand.Float32(),
+			fFloat64:    rand.Float64(),
+			fComplex64:  complex(rand.Float32(), rand.Float32()),
+			fComplex128: complex(rand.Float64(), rand.Float64()),
+			fString:     getRandomString(20 + rand.Intn(256)),
+			array:       [3]uint32{rand.Uint32(), rand.Uint32()},
+			inter:       interface{}(int(1)),
+			A:           genA(),
+		}
 	}
+	return base
 }
 
 func genA() A {
 	return A{
-		Name:     getRandomString(16),
-		BirthDay: time.Now(),
-		//Phone:    getRandomString(10),
+		Name: getRandomString(16),
+		// Phone:    getRandomString(10),
 		Siblings: rand.Intn(5),
 		Spouse:   rand.Intn(2) == 1,
 		Money:    rand.Float64(),
@@ -121,7 +130,7 @@ var (
 	vint        = int(123456)
 	vint1       = int(123456)
 	vint2       = int(1234567)
-	vint3       = tint(1234567)
+	vint3       = tint{a: 123}
 	vuint       = uint(123)
 	vuint8      = uint8(123)
 	vuint16     = uint16(12345)
@@ -130,25 +139,26 @@ var (
 	v2uint64    = uint64(1<<64 - 1)
 	v3uint64    = uint64(rand.Uint32() * rand.Uint32())
 	v4uint64    = v2uint64 - uint64(rand.Intn(200))
+	v5uint64    = uint64(1<<7 - 1)
 	vuintptr    = uintptr(12345678)
 	vfloat32    = float32(1.2345)
 	vfloat64    = float64(1.2345678)
 	vcomp64     = complex(1.2345, 2.3456)
 	vcomp128    = complex(1.2345678, 2.3456789)
 	vstring     = string("hello,日本国")
+	a           = genA()
 	base        = genBase()
 	vbytes      = []byte("aaaaaaaaaaaaaaaaaaa")
 	vslicebytes = [][]byte{[]byte("aaaaaaaaaaaaaaaaaaa"), []byte("bbbbbbbbbbbbbbb"), []byte("ccccccccccccc")}
 	v2slice     = []int{1, 2, 3, 4, 5}
 	v3slice     []byte
-	varr        = [3]baseTyp{genBase(), genBase(), genBase()}
+	varr        = [3][]baseTyp{genBase(), genBase(), genBase()}
 	vmap        = map[int]int{1: 2, 2: 3, 3: 4, 4: 5, 5: 6}
 	v2map       = map[int]map[int]int{1: {2: 3, 3: 4}}
 	v3map       = map[int][]byte{1: {2, 3, 3, 4}}
 	v4map       = map[int]*int{1: &vint}
-	v5map       = map[int]baseTyp{1: genBase(), 2: genBase()}
-	v6map       = map[*int]baseTyp{&vint1: genBase(), &vint2: genBase()}
-	v7map       = map[int][3]baseTyp{1: varr}
+	v5map       = map[int][]baseTyp{1: genBase(), 2: genBase()}
+	v7map       = map[int][3][]baseTyp{1: varr}
 	vnilmap     map[int]int
 	vptr        = &vint
 	vsliceptr   = &vbytes
@@ -157,9 +167,8 @@ var (
 	v2nilptr    []string
 	vnilptrptr  = &vnilptr
 	varrptr     = &varr
-	vtime       = time.Now()
 
-	vslicebase = []baseTyp{
+	vslicebase = [][]baseTyp{
 		genBase(),
 		genBase(),
 		genBase(),
@@ -170,19 +179,17 @@ var (
 		"ccccccccc",
 	}
 
-	varray = [3]baseTyp{
+	varray = [3][]baseTyp{
 		genBase(),
 		genBase(),
 		genBase(),
 	}
 
-	unsafePointer = unsafe.Pointer(&vtime)
-
 	vcir        cirTyp
 	v2cir       cirTyp = &vcir
 	v3cir       cirTyp = &v2cir
-	vcirStruct         = cirStruct{a: 1}
-	v2cirStruct        = cirStruct{a: 1, cirStruct: &vcirStruct}
+	vcirStruct         = cirStruct{b: tint{a: 45}, a: 1}
+	v2cirStruct        = cirStruct{b: tint{a: 22}, a: 1, cirStruct: &vcirStruct}
 	vcirmap            = cirMap{1: nil}
 	v2cirmap           = cirMap{2: vcirmap}
 	v1cirSlice         = make([]cirSlice, 10)
@@ -203,11 +210,9 @@ var (
 
 	v0interface interface{}
 	vinterface  interface{}        = varray
-	v1interface io.ReadWriteCloser = tint(2)
-	v2interface io.ReadWriteCloser = os.Stdin
+	v1interface io.ReadWriteCloser = tint{a: 1}
 	v3interface interface{}        = &vinterface
 	v4interface interface{}        = &v1interface
-	v5interface interface{}        = &v2interface
 	v6interface interface{}        = &v3interface
 	v7interface interface{}        = &v0interface
 	v8interface interface{}        = &vnilptr
@@ -237,13 +242,14 @@ var (
 		v2uint64,
 		v3uint64,
 		v4uint64,
+		v5uint64,
 		vuintptr,
 		vfloat32,
 		vfloat64,
 		vcomp64,
 		vcomp128,
 		vstring,
-		base,
+		a,
 		vbytes,
 		vslicebytes,
 		v2slice,
@@ -254,7 +260,6 @@ var (
 		v3map,
 		v4map,
 		v5map,
-		v6map,
 		v7map,
 		vnilmap,
 		vptr,
@@ -264,21 +269,17 @@ var (
 		v2nilptr,
 		vnilptrptr,
 		varrptr,
-		vtime,
 		vslicebase,
 		vslicestring,
 		varray,
 		vinterface,
 		v1interface,
-		v2interface,
 		v3interface,
 		v4interface,
-		v5interface,
 		v6interface,
 		v7interface,
 		v8interface,
 		v9interface,
-		unsafePointer,
 		vcir,
 		v2cir,
 		v3cir,
@@ -302,7 +303,6 @@ var (
 	buf    = make([]byte, 0, 1<<14)
 	e      = gotiny.NewEncoder(vs...)
 	d      = gotiny.NewDecoder(vs...)
-	c      = goutils.NewComparer()
 
 	srci = make([]interface{}, length)
 	reti = make([]interface{}, length)
@@ -387,9 +387,9 @@ func TestHelloWorld(t *testing.T) {
 }
 
 func Assert(t *testing.T, buf []byte, x, y interface{}) {
-	if !c.DeepEqual(x, y) {
+	if !reflect.DeepEqual(x, y) {
 		e, g := indirect(x), indirect(y)
-		t.Errorf("\nbuf : %v\nlength:%d \nexp type = %T; value = %+v;\ngot type = %T; value = %+v; \n", buf, len(buf), e, e, g, g)
+		t.Errorf("\nlength:%d \nexp type = %T; value = %+v;\ngot type = %T; value = %+v; \n", len(buf), e, e, g, g)
 	}
 }
 
@@ -461,4 +461,150 @@ func newType() struct {
 	A int
 } {
 	return struct{ A int }{A: 1}
+}
+
+func TestUint64(t *testing.T) {
+	n := 10000000
+	u64 := make([]uint64, n)
+	for i := 0; i < n; i++ {
+		u64[i] = rand.Uint64()
+	}
+	buf := gotiny.Marshal(&u64)
+	var u64d []uint64
+	gotiny.Unmarshal(buf, &u64d)
+
+	for i := 0; i < n; i++ {
+		Assert(t, buf, u64[i], u64d[i])
+	}
+}
+
+func TestInt64(t *testing.T) {
+	n := 10000000
+	u64 := make([]int64, n)
+	for i := 0; i < n; i++ {
+		u64[i] = rand.Int63()
+		if rand.Intn(2)%2 == 0 {
+			u64[i] = -u64[i]
+		}
+	}
+	buf := gotiny.Marshal(&u64)
+	var u64d []int64
+	gotiny.Unmarshal(buf, &u64d)
+
+	for i := 0; i < n; i++ {
+		Assert(t, buf, u64[i], u64d[i])
+	}
+}
+
+func TestUint16(t *testing.T) {
+	n := 10000000
+	u64 := make([]uint16, n)
+	for i := 0; i < n; i++ {
+		u64[i] = uint16(rand.Uint32())
+	}
+	buf := gotiny.Marshal(&u64)
+	var u64d []uint16
+	gotiny.Unmarshal(buf, &u64d)
+
+	for i := 0; i < n; i++ {
+		Assert(t, buf, u64[i], u64d[i])
+	}
+}
+
+func TestInt16(t *testing.T) {
+	n := 10000000
+	u64 := make([]int16, n)
+	for i := 0; i < n; i++ {
+		u64[i] = int16(rand.Int31())
+		if rand.Intn(2)%2 == 0 {
+			u64[i] = -u64[i]
+		}
+	}
+	buf := gotiny.Marshal(&u64)
+	var u64d []int16
+	gotiny.Unmarshal(buf, &u64d)
+
+	for i := 0; i < n; i++ {
+		Assert(t, buf, u64[i], u64d[i])
+	}
+}
+
+func TestUint32(t *testing.T) {
+	n := 10000000
+	u64 := make([]uint32, n)
+	for i := 0; i < n; i++ {
+		u64[i] = rand.Uint32()
+	}
+	buf := gotiny.Marshal(&u64)
+	var u64d []uint32
+	gotiny.Unmarshal(buf, &u64d)
+
+	for i := 0; i < n; i++ {
+		Assert(t, buf, u64[i], u64d[i])
+	}
+}
+
+func TestInt32(t *testing.T) {
+	n := 10000000
+	u64 := make([]int32, n)
+	for i := 0; i < n; i++ {
+		u64[i] = rand.Int31()
+		if rand.Intn(2)%2 == 0 {
+			u64[i] = -u64[i]
+		}
+	}
+	buf := gotiny.Marshal(&u64)
+	var u64d []int32
+	gotiny.Unmarshal(buf, &u64d)
+
+	for i := 0; i < n; i++ {
+		Assert(t, buf, u64[i], u64d[i])
+	}
+}
+
+func TestBool(t *testing.T) {
+	n := 10000000
+	u64 := make([]bool, n)
+	for i := 0; i < n; i++ {
+		u64[i] = rand.Intn(2)%2 == 0
+	}
+	buf := gotiny.Marshal(&u64)
+	var u64d []bool
+	gotiny.Unmarshal(buf, &u64d)
+
+	for i := 0; i < n; i++ {
+		Assert(t, buf, u64[i], u64d[i])
+	}
+}
+
+func TestTime(t *testing.T) {
+	n := 1000
+	u64 := make([]time.Time, n)
+	for i := 0; i < n; i++ {
+		u64[i] = time.Now()
+	}
+	buf := gotiny.Marshal(&u64)
+	var u64d []time.Time
+	gotiny.Unmarshal(buf, &u64d)
+
+	for i := 0; i < n; i++ {
+		u64[i].Equal(u64d[i])
+	}
+}
+
+func TestPointerMap(t *testing.T) {
+	n := 100
+	for i := 0; i < n; i++ {
+		v6map := map[*int][]baseTyp{&vint1: genBase(), &vint2: genBase()}
+		v6mapd := map[*int][]baseTyp{}
+		buf := gotiny.Marshal(&v6map)
+		gotiny.Unmarshal(buf, &v6mapd)
+		vd := map[int][]baseTyp{}
+		for k, v := range v6map {
+			vd[*k] = v
+		}
+		for k, v := range v6mapd {
+			Assert(t, buf, vd[*k], v)
+		}
+	}
 }

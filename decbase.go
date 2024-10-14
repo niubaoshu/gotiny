@@ -120,27 +120,27 @@ func (d *Decoder) decUint32() uint32 {
 func (d *Decoder) decLength() int    { return int(d.decUint32()) }
 func (d *Decoder) decIsNotNil() bool { return d.decBool() }
 
-func decIgnore(*Decoder, unsafe.Pointer)        {}
-func decBool(d *Decoder, p unsafe.Pointer)      { *(*bool)(p) = d.decBool() }
-func decInt(d *Decoder, p unsafe.Pointer)       { *(*int)(p) = int(uint64ToInt64(d.decUint64())) }
-func decInt8(d *Decoder, p unsafe.Pointer)      { *(*int8)(p) = int8(d.buf[d.index]); d.index++ }
-func decInt16(d *Decoder, p unsafe.Pointer)     { *(*int16)(p) = uint16ToInt16(d.decUint16()) }
-func decInt32(d *Decoder, p unsafe.Pointer)     { *(*int32)(p) = uint32ToInt32(d.decUint32()) }
-func decInt64(d *Decoder, p unsafe.Pointer)     { *(*int64)(p) = uint64ToInt64(d.decUint64()) }
-func decUint(d *Decoder, p unsafe.Pointer)      { *(*uint)(p) = uint(d.decUint64()) }
-func decUint8(d *Decoder, p unsafe.Pointer)     { *(*uint8)(p) = d.buf[d.index]; d.index++ }
-func decUint16(d *Decoder, p unsafe.Pointer)    { *(*uint16)(p) = d.decUint16() }
-func decUint32(d *Decoder, p unsafe.Pointer)    { *(*uint32)(p) = d.decUint32() }
-func decUint64(d *Decoder, p unsafe.Pointer)    { *(*uint64)(p) = d.decUint64() }
-func decUintptr(d *Decoder, p unsafe.Pointer)   { *(*uintptr)(p) = uintptr(d.decUint64()) }
-func decPointer(d *Decoder, p unsafe.Pointer)   { *(*uintptr)(p) = uintptr(d.decUint64()) }
-func decFloat32(d *Decoder, p unsafe.Pointer)   { *(*float32)(p) = uint32ToFloat32(d.decUint32()) }
-func decFloat64(d *Decoder, p unsafe.Pointer)   { *(*float64)(p) = uint64ToFloat64(d.decUint64()) }
+func decIgnore(*Decoder, unsafe.Pointer)      {}
+func decBool(d *Decoder, p unsafe.Pointer)    { *(*bool)(p) = d.decBool() }
+func decInt(d *Decoder, p unsafe.Pointer)     { *(*int)(p) = int(uint64ToInt64(d.decUint64())) }
+func decInt8(d *Decoder, p unsafe.Pointer)    { *(*int8)(p) = int8(d.buf[d.index]); d.index++ }
+func decInt16(d *Decoder, p unsafe.Pointer)   { *(*int16)(p) = uint16ToInt16(d.decUint16()) }
+func decInt32(d *Decoder, p unsafe.Pointer)   { *(*int32)(p) = uint32ToInt32(d.decUint32()) }
+func decInt64(d *Decoder, p unsafe.Pointer)   { *(*int64)(p) = uint64ToInt64(d.decUint64()) }
+func decUint(d *Decoder, p unsafe.Pointer)    { *(*uint)(p) = uint(d.decUint64()) }
+func decUint8(d *Decoder, p unsafe.Pointer)   { *(*uint8)(p) = d.buf[d.index]; d.index++ }
+func decUint16(d *Decoder, p unsafe.Pointer)  { *(*uint16)(p) = d.decUint16() }
+func decUint32(d *Decoder, p unsafe.Pointer)  { *(*uint32)(p) = d.decUint32() }
+func decUint64(d *Decoder, p unsafe.Pointer)  { *(*uint64)(p) = d.decUint64() }
+func decUintptr(d *Decoder, p unsafe.Pointer) { *(*uintptr)(p) = uintptr(d.decUint64()) }
+func decFloat32(d *Decoder, p unsafe.Pointer) { *(*float32)(p) = uint32ToFloat32(d.decUint32()) }
+func decFloat64(d *Decoder, p unsafe.Pointer) { *(*float64)(p) = uint64ToFloat64(d.decUint64()) }
+
 func decTime(d *Decoder, p unsafe.Pointer)      { *(*time.Time)(p) = time.Unix(0, int64(d.decUint64())) }
 func decComplex64(d *Decoder, p unsafe.Pointer) { *(*uint64)(p) = d.decUint64() }
 func decComplex128(d *Decoder, p unsafe.Pointer) {
 	*(*uint64)(p) = d.decUint64()
-	*(*uint64)(unsafe.Pointer(uintptr(p) + ptr1Size)) = d.decUint64()
+	*(*uint64)(unsafe.Add(p, 8)) = d.decUint64()
 }
 
 func decString(d *Decoder, p unsafe.Pointer) {

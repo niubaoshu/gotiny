@@ -19,21 +19,21 @@ func (e *Encoder) encBool(v bool) {
 
 func (e *Encoder) encUint64(v uint64) {
 	switch {
-	case v < 1<<7-1:
+	case v < 1<<7:
 		e.buf = append(e.buf, byte(v))
-	case v < 1<<14-1:
+	case v < 1<<14:
 		e.buf = append(e.buf, byte(v)|0x80, byte(v>>7))
-	case v < 1<<21-1:
+	case v < 1<<21:
 		e.buf = append(e.buf, byte(v)|0x80, byte(v>>7)|0x80, byte(v>>14))
-	case v < 1<<28-1:
+	case v < 1<<28:
 		e.buf = append(e.buf, byte(v)|0x80, byte(v>>7)|0x80, byte(v>>14)|0x80, byte(v>>21))
-	case v < 1<<35-1:
+	case v < 1<<35:
 		e.buf = append(e.buf, byte(v)|0x80, byte(v>>7)|0x80, byte(v>>14)|0x80, byte(v>>21)|0x80, byte(v>>28))
-	case v < 1<<42-1:
+	case v < 1<<42:
 		e.buf = append(e.buf, byte(v)|0x80, byte(v>>7)|0x80, byte(v>>14)|0x80, byte(v>>21)|0x80, byte(v>>28)|0x80, byte(v>>35))
-	case v < 1<<49-1:
+	case v < 1<<49:
 		e.buf = append(e.buf, byte(v)|0x80, byte(v>>7)|0x80, byte(v>>14)|0x80, byte(v>>21)|0x80, byte(v>>28)|0x80, byte(v>>35)|0x80, byte(v>>42))
-	case v < 1<<56-1:
+	case v < 1<<56:
 		e.buf = append(e.buf, byte(v)|0x80, byte(v>>7)|0x80, byte(v>>14)|0x80, byte(v>>21)|0x80, byte(v>>28)|0x80, byte(v>>35)|0x80, byte(v>>42)|0x80, byte(v>>49))
 	default:
 		e.buf = append(e.buf, byte(v)|0x80, byte(v>>7)|0x80, byte(v>>14)|0x80, byte(v>>21)|0x80, byte(v>>28)|0x80, byte(v>>35)|0x80, byte(v>>42)|0x80, byte(v>>49)|0x80, byte(v>>56))
@@ -41,9 +41,9 @@ func (e *Encoder) encUint64(v uint64) {
 }
 
 func (e *Encoder) encUint16(v uint16) {
-	if v < 1<<7-1 {
+	if v < 1<<7 {
 		e.buf = append(e.buf, byte(v))
-	} else if v < 1<<14-1 {
+	} else if v < 1<<14 {
 		e.buf = append(e.buf, byte(v)|0x80, byte(v>>7))
 	} else {
 		e.buf = append(e.buf, byte(v)|0x80, byte(v>>7)|0x80, byte(v>>14))
@@ -52,13 +52,13 @@ func (e *Encoder) encUint16(v uint16) {
 
 func (e *Encoder) encUint32(v uint32) {
 	switch {
-	case v < 1<<7-1:
+	case v < 1<<7:
 		e.buf = append(e.buf, byte(v))
-	case v < 1<<14-1:
+	case v < 1<<14:
 		e.buf = append(e.buf, byte(v)|0x80, byte(v>>7))
-	case v < 1<<21-1:
+	case v < 1<<21:
 		e.buf = append(e.buf, byte(v)|0x80, byte(v>>7)|0x80, byte(v>>14))
-	case v < 1<<28-1:
+	case v < 1<<28:
 		e.buf = append(e.buf, byte(v)|0x80, byte(v>>7)|0x80, byte(v>>14)|0x80, byte(v>>21))
 	default:
 		e.buf = append(e.buf, byte(v)|0x80, byte(v>>7)|0x80, byte(v>>14)|0x80, byte(v>>21)|0x80, byte(v>>28))
@@ -82,7 +82,6 @@ func encUint32(e *Encoder, p unsafe.Pointer)  { e.encUint32(*(*uint32)(p)) }
 func encUint64(e *Encoder, p unsafe.Pointer)  { e.encUint64(uint64(*(*uint64)(p))) }
 func encUint(e *Encoder, p unsafe.Pointer)    { e.encUint64(uint64(*(*uint)(p))) }
 func encUintptr(e *Encoder, p unsafe.Pointer) { e.encUint64(uint64(*(*uintptr)(p))) }
-func encPointer(e *Encoder, p unsafe.Pointer) { e.encUint64(uint64(*(*uintptr)(p))) }
 func encFloat32(e *Encoder, p unsafe.Pointer) { e.encUint32(float32ToUint32(p)) }
 func encFloat64(e *Encoder, p unsafe.Pointer) { e.encUint64(float64ToUint64(p)) }
 func encString(e *Encoder, p unsafe.Pointer) {
@@ -94,7 +93,7 @@ func encTime(e *Encoder, p unsafe.Pointer)      { e.encUint64(uint64((*time.Time
 func encComplex64(e *Encoder, p unsafe.Pointer) { e.encUint64(*(*uint64)(p)) }
 func encComplex128(e *Encoder, p unsafe.Pointer) {
 	e.encUint64(*(*uint64)(p))
-	e.encUint64(*(*uint64)(unsafe.Pointer(uintptr(p) + ptr1Size)))
+	e.encUint64(*(*uint64)(unsafe.Add(p, 8)))
 }
 
 func encBytes(e *Encoder, p unsafe.Pointer) {

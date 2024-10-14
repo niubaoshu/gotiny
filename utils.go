@@ -8,10 +8,6 @@ import (
 	"unsafe"
 )
 
-const (
-	ptr1Size = 4 << (^uintptr(0) >> 63) // unsafe.Sizeof(uintptr(0)) but an ideal const
-)
-
 func float64ToUint64(v unsafe.Pointer) uint64 {
 	return reverse64Byte(*(*uint64)(v))
 }
@@ -104,7 +100,7 @@ type GoTinySerializer interface {
 }
 
 func implementOtherSerializer(rt reflect.Type) (encEng encEng, decEng decEng) {
-	rtNil := reflect.Zero(reflect.PtrTo(rt)).Interface()
+	rtNil := reflect.New(rt).Interface()
 	if _, ok := rtNil.(GoTinySerializer); ok {
 		encEng = func(e *Encoder, p unsafe.Pointer) {
 			e.buf = reflect.NewAt(rt, p).Interface().(GoTinySerializer).GotinyEncode(e.buf)
