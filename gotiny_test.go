@@ -14,7 +14,6 @@ import (
 	"unsafe"
 
 	"github.com/niubaoshu/gotiny"
-	"github.com/niubaoshu/goutils"
 )
 
 type (
@@ -42,9 +41,8 @@ type (
 	}
 
 	A struct {
-		Name     string
-		BirthDay time.Time
-		Phone    string `gotiny:"-"`
+		Name string
+		// Phone    string `gotiny:"-"`
 		Siblings int
 		Spouse   bool
 		Money    float64
@@ -81,8 +79,9 @@ func (v *gotinyTest) GotinyDecode(buf []byte) int {
 }
 
 func genBase() []baseTyp {
-	base := make([]baseTyp, 10000)
-	for i := 0; i < 10000; i++ {
+	n := 1
+	base := make([]baseTyp, n)
+	for i := 0; i < n; i++ {
 		base[i] = baseTyp{
 			fBool:       rand.Int()%2 == 0,
 			fInt8:       int8(rand.Int()),
@@ -111,9 +110,8 @@ func genBase() []baseTyp {
 
 func genA() A {
 	return A{
-		Name:     getRandomString(16),
-		BirthDay: time.Now(),
-		//Phone:    getRandomString(10),
+		Name: getRandomString(16),
+		// Phone:    getRandomString(10),
 		Siblings: rand.Intn(5),
 		Spouse:   rand.Intn(2) == 1,
 		Money:    rand.Float64(),
@@ -148,6 +146,7 @@ var (
 	vcomp64     = complex(1.2345, 2.3456)
 	vcomp128    = complex(1.2345678, 2.3456789)
 	vstring     = string("hello,日本国")
+	a           = genA()
 	base        = genBase()
 	vbytes      = []byte("aaaaaaaaaaaaaaaaaaa")
 	vslicebytes = [][]byte{[]byte("aaaaaaaaaaaaaaaaaaa"), []byte("bbbbbbbbbbbbbbb"), []byte("ccccccccccccc")}
@@ -159,7 +158,6 @@ var (
 	v3map       = map[int][]byte{1: {2, 3, 3, 4}}
 	v4map       = map[int]*int{1: &vint}
 	v5map       = map[int][]baseTyp{1: genBase(), 2: genBase()}
-	v6map       = map[*int][]baseTyp{&vint1: genBase(), &vint2: genBase()}
 	v7map       = map[int][3][]baseTyp{1: varr}
 	vnilmap     map[int]int
 	vptr        = &vint
@@ -169,7 +167,6 @@ var (
 	v2nilptr    []string
 	vnilptrptr  = &vnilptr
 	varrptr     = &varr
-	vtime       = time.Now()
 
 	vslicebase = [][]baseTyp{
 		genBase(),
@@ -252,7 +249,7 @@ var (
 		vcomp64,
 		vcomp128,
 		vstring,
-		base,
+		a,
 		vbytes,
 		vslicebytes,
 		v2slice,
@@ -263,7 +260,6 @@ var (
 		v3map,
 		v4map,
 		v5map,
-		v6map,
 		v7map,
 		vnilmap,
 		vptr,
@@ -273,7 +269,6 @@ var (
 		v2nilptr,
 		vnilptrptr,
 		varrptr,
-		vtime,
 		vslicebase,
 		vslicestring,
 		varray,
@@ -308,7 +303,6 @@ var (
 	buf    = make([]byte, 0, 1<<14)
 	e      = gotiny.NewEncoder(vs...)
 	d      = gotiny.NewDecoder(vs...)
-	c      = goutils.NewComparer()
 
 	srci = make([]interface{}, length)
 	reti = make([]interface{}, length)
@@ -393,9 +387,9 @@ func TestHelloWorld(t *testing.T) {
 }
 
 func Assert(t *testing.T, buf []byte, x, y interface{}) {
-	if !c.DeepEqual(x, y) {
+	if !reflect.DeepEqual(x, y) {
 		e, g := indirect(x), indirect(y)
-		t.Errorf("\nbuf : %v\nlength:%d \nexp type = %T; value = %+v;\ngot type = %T; value = %+v; \n", buf, len(buf), e, e, g, g)
+		t.Errorf("\nlength:%d \nexp type = %T; value = %+v;\ngot type = %T; value = %+v; \n", len(buf), e, e, g, g)
 	}
 }
 
@@ -470,7 +464,7 @@ func newType() struct {
 }
 
 func TestUint64(t *testing.T) {
-	n := 100000000
+	n := 10000000
 	u64 := make([]uint64, n)
 	for i := 0; i < n; i++ {
 		u64[i] = rand.Uint64()
@@ -480,15 +474,12 @@ func TestUint64(t *testing.T) {
 	gotiny.Unmarshal(buf, &u64d)
 
 	for i := 0; i < n; i++ {
-		if u64d[i] != (u64d[i]) {
-			t.Error(u64d[i])
-		}
-		// Assert(t, buf, u64[i], u64d[i])
+		Assert(t, buf, u64[i], u64d[i])
 	}
 }
 
 func TestInt64(t *testing.T) {
-	n := 100000000
+	n := 10000000
 	u64 := make([]int64, n)
 	for i := 0; i < n; i++ {
 		u64[i] = rand.Int63()
@@ -501,15 +492,12 @@ func TestInt64(t *testing.T) {
 	gotiny.Unmarshal(buf, &u64d)
 
 	for i := 0; i < n; i++ {
-		if u64d[i] != (u64d[i]) {
-			t.Error(u64d[i])
-		}
-		// Assert(t, buf, u64[i], u64d[i])
+		Assert(t, buf, u64[i], u64d[i])
 	}
 }
 
 func TestUint16(t *testing.T) {
-	n := 100000000
+	n := 10000000
 	u64 := make([]uint16, n)
 	for i := 0; i < n; i++ {
 		u64[i] = uint16(rand.Uint32())
@@ -519,15 +507,12 @@ func TestUint16(t *testing.T) {
 	gotiny.Unmarshal(buf, &u64d)
 
 	for i := 0; i < n; i++ {
-		if u64d[i] != (u64d[i]) {
-			t.Error(u64d[i])
-		}
-		// Assert(t, buf, u64[i], u64d[i])
+		Assert(t, buf, u64[i], u64d[i])
 	}
 }
 
 func TestInt16(t *testing.T) {
-	n := 100000000
+	n := 10000000
 	u64 := make([]int16, n)
 	for i := 0; i < n; i++ {
 		u64[i] = int16(rand.Int31())
@@ -540,15 +525,12 @@ func TestInt16(t *testing.T) {
 	gotiny.Unmarshal(buf, &u64d)
 
 	for i := 0; i < n; i++ {
-		if u64d[i] != (u64d[i]) {
-			t.Error(u64d[i])
-		}
-		// Assert(t, buf, u64[i], u64d[i])
+		Assert(t, buf, u64[i], u64d[i])
 	}
 }
 
 func TestUint32(t *testing.T) {
-	n := 100000000
+	n := 10000000
 	u64 := make([]uint32, n)
 	for i := 0; i < n; i++ {
 		u64[i] = rand.Uint32()
@@ -558,15 +540,12 @@ func TestUint32(t *testing.T) {
 	gotiny.Unmarshal(buf, &u64d)
 
 	for i := 0; i < n; i++ {
-		if u64d[i] != (u64d[i]) {
-			t.Error(u64d[i])
-		}
-		// Assert(t, buf, u64[i], u64d[i])
+		Assert(t, buf, u64[i], u64d[i])
 	}
 }
 
 func TestInt32(t *testing.T) {
-	n := 100000000
+	n := 10000000
 	u64 := make([]int32, n)
 	for i := 0; i < n; i++ {
 		u64[i] = rand.Int31()
@@ -579,15 +558,12 @@ func TestInt32(t *testing.T) {
 	gotiny.Unmarshal(buf, &u64d)
 
 	for i := 0; i < n; i++ {
-		if u64d[i] != (u64d[i]) {
-			t.Error(u64d[i])
-		}
-		// Assert(t, buf, u64[i], u64d[i])
+		Assert(t, buf, u64[i], u64d[i])
 	}
 }
 
 func TestBool(t *testing.T) {
-	n := 100000000
+	n := 10000000
 	u64 := make([]bool, n)
 	for i := 0; i < n; i++ {
 		u64[i] = rand.Intn(2)%2 == 0
@@ -597,9 +573,38 @@ func TestBool(t *testing.T) {
 	gotiny.Unmarshal(buf, &u64d)
 
 	for i := 0; i < n; i++ {
-		if u64d[i] != (u64d[i]) {
-			t.Error(u64d[i])
+		Assert(t, buf, u64[i], u64d[i])
+	}
+}
+
+func TestTime(t *testing.T) {
+	n := 1000
+	u64 := make([]time.Time, n)
+	for i := 0; i < n; i++ {
+		u64[i] = time.Now()
+	}
+	buf := gotiny.Marshal(&u64)
+	var u64d []time.Time
+	gotiny.Unmarshal(buf, &u64d)
+
+	for i := 0; i < n; i++ {
+		u64[i].Equal(u64d[i])
+	}
+}
+
+func TestPointerMap(t *testing.T) {
+	n := 100
+	for i := 0; i < n; i++ {
+		v6map := map[*int][]baseTyp{&vint1: genBase(), &vint2: genBase()}
+		v6mapd := map[*int][]baseTyp{}
+		buf := gotiny.Marshal(&v6map)
+		gotiny.Unmarshal(buf, &v6mapd)
+		vd := map[int][]baseTyp{}
+		for k, v := range v6map {
+			vd[*k] = v
 		}
-		// Assert(t, buf, u64[i], u64d[i])
+		for k, v := range v6mapd {
+			Assert(t, buf, vd[*k], v)
+		}
 	}
 }

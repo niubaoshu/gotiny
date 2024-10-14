@@ -8,10 +8,6 @@ import (
 	"unsafe"
 )
 
-const (
-	ptr1Size = 4 << (^uintptr(0) >> 63) // unsafe.Sizeof(uintptr(0)) but an ideal const
-)
-
 func float64ToUint64(v unsafe.Pointer) uint64 {
 	return reverse64Byte(*(*uint64)(v))
 }
