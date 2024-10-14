@@ -39,19 +39,27 @@ func directType(rt *reflect.Type) bool {
 type refVal struct {
 	_    unsafe.Pointer
 	ptr  unsafe.Pointer
-	flag flag
+	flag uintptr
 }
 
-type flag uintptr
+const flagIndir uintptr = 1 << 7
 
-//go:linkname flagIndir reflect.flagIndir
-const flagIndir flag = 1 << 7
-
-func getUnsafePointer(rv *reflect.Value) unsafe.Pointer {
-	vv := (*refVal)(unsafe.Pointer(rv))
+func getUnsafePointer(rv reflect.Value) unsafe.Pointer {
+	vv := (*refVal)(unsafe.Pointer(&rv))
 	if vv.flag&flagIndir == 0 {
 		return unsafe.Pointer(&vv.ptr)
 	} else {
 		return vv.ptr
 	}
+}
+
+type sliceHeader struct {
+	data unsafe.Pointer
+	len  int
+	cap  int
+}
+
+type stringHeader struct {
+	data unsafe.Pointer
+	len  int
 }

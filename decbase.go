@@ -133,14 +133,13 @@ func decUint16(d *Decoder, p unsafe.Pointer)    { *(*uint16)(p) = d.decUint16() 
 func decUint32(d *Decoder, p unsafe.Pointer)    { *(*uint32)(p) = d.decUint32() }
 func decUint64(d *Decoder, p unsafe.Pointer)    { *(*uint64)(p) = d.decUint64() }
 func decUintptr(d *Decoder, p unsafe.Pointer)   { *(*uintptr)(p) = uintptr(d.decUint64()) }
-func decPointer(d *Decoder, p unsafe.Pointer)   { *(*uintptr)(p) = uintptr(d.decUint64()) }
 func decFloat32(d *Decoder, p unsafe.Pointer)   { *(*float32)(p) = uint32ToFloat32(d.decUint32()) }
 func decFloat64(d *Decoder, p unsafe.Pointer)   { *(*float64)(p) = uint64ToFloat64(d.decUint64()) }
 func decTime(d *Decoder, p unsafe.Pointer)      { *(*time.Time)(p) = time.Unix(0, int64(d.decUint64())) }
 func decComplex64(d *Decoder, p unsafe.Pointer) { *(*uint64)(p) = d.decUint64() }
 func decComplex128(d *Decoder, p unsafe.Pointer) {
 	*(*uint64)(p) = d.decUint64()
-	*(*uint64)(unsafe.Pointer(uintptr(p) + ptr1Size)) = d.decUint64()
+	*(*uint64)(unsafe.Add(p, 8)) = d.decUint64()
 }
 
 func decString(d *Decoder, p unsafe.Pointer) {

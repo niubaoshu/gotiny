@@ -104,7 +104,7 @@ type GoTinySerializer interface {
 }
 
 func implementOtherSerializer(rt reflect.Type) (encEng encEng, decEng decEng) {
-	rtNil := reflect.Zero(reflect.PtrTo(rt)).Interface()
+	rtNil := reflect.New(rt).Interface()
 	if _, ok := rtNil.(GoTinySerializer); ok {
 		encEng = func(e *Encoder, p unsafe.Pointer) {
 			e.buf = reflect.NewAt(rt, p).Interface().(GoTinySerializer).GotinyEncode(e.buf)

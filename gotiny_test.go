@@ -49,16 +49,18 @@ type (
 		Spouse   bool
 		Money    float64
 	}
+	tint struct {
+		a uint8
+	}
 
 	cirTyp    *cirTyp
 	cirStruct struct {
+		b tint
 		a int
 		*cirStruct
 	}
 	cirMap   map[int]cirMap
 	cirSlice []cirSlice
-
-	tint int
 
 	gotinyTest string
 )
@@ -66,6 +68,9 @@ type (
 func (tint) Read([]byte) (int, error)  { return 0, nil }
 func (tint) Write([]byte) (int, error) { return 0, nil }
 func (tint) Close() error              { return nil }
+
+func (t *tint) GotinyEncode(buf []byte) []byte { return append(buf, byte(t.a)) }
+func (t *tint) GotinyDecode(buf []byte) int    { t.a = buf[0]; return 1 }
 
 func (v *gotinyTest) GotinyEncode(buf []byte) []byte {
 	return append(buf, gotiny.Marshal((*string)(v))...)
@@ -84,10 +89,12 @@ func genBase() []baseTyp {
 			fInt16:      int16(rand.Int()),
 			fInt32:      int32(rand.Int()),
 			fInt64:      int64(rand.Int()),
-			fInt:        int(rand.Int()),
+			fInt:        rand.Int(),
 			fUint8:      uint8(rand.Int()),
 			fUint16:     uint16(rand.Int()),
+			fUint32:     uint32(rand.Int()),
 			fUint64:     uint64(rand.Int()),
+			fUint:       uint(rand.Int()),
 			fUintptr:    uintptr(rand.Int()),
 			fFloat32:    rand.Float32(),
 			fFloat64:    rand.Float64(),
@@ -125,7 +132,7 @@ var (
 	vint        = int(123456)
 	vint1       = int(123456)
 	vint2       = int(1234567)
-	vint3       = tint(1234567)
+	vint3       = tint{a: 123}
 	vuint       = uint(123)
 	vuint8      = uint8(123)
 	vuint16     = uint16(12345)
@@ -181,13 +188,11 @@ var (
 		genBase(),
 	}
 
-	unsafePointer = unsafe.Pointer(&vtime)
-
 	vcir        cirTyp
 	v2cir       cirTyp = &vcir
 	v3cir       cirTyp = &v2cir
-	vcirStruct         = cirStruct{a: 1}
-	v2cirStruct        = cirStruct{a: 1, cirStruct: &vcirStruct}
+	vcirStruct         = cirStruct{b: tint{a: 45}, a: 1}
+	v2cirStruct        = cirStruct{b: tint{a: 22}, a: 1, cirStruct: &vcirStruct}
 	vcirmap            = cirMap{1: nil}
 	v2cirmap           = cirMap{2: vcirmap}
 	v1cirSlice         = make([]cirSlice, 10)
@@ -208,11 +213,9 @@ var (
 
 	v0interface interface{}
 	vinterface  interface{}        = varray
-	v1interface io.ReadWriteCloser = tint(2)
-	v2interface io.ReadWriteCloser = os.Stdin
+	v1interface io.ReadWriteCloser = tint{a: 1}
 	v3interface interface{}        = &vinterface
 	v4interface interface{}        = &v1interface
-	v5interface interface{}        = &v2interface
 	v6interface interface{}        = &v3interface
 	v7interface interface{}        = &v0interface
 	v8interface interface{}        = &vnilptr
@@ -276,15 +279,12 @@ var (
 		varray,
 		vinterface,
 		v1interface,
-		v2interface,
 		v3interface,
 		v4interface,
-		v5interface,
 		v6interface,
 		v7interface,
 		v8interface,
 		v9interface,
-		unsafePointer,
 		vcir,
 		v2cir,
 		v3cir,

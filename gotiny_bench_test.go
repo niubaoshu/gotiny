@@ -6,7 +6,6 @@ import (
 	"reflect"
 	"testing"
 	"time"
-	"unsafe"
 )
 
 var (
@@ -49,24 +48,23 @@ func BenchmarkDecode2(b *testing.B) {
 
 type (
 	baseTyp struct {
-		FBool          bool
-		FInt8          int8
-		FInt16         int16
-		FInt32         int32
-		FInt64         int64
-		FInt           int
-		FUint8         uint8
-		FUint16        uint16
-		FUint32        uint32
-		FUint64        uint64
-		FUint          uint
-		FUintptr       uintptr
-		FFloat32       float32
-		FFloat64       float64
-		FComplex64     complex64
-		FComplex128    complex128
-		FString        string
-		FUnsafePointer unsafe.Pointer
+		FBool       bool
+		FInt8       int8
+		FInt16      int16
+		FInt32      int32
+		FInt64      int64
+		FInt        int
+		FUint8      uint8
+		FUint16     uint16
+		FUint32     uint32
+		FUint64     uint64
+		FUint       uint
+		FUintptr    uintptr
+		FFloat32    float32
+		FFloat64    float64
+		FComplex64  complex64
+		FComplex128 complex128
+		FString     string
 	}
 
 	A struct {
@@ -80,22 +78,21 @@ type (
 
 func genBase() baseTyp {
 	return baseTyp{
-		FBool:          rand.Int()%2 == 0,
-		FInt8:          int8(rand.Int()),
-		FInt16:         int16(rand.Int()),
-		FInt32:         int32(rand.Int()),
-		FInt64:         int64(rand.Int()),
-		FInt:           int(rand.Int()),
-		FUint8:         uint8(rand.Int()),
-		FUint16:        uint16(rand.Int()),
-		FUint64:        uint64(rand.Int()),
-		FUintptr:       uintptr(rand.Int()),
-		FFloat32:       rand.Float32(),
-		FFloat64:       rand.Float64(),
-		FComplex64:     complex(rand.Float32(), rand.Float32()),
-		FComplex128:    complex(rand.Float64(), rand.Float64()),
-		FString:        GetRandomString(20 + rand.Intn(256)),
-		FUnsafePointer: unsafe.Pointer(nil),
+		FBool:       rand.Int()%2 == 0,
+		FInt8:       int8(rand.Int()),
+		FInt16:      int16(rand.Int()),
+		FInt32:      int32(rand.Int()),
+		FInt64:      int64(rand.Int()),
+		FInt:        int(rand.Int()),
+		FUint8:      uint8(rand.Int()),
+		FUint16:     uint16(rand.Int()),
+		FUint64:     uint64(rand.Int()),
+		FUintptr:    uintptr(rand.Int()),
+		FFloat32:    rand.Float32(),
+		FFloat64:    rand.Float64(),
+		FComplex64:  complex(rand.Float32(), rand.Float32()),
+		FComplex128: complex(rand.Float64(), rand.Float64()),
+		FString:     GetRandomString(20 + rand.Intn(256)),
 	}
 }
 
