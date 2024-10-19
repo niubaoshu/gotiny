@@ -8,6 +8,8 @@ import (
 	"unsafe"
 )
 
+const ptr1Size = 4 << (^uintptr(0) >> 63)
+
 func float64ToUint64(v unsafe.Pointer) uint64 {
 	return reverse64Byte(*(*uint64)(v))
 }
@@ -92,7 +94,7 @@ type binInter interface {
 }
 
 // 只应该由指针来实现该接口
-type GoTinySerializer interface {
+type Serializer interface {
 	// 编码方法，将对象的序列化结果append到入参数并返回，方法不应该修改入参数值原有的值
 	GotinyEncode([]byte) []byte
 	// 解码方法，将入参解码到对象里并返回使用的长度。方法从入参的第0个字节开始使用，并且不应该修改入参中的任何数据
@@ -101,12 +103,12 @@ type GoTinySerializer interface {
 
 func implementOtherSerializer(rt reflect.Type) (encEng encEng, decEng decEng) {
 	rtNil := reflect.New(rt).Interface()
-	if _, ok := rtNil.(GoTinySerializer); ok {
+	if _, ok := rtNil.(Serializer); ok {
 		encEng = func(e *Encoder, p unsafe.Pointer) {
-			e.buf = reflect.NewAt(rt, p).Interface().(GoTinySerializer).GotinyEncode(e.buf)
+			e.buf = reflect.NewAt(rt, p).Interface().(Serializer).GotinyEncode(e.buf)
 		}
 		decEng = func(d *Decoder, p unsafe.Pointer) {
-			d.index += reflect.NewAt(rt, p).Interface().(GoTinySerializer).GotinyDecode(d.buf[d.index:])
+			d.index += reflect.NewAt(rt, p).Interface().(Serializer).GotinyDecode(d.buf[d.index:])
 		}
 		return
 	}

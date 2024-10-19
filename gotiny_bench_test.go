@@ -19,7 +19,7 @@ func init() {
 	t := reflect.TypeOf(value).Elem()
 	e = NewEncoderWithType(t)
 	d = NewDecoderWithType(t)
-	buf = e.Encode(value)
+	buf = e.encode(value)
 }
 
 func BenchmarkEncode(b *testing.B) {
@@ -36,13 +36,13 @@ func BenchmarkDecode(b *testing.B) {
 
 func BenchmarkEncode2(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		e.Encode(value)
+		e.encode(value)
 	}
 }
 
 func BenchmarkDecode2(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		d.Decode(buf, value)
+		d.decode(buf, value)
 	}
 }
 
@@ -71,7 +71,7 @@ type (
 		Array    [10]baseTyp
 		Slice    []baseTyp
 		BirthDay time.Time
-		Inter    interface{}
+		Inter    any
 		M        map[string]*baseTyp
 	}
 )

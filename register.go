@@ -10,7 +10,7 @@ var (
 	name2type = map[string]reflect.Type{}
 )
 
-func GetName(obj interface{}) string {
+func GetName(obj any) string {
 	return GetNameByType(reflect.TypeOf(obj))
 }
 func GetNameByType(rt reflect.Type) string {
@@ -113,7 +113,7 @@ func getNameOfType(rt reflect.Type) string {
 	}
 }
 
-func Register(i interface{}) string {
+func Register(i any) string {
 	return registerType(reflect.TypeOf(i))
 }
 

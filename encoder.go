@@ -2,7 +2,6 @@ package gotiny
 
 import (
 	"reflect"
-	"unsafe"
 )
 
 type Encoder struct {
@@ -15,12 +14,19 @@ type Encoder struct {
 	length  int
 }
 
-func Marshal(is ...interface{}) []byte {
-	return NewEncoderWithPtr(is...).Encode(is...)
+/*
+Marshal serializes the value pointed to by the incoming pointer.
+The argument must be a pointer, similar to the form &value
+which is serializing value. If value itself is a pointer,
+then you can pass in value directly,
+which serializes the value pointed to by value.
+*/
+func Marshal(ps ...any) []byte {
+	return NewEncoderWithPtr(ps...).encode(ps...)
 }
 
 // 创建一个编码ps 指向类型的编码器
-func NewEncoderWithPtr(ps ...interface{}) *Encoder {
+func NewEncoderWithPtr(ps ...any) *Encoder {
 	l := len(ps)
 	engines := make([]encEng, l)
 	for i := 0; i < l; i++ {
@@ -37,7 +43,7 @@ func NewEncoderWithPtr(ps ...interface{}) *Encoder {
 }
 
 // 创建一个编码is 类型的编码器
-func NewEncoder(is ...interface{}) *Encoder {
+func NewEncoder(is ...any) *Encoder {
 	l := len(is)
 	engines := make([]encEng, l)
 	for i := 0; i < l; i++ {
@@ -62,25 +68,16 @@ func NewEncoderWithType(ts ...reflect.Type) *Encoder {
 }
 
 // 入参是要编码值的指针
-func (e *Encoder) Encode(is ...interface{}) []byte {
+func (e *Encoder) encode(is ...any) []byte {
 	engines := e.engines
 	for i := 0; i < len(engines) && i < len(is); i++ {
-		engines[i](e, (*[2]unsafe.Pointer)(unsafe.Pointer(&is[i]))[1])
-	}
-	return e.reset()
-}
-
-// 入参是要编码的值得unsafe.Pointer 指针
-func (e *Encoder) EncodePtr(ps ...unsafe.Pointer) []byte {
-	engines := e.engines
-	for i := 0; i < len(engines) && i < len(ps); i++ {
-		engines[i](e, ps[i])
+		engines[i](e, reflect.ValueOf(is[i]).UnsafePointer())
 	}
 	return e.reset()
 }
 
 // vs 是持有要编码的值
-func (e *Encoder) EncodeValue(vs ...reflect.Value) []byte {
+func (e *Encoder) encodeValue(vs ...reflect.Value) []byte {
 	engines := e.engines
 	for i := 0; i < len(engines) && i < len(vs); i++ {
 		engines[i](e, getUnsafePointer(vs[i]))
@@ -88,7 +85,7 @@ func (e *Encoder) EncodeValue(vs ...reflect.Value) []byte {
 	return e.reset()
 }
 
-// 编码产生的数据将append到buf上
+// AppendTo 编码产生的数据将append到buf上
 func (e *Encoder) AppendTo(buf []byte) {
 	e.off = len(buf)
 	e.buf = buf

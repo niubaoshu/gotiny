@@ -47,7 +47,7 @@ var (
 	inta          = 2
 	ptrint   *int = &inta
 	nilint   *int
-	vs       = []interface{}{
+	vs       = []any{
 		ptrint,
 		strs,
 		`习近平离京对瑞士联邦进行国事访问
@@ -112,8 +112,8 @@ var (
 	e = gotiny.NewEncoder(vs...)
 	d = gotiny.NewDecoder(vs...)
 
-	spvals = make([]interface{}, len(vs))
-	rpvals = make([]interface{}, len(vs))
+	spvals = make([]any, len(vs))
+	rpvals = make([]any, len(vs))
 	c      = goutils.NewComparer()
 
 	buf = make([]byte, 0, 2048)
@@ -163,7 +163,7 @@ func main() {
 	}
 }
 
-func Assert(x, y interface{}) error {
+func Assert(x, y any) error {
 	if !c.DeepEqual(x, y) {
 		return fmt.Errorf("\n exp type =  %T; value = %#v;\n got type = %T; value = %#v ", x, x, y, y)
 	}
