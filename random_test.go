@@ -2,8 +2,10 @@ package gotiny
 
 import (
 	cr "crypto/rand"
+	"fmt"
 	"math/rand"
 	"reflect"
+	"testing"
 	"time"
 )
 
@@ -66,7 +68,7 @@ var (
 		kStruckEmpty: reflect.TypeFor[struct{}](),
 	}
 
-	t = [...]kind{
+	t = []kind{
 		kBool, kInt, kInt8, kInt16, kInt32, kInt64,
 		kUint, kUint8, kUint16, kUint32, kUint64, kUintptr,
 		kFloat32, kFloat64, kComplex64, kComplex128,
@@ -79,78 +81,115 @@ var (
 		kSlice, kSlice, kSlice, kSlice, kSlice,
 		kStruct, kStruct, kStruct, kStruct, kStruct,
 	}
-	vBool = [...]reflect.Value{
-		reflect.ValueOf(true),
-		reflect.ValueOf(false),
+	it = []kind{
+		kBool, kInt, kInt8, kInt16, kInt32, kInt64,
+		kUint, kUint8, kUint16, kUint32, kUint64, kUintptr,
+		kFloat32, kFloat64, kComplex64, kComplex128,
+		kString, kTime, kBytes, kStruckEmpty,
+
+		kArray, kArray, kArray, kArray, kArray,
+		kMap, kMap, kMap, kMap, kMap,
+		// kInterface, kInterface, kInterface, kInterface, kInterface,
+		kPointer, kPointer, kPointer, kPointer, kPointer,
+		kSlice, kSlice, kSlice, kSlice, kSlice,
+		kStruct, kStruct, kStruct, kStruct, kStruct,
 	}
+	ct = []kind{
+		kBool, kInt, kInt8, kInt16, kInt32, kInt64,
+		kUint, kUint8, kUint16, kUint32, kUint64, kUintptr,
+		kFloat32, kFloat64, kComplex64, kComplex128,
+		kString, kTime,
+		// kBytes, kStruckEmpty,
+		kArray, kArray, kArray, kArray, kArray,
+		// kMap, kMap, kMap, kMap, kMap,
+		kInterface, kInterface, kInterface, kInterface, kInterface,
+		kPointer, kPointer, kPointer, kPointer, kPointer,
+		// kSlice, kSlice, kSlice, kSlice, kSlice,
+		kStruct, kStruct, kStruct, kStruct, kStruct,
+	}
+	cit = []kind{
+		kBool, kInt, kInt8, kInt16, kInt32, kInt64,
+		kUint, kUint8, kUint16, kUint32, kUint64, kUintptr,
+		kFloat32, kFloat64, kComplex64, kComplex128,
+		kString, kTime,
+		// kBytes, kStruckEmpty,
+		kArray, kArray, kArray, kArray, kArray,
+		// kMap, kMap, kMap, kMap, kMap,
+		// kInterface, kInterface, kInterface, kInterface, kInterface,
+		kPointer, kPointer, kPointer, kPointer, kPointer,
+		// kSlice, kSlice, kSlice, kSlice, kSlice,
+		kStruct, kStruct, kStruct, kStruct, kStruct,
+	}
+	vEmptyStruct = struct{}{}
 )
 
 func randValue(rt reflect.Type) reflect.Value {
-
+	var v interface{}
 	if rt == rts[kTime] {
-		return reflect.ValueOf(time.Unix(0, time.Now().UnixNano()+rand.Int63n(1<<20)-1<<19))
+		v = time.Unix(0, time.Now().UnixNano()+rand.Int63n(1<<20)-1<<19)
 	} else if rt == rts[kBytes] {
 		bs := make([]byte, rand.Intn(maxLength))
 		n, _ := cr.Read(bs)
-		return reflect.ValueOf(bs[:n])
+		v = bs[:n]
 	} else if rt == rts[kStruckEmpty] {
-		return reflect.ValueOf(struct{}{})
+		v = vEmptyStruct
 	}
 
 	switch rt.Kind() {
 	case reflect.Bool:
-		return vBool[(rand.Intn(2))]
+		v = rand.Intn(2) == 0
 	case reflect.Int:
 		if ptr1Size == 4 {
-			return reflect.ValueOf(int(rand.Int63n(1<<32) - 1<<31))
+			v = int(rand.Int63n(1<<32) - 1<<31)
 		} else {
-			return reflect.ValueOf(int(rand.Uint64() - 1<<63))
+			v = int(rand.Uint64() - 1<<63)
 		}
 	case reflect.Int8:
-		return reflect.ValueOf(int8(rand.Intn(1<<8) - 1<<7))
+		v = int8(rand.Intn(1<<8) - 1<<7)
 	case reflect.Int16:
-		return reflect.ValueOf(int16(rand.Intn(1<<16) - 1<<15))
+		v = int16(rand.Intn(1<<16) - 1<<15)
 	case reflect.Int32:
-		return reflect.ValueOf(int32(rand.Int63n(1<<32) - 1<<31))
+		v = int32(rand.Intn(1<<32) - 1<<31)
 	case reflect.Int64:
-		return reflect.ValueOf(int64(rand.Uint64() - 1<<63))
+		v = int64(rand.Uint64() - 1<<63)
 	case reflect.Uint:
 		if ptr1Size == 4 {
-			return reflect.ValueOf(uint(rand.Uint32()))
+			v = uint(rand.Uint32())
 		} else {
-			return reflect.ValueOf(uint(rand.Uint64()))
+			v = uint(rand.Uint64())
 		}
-
 	case reflect.Uint8:
-		return reflect.ValueOf(uint8(rand.Intn(1 << 8)))
+		v = uint8(rand.Intn(1 << 8))
 	case reflect.Uint16:
-		return reflect.ValueOf(uint16(rand.Intn(1 << 16)))
+		v = uint16(rand.Intn(1 << 16))
 	case reflect.Uint32:
-		return reflect.ValueOf(rand.Uint32())
+		v = rand.Uint32()
 	case reflect.Uint64:
-		return reflect.ValueOf(rand.Uint64())
+		v = rand.Uint64()
 	case reflect.Uintptr:
 		if ptr1Size == 4 {
-			return reflect.ValueOf(uintptr(rand.Uint32()))
+			v = uintptr(rand.Uint32())
 		} else {
-			return reflect.ValueOf(uintptr(rand.Uint64()))
+			v = uintptr(rand.Uint64())
 		}
 	case reflect.Float32:
-		return reflect.ValueOf(rand.Float32())
+		v = rand.Float32()
 	case reflect.Float64:
-		return reflect.ValueOf(rand.Float64())
+		v = rand.Float64()
 	case reflect.Complex64:
-		return reflect.ValueOf(complex(rand.Float32(), rand.Float32()))
+		v = complex(rand.Float32(), rand.Float32())
 	case reflect.Complex128:
-		return reflect.ValueOf(complex(rand.Float64(), rand.Float64()))
+		v = complex(rand.Float64(), rand.Float64())
 	case reflect.String:
-		return reflect.ValueOf(randString(rand.Intn(maxLength)))
+		v = randString(rand.Intn(maxLength))
 	case reflect.Array:
 		l := rt.Len()
 		v := reflect.New(rt).Elem()
+		et := rt.Elem()
 		for i := 0; i < l; i++ {
-			v.Index(i).Set(randValue(rt.Elem()))
+			v.Index(i).Set(randValue(et))
 		}
+		return v
 	case reflect.Interface:
 		return reflect.ValueOf(randValue(rt.Elem()).Interface())
 
@@ -160,9 +199,10 @@ func randValue(rt reflect.Type) reflect.Value {
 		for i := 0; i < l; i++ {
 			m.SetMapIndex(randValue(rt.Key()), randValue(rt.Elem()))
 		}
+		return m
 	case reflect.Pointer:
-		v := reflect.New(rt)
-		v.Elem().Set(randValue(rt.Elem()))
+		v := reflect.New(rt).Elem()
+		v.Set(randValue(rt.Elem()).Addr())
 		return v
 	case reflect.Slice:
 		l := rand.Intn(maxLength)
@@ -170,50 +210,113 @@ func randValue(rt reflect.Type) reflect.Value {
 		for i := 0; i < l; i++ {
 			s.Index(i).Set(randValue(rt.Elem()))
 		}
+		return s
 	case reflect.Struct:
 		n := rt.NumField()
 		v := reflect.New(rt).Elem()
 		for i := 0; i < n; i++ {
 			v.Field(i).Set(randValue(rt.Field(i).Type))
 		}
+		return v
 	default:
-		return reflect.New(rt).Elem()
+		panic("unknown type")
 	}
-	return reflect.New(rt).Elem()
+	fmt.Println(reflect.TypeOf(v))
+	return reflect.ValueOf(v)
 }
 
-func randType() reflect.Type {
-	t := randKind()
+type state struct {
+	r              *rand.Rand
+	lt             kind
+	needComparable bool
+	depth          int
+}
+
+func newState() *state {
+	return &state{rand.New(rand.NewSource(time.Now().UnixNano())), 30, false, 0}
+}
+
+func (s *state) randType() (rt reflect.Type) {
+	s.depth++
+
+	t := s.randKind()
 	if t < kArray {
+		s.depth--
 		return rts[t]
 	}
 	switch t {
 	case kArray:
 		l := rand.Intn(maxLength)
-		return reflect.ArrayOf(l, randType())
+		rt = reflect.ArrayOf(l, s.randType())
 	case kInterface:
-		return reflect.TypeOf(reflect.New(randType()).Elem().Interface())
+		rt = reflect.TypeOf(reflect.New(s.randType()).Elem().Interface())
 	case kMap:
-		return reflect.MapOf(randType(), randType())
+		s.needComparable = true
+		key := s.randType()
+		s.needComparable = false
+		val := s.randType()
+		rt = reflect.MapOf(key, val)
 	case kPointer:
-		return reflect.PointerTo(randType())
+		rt = reflect.PointerTo(s.randType())
 	case kSlice:
-		return reflect.SliceOf(randType())
+		rt = reflect.SliceOf(s.randType())
 	case kStruct:
 		n := rand.Intn(maxLength) / 3
 		fs := make([]reflect.StructField, n)
 		for i := 0; i < n; i++ {
 			fs[i] = reflect.StructField{
-				Name: randString(10),
-				Type: randType(),
+				Name:    randFieldName(),
+				Type:    s.randType(),
+				PkgPath: "github.com/niubaoshu/gotiny",
 			}
 		}
-		return reflect.StructOf(fs)
+		rt = reflect.StructOf(fs)
 	default:
 		panic("invalid kind")
 	}
+	s.depth--
+	return rt
 }
 
-func randKind() kind {
-	return kind(rand.Intn(int(kNumber)))
+func (s *state) randKind() kind {
+	ts := t
+	if s.lt == kInterface {
+		ts = it
+	}
+	if s.needComparable {
+		ts = ct
+	}
+	if s.lt == kInterface && s.needComparable {
+		ts = cit
+	}
+	if s.depth > 10 {
+		ts = t[:kTime]
+	}
+	t := ts[s.r.Intn(len(ts))]
+	s.lt = t
+	return t
+}
+
+func TestRandType(t *testing.T) {
+	r := newState()
+	for i := 0; i < 1000000; i++ {
+		r.randType()
+	}
+}
+
+func TestRandValue(t *testing.T) {
+	//r := newState()
+	for i := 0; i < 10; i++ {
+		//rt := r.randType()
+		//t.Log(rt)
+		//t.Log(randValue(rt))
+	}
+}
+
+func randFieldName() string {
+	if rand.Intn(2) == 0 {
+		return "f" + randString(10)
+	} else {
+		return "F" + randString(10)
+	}
 }
